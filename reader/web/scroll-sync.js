@@ -18,7 +18,7 @@
     mirror.setAttribute('aria-hidden', 'true'); mirror.className = 'source-mirror'; document.body.append(mirror);
     let points = [], metrics = [], cacheKey = '', frame = 0, paused = false, driver = 'preview';
     const expected = new WeakMap();
-    const active = () => enabled() && current()?.editMode && current()?.format !== 'PDF' && editor() && !current().previewPending;
+    const active = () => enabled() && current()?.editMode && current()?.format !== 'PDF' && editor() && !current().previewPending && !current().apiRendering;
     function sourceMetrics() {
       const field = editor(), css = getComputedStyle(field);
       const key = [field.value, field.clientWidth, css.font, css.padding, field.dir].join('\0');
@@ -41,7 +41,7 @@
       if (!active()) return;
       sourceMetrics();
       const top = scroller.getBoundingClientRect().top, candidates = [];
-      article.querySelectorAll('[data-source-line]').forEach(node => {
+      ReaderOpenAPI.contentRoot(article).querySelectorAll('[data-source-line]').forEach(node => {
         if (!node.getClientRects().length || node.closest('.diagram-source')) return;
         // Inline HTML tags share the containing block's line and are not scroll anchors.
         if (!node.matches('p,h1,h2,h3,h4,h5,h6,li,pre,table,tr,blockquote,div,section,article,figure,summary,dt,dd,.source-line')) return;

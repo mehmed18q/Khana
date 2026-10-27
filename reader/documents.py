@@ -68,6 +68,7 @@ class Document:
     bom: str = ""
     newline: str = "\n"
     fingerprint: str = ""
+    api: dict | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -254,7 +255,9 @@ def render_source(source: str, document_format: str, base_directory: Path | None
     else:
         html, headings = render_code_document(source, document_format)
     readable = BeautifulSoup(html, "html.parser").get_text(" ")
-    return {"html": html, "headings": headings, "words": len(re.findall(r"[\w\u200c]+", readable, re.UNICODE))}
+    from reader.openapi_documents import api_definition
+    return {"html": html, "headings": headings, "words": len(re.findall(r"[\w\u200c]+", readable, re.UNICODE)),
+            "api": api_definition(source, document_format)}
 
 
 def load_document(path: Path, *, sample: bool = False) -> Document:

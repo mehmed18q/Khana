@@ -52,6 +52,7 @@ def collect_licenses():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
     notices += ["", "Mermaid 11.12.2: reader/web/vendor/MERMAID-LICENSE.txt",
+                "Swagger UI 5.34.0: reader/web/vendor/SWAGGER-UI-LICENSE.txt; swagger-ui-bundle.js.LICENSE.txt",
                 "Noto Sans Arabic: reader/web/fonts/LICENSE.txt"]
     (output / "THIRD-PARTY.txt").write_text("\n".join(notices) + "\n", encoding="utf-8")
 

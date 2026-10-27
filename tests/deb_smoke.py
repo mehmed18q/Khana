@@ -16,11 +16,12 @@ sys.path.insert(0, str(ROOT))
 import pymupdf
 from reader.word_documents import save_word, load_word
 from reader.source_formatting import beautify_source
+from api_fixture import api_server, api_spec
 
 
 def main():
     app = QCoreApplication.instance() or QCoreApplication([])
-    package = ROOT / 'dist/khana_0.5.2-1_amd64.deb'
+    package = ROOT / 'dist/khana_0.5.4-1_amd64.deb'
     fields = subprocess.check_output(['dpkg-deb', '--field', str(package)], text=True)
     assert 'Package: khana\n' in fields and 'Architecture: amd64\n' in fields
     with tempfile.TemporaryDirectory(prefix='khana-deb-') as temporary:
@@ -34,7 +35,7 @@ def main():
         subprocess.run(['desktop-file-validate', str(entry)], check=True)
         assert (payload / 'usr/bin/khana').readlink() == Path('/opt/khana/Khana')
         executable = payload / 'opt/khana/Khana'
-        assert subprocess.check_output([str(executable), '--version'], text=True).strip() == 'Khana 0.5.2'
+        assert subprocess.check_output([str(executable), '--version'], text=True).strip() == 'Khana 0.5.4'
         for size in (16, 22, 24, 32, 48, 64, 128, 256, 512):
             icon = QImage(str(payload / f'usr/share/icons/hicolor/{size}x{size}/apps/io.khana.Khana.png'))
             assert icon.width() == size and icon.height() == size
@@ -55,7 +56,7 @@ def main():
         running = None
         try:
             running = PackagedApp(executable, folder, extra_env={'WAYLAND_DEBUG': 'client'})
-            assert running.evaluate("document.querySelector('.version-note').textContent.includes('0.5.2')")
+            assert running.evaluate("document.querySelector('.version-note').textContent.includes('0.5.4')")
             dimensions = "[document.querySelector('.topbar').getBoundingClientRect().width, document.querySelector('.sidebar').getBoundingClientRect().width]"
             before = running.evaluate(dimensions)
             x, y = running.evaluate("(()=>{const r=document.getElementById('reading-scroll').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()")
@@ -123,6 +124,50 @@ def main():
                 running.wait("document.getElementById('save-status').textContent==='Saved'", 'packaged formatted source saves')
                 assert file.read_text() == formatted
                 running.close()
+            for suffix, spec in [('yaml', 'openapi: 3.0.3\ninfo: {title: Packaged API, version: "1"}\npaths:\n  /hello:\n    get:\n      responses:\n        200: {description: OK}\n'),
+                                 ('json', '{"swagger":"2.0","info":{"title":"Packaged API","version":"1"},"paths":{"/hello":{"get":{"responses":{"200":{"description":"OK"}}}}}}')]:
+                file = folder / ('api.' + suffix); file.write_text(spec)
+                running = PackagedApp(executable, folder, [file])
+                shadow = "document.querySelector('.swagger-host')?.shadowRoot"
+                running.wait(shadow + "?.querySelectorAll('[data-api-operation]').length===1", 'packaged Swagger UI ' + suffix)
+                running.evaluate(shadow + ".querySelector('.opblock-summary-control').click()")
+                running.wait(shadow + "?.querySelectorAll('.responses-table').length===1", 'packaged Swagger response')
+                running.evaluate("readerApp.setEditMode(true);const e=document.querySelector('.source-editor:not([hidden])');e.value=e.value.replace('Packaged API','Updated API');e.dispatchEvent(new Event('input',{bubbles:true}));readerApp.command('save')")
+                running.wait(shadow + "?.querySelector('.info .title')?.textContent.includes('Updated API')", 'packaged API live preview')
+                running.wait("document.getElementById('save-status').textContent==='Saved'", 'packaged API save')
+                assert 'Updated API' in file.read_text()
+                running.evaluate("document.getElementById('api-preview-source').click()")
+                running.wait("!!document.querySelector('.structured-source')", 'packaged API source view')
+                running.close()
+            with api_server() as (url, received):
+                file = folder / 'requests.json'; file.write_text(json.dumps(api_spec(url)))
+                shadow = "document.querySelector('.swagger-host')?.shadowRoot"
+                running = PackagedApp(executable, folder, [file])
+                running.wait(shadow + "?.querySelectorAll('[data-api-operation]').length===10", 'packaged request controls')
+                assert not received
+                def execute(path):
+                    block = shadow + '.querySelector(' + json.dumps(f'[data-api-operation="GET {path}"]') + ')'
+                    running.evaluate(block + ".querySelector('.opblock-summary-control').click()")
+                    running.wait(block + ".querySelector('.try-out__btn')!==null", 'packaged Try it out')
+                    running.evaluate(block + ".querySelector('.try-out__btn').click()")
+                    running.evaluate(block + ".querySelector('.execute').click()")
+                    running.wait(block + ".querySelector('.live-responses-table tbody .response-col_status')?.textContent.includes('200')", 'packaged HTTP response')
+                execute('/public'); assert received[-1]['path'] == '/public' and 'authorization' not in received[-1]['headers']
+                running.evaluate(shadow + ".querySelector('.auth-wrapper .authorize').click()")
+                container = "[..." + shadow + ".querySelectorAll('.auth-container')].find(n=>n.querySelector('h4')?.textContent.startsWith('token'))"
+                running.wait('!!(' + container + ')', 'packaged Authorize dialog')
+                running.evaluate('(()=>{const input=(' + container + ').querySelector("input");Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set.call(input,"packaged-example-token");input.dispatchEvent(new Event("input",{bubbles:true}));})()')
+                running.evaluate('(' + container + ").querySelector('.authorize').click()")
+                running.wait('(' + container + ").textContent.includes('Authorized')", 'packaged token accepted')
+                running.evaluate(shadow + ".querySelector('.btn-done').click()")
+                execute('/bearer'); assert received[-1]['headers']['authorization'] == 'Bearer packaged-example-token'
+                (artifacts / 'packaged-api-request.png').write_bytes(base64.b64decode(running.call('Page.captureScreenshot', {'format': 'png'})['data']))
+                running.close(); running = PackagedApp(executable, folder, [file])
+                running.wait(shadow + "?.querySelectorAll('[data-api-operation]').length===10", 'packaged API restart')
+                execute('/bearer'); assert 'authorization' not in received[-1]['headers']
+                assert 'packaged-example-token' not in file.read_text()
+                running.close()
+                print('PASS: packaged public/authenticated requests and credentials cleared on restart', flush=True)
             word_file = folder / 'word.docx'; word_file.write_bytes(save_word('<h1>Packaged Word</h1>', '.docx'))
             running = PackagedApp(executable, folder, [word_file])
             running.wait("document.getElementById('document-format').textContent==='Word'", 'packaged Word conversion')

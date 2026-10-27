@@ -21,6 +21,7 @@ from reader import APP_ID, APP_NAME, VERSION
 from reader.documents import Document, EXTENSIONS, FORMAT_EXTENSIONS, IMAGE_EXTENSIONS, file_filter, load_document, render_source
 from reader.editing import EditSession, fingerprint
 from reader.library import ReadingLibrary
+from reader.api_requests import ApiRequests
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "reader" / "web"
@@ -153,6 +154,7 @@ class Bridge(QObject):
     libraryChanged = Signal(str)
     pdfPageReady = Signal(str)
     sourceFormatted = Signal(str)
+    apiResponse = Signal(str)
     command = Signal(str)
 
     def __init__(self, window, initial_paths, settings_path=None):
@@ -180,6 +182,20 @@ class Bridge(QObject):
         self.pool = QThreadPool(self)
         self.pool.setMaxThreadCount(1)
         self.initialized = False
+        self.api_requests = ApiRequests(self)
+        self.api_requests.finished.connect(self.apiResponse)
+
+    @Slot(str, str, str)
+    def executeApiRequest(self, document_id, request_id, raw):
+        session = self.sessions.get(document_id)
+        if not session or document_id != self.active_id or session.document.format not in {'JSON', 'YAML'}:
+            self.api_requests.fail(document_id, request_id, 'Open the API document before sending a request.')
+            return
+        self.api_requests.send(document_id, request_id, raw)
+
+    @Slot(str)
+    def cancelApiRequests(self, document_id):
+        self.api_requests.cancel(document_id)
 
     @Slot()
     def ready(self):
@@ -515,6 +531,7 @@ class Bridge(QObject):
         if not session or not self._confirm_changes(session):
             return
         del self.sessions[document_id]
+        self.api_requests.cancel(document_id)
         self.pending_previews.pop(document_id, None)
         self._refresh_folders()
         self.documentClosed.emit(document_id)
@@ -745,6 +762,7 @@ class ReaderWindow(QMainWindow):
             return
         self.bridge.settings.setValue("geometry", self.saveGeometry())
         self.bridge.settings.sync()
+        self.bridge.api_requests.cancel()
         self.bridge.pool.waitForDone()
         super().closeEvent(event)
 

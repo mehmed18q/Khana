@@ -19,12 +19,12 @@ The verified environment is Ubuntu 26.04 x86_64 with Python 3.14. Windows source
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/markdown_tool/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.5.2 these are `khana_0.5.2-1_amd64.deb` and `khana_0.5.2-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.5.4 these are `khana_0.5.4-1_amd64.deb` and `khana_0.5.4-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.5.2-1_amd64.deb.sha256
-sudo apt install ./khana_0.5.2-1_amd64.deb
+sha256sum -c khana_0.5.4-1_amd64.deb.sha256
+sudo apt install ./khana_0.5.4-1_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -114,10 +114,10 @@ Build on **Ubuntu 26.04 x86_64**. First follow the [Ubuntu source setup](#ubuntu
 sudo apt install curl dpkg desktop-file-utils
 .venv/bin/python -m pip install -r requirements-build.txt
 .venv/bin/python scripts/build_deb.py
-sudo apt install ./dist/khana_0.5.2-1_amd64.deb
+sudo apt install ./dist/khana_0.5.4-1_amd64.deb
 ```
 
-The build produces `dist/khana_0.5.2-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.5.4-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -157,12 +157,12 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.5.2-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.5.2-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.5.4-1_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.5.4-1_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 
-These names describe version 0.5.2. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+These names describe version 0.5.4. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
 
 ## Reading
 
@@ -258,7 +258,7 @@ Open [examples/tables-and-flowcharts.md](examples/tables-and-flowcharts.md) for 
 
 HTML is displayed in a consistent reading layout: headings, paragraphs, lists, links, tables, images, code, and disclosure sections. Scripts, forms, embedded pages, and the original page's CSS are removed. Existing HTML `dir="rtl"` / `dir="ltr"` hints are honored in Smart mode.
 
-No server or internet connection is needed after installation. No content is uploaded. Images can use relative paths, absolute system paths, or local `file:///…` URLs; embedded Word images are supported too. Remote images are replaced by placeholders. External links open in your default browser only when clicked. Relative supported-document links inside the document's folder open in Khana.
+Reading and editing need no server or internet connection after installation. Documents are not uploaded. The optional Swagger **Execute** action sends the selected HTTP request, including its parameters, body and applicable authorization, to the selected API server. Images can use relative paths, absolute system paths, or local `file:///…` URLs; embedded Word images are supported too. Remote images are replaced by placeholders. External links open in your default browser only when clicked. Relative supported-document links inside the document's folder open in Khana.
 
 Text files must use UTF-8 (with or without BOM) or UTF-16 with BOM. The current file-size limit is 5 MB, including Word and PDF files. Raw HTML embedded inside Markdown is shown as text. Smart direction is a heuristic; use the manual direction controls for ambiguous sentences.
 
@@ -266,7 +266,8 @@ Text files must use UTF-8 (with or without BOM) or UTF-16 with BOM. The current 
 
 | Format | Reading and editing |
 | --- | --- |
-| JSON, YAML, XML | Literal source with syntax colors and line numbers; edit and save without reformatting or executing it. Incomplete syntax remains visible while typing. |
+| JSON, YAML | OpenAPI / Swagger definitions open as offline Swagger UI documentation. Other files show literal source with syntax colors and line numbers. Incomplete syntax remains visible while typing. |
+| XML | Literal source with syntax colors and line numbers; edit and save without reformatting or executing it. |
 | LOG, CONF (`.conf`, `.cfg`, `.ini`) | Literal lines, preserved whitespace, search, marks, notes, and source editing. Configuration syntax is highlighted as INI; logs remain plain text. |
 | Word (`.docx`, `.doc`) | Import text, headings, common character styles, tables, and images into an HTML editing source. Formatting buttons insert HTML; saving exports back to Word through LibreOffice Writer. |
 | PDF | Original pages rendered on demand, with simple text-region replacement. Image-only pages and complex text regions remain read-only. |
@@ -274,6 +275,18 @@ Text files must use UTF-8 (with or without BOM) or UTF-16 with BOM. The current 
 Word requires LibreOffice Writer (`libreoffice` or `soffice` on PATH for source/portable runs, including Windows). Each conversion uses a temporary isolated profile. Word editing uses a simplified reading layout; saving edited content may change advanced Word features such as page layout, fields, headers, tracked changes, and complex styles. Use **Save As…** when keeping the original layout is important.
 
 For **JSON, YAML and XML**, choose **Edit & Preview**, then **Format document** (or **Ctrl+Shift+I**). This applies consistent two-space indentation and spacing without sorting keys. JSON numbers and strings retain their original spellings; YAML keeps comments, quotes, anchors, tags, document separators, and existing inline/block styles. XML keeps comments and mixed text and respects `xml:space="preserve"`; XML containing a DTD is left unchanged. Invalid input reports an error without changing the source. Formatting is one undoable edit (**Ctrl+Z**); use **Save** to write it to disk. This button is separate from the prose styling toolbar and appears only for supported structured formats.
+
+### Swagger / OpenAPI preview
+
+Open a `.json`, `.yaml`, or `.yml` definition with a root `swagger: "2.0"` or `openapi: 3.0.x / 3.1.x / 3.2.x`. Khana automatically displays **Swagger UI** with expandable endpoints, parameters, responses, and schemas. Use **Source** in the preview toolbar to see the original text, or **Edit & Preview** to edit it with a live API preview. The original source is only written when you save. Invalid or unsupported definitions remain visible as source.
+
+The preview includes endpoint navigation, a tag/path filter, Persian/English descriptions, preview zoom, synchronized source scrolling, and marks/notes attached to API operations. Swagger UI is bundled locally. Online validation and external `$ref` loading remain disabled; internal `#/...` references work. For definitions split across files, open a bundled specification to see all models.
+
+To call an API, expand an endpoint, click **Try it out**, fill in its parameters/body, and click **Execute**. The response includes its status, headers, body and elapsed time. Opening or editing a definition does not send API requests. HTTP requests use the native desktop client, so browser CORS headers are not required.
+
+**Authorize** supports the security schemes defined in the document: **Bearer**, **Basic**, and **API Key** in a header, query or cookie. Public operations need no authorization. For **OAuth2**, paste an existing access token; browser sign-in, token acquisition and automatic refresh are not implemented. Logout removes the selected credentials. Authorization is held in memory for each open document, survives preview changes, and is discarded when that document or the app is closed; it is never written to the source, library or settings.
+
+Under **Request settings**, optionally set a full **Server URL override**, including any base path such as `/v1`. This is useful for relative server URLs and local test servers. Applying a different base URL clears authorization. **Cancel requests** cancels pending requests for the current document; switching previews/documents also cancels pending requests. Cancellation cannot undo a request already received by the server. Each request has a 30-second timeout and a 10 MB request/response limit. HTTPS certificate verification remains enabled, cookies are not shared or saved automatically, and redirects are displayed without automatically following them.
 
 For a PDF, hover over an editable text region and click **Edit text** (or double-click the region). Enter replacement text, choose **Apply**, review the page, then **Save** or **Save As…**. Text is replaced within its existing region; longer replacements may shrink to fit, and replacements that do not fit are rejected. Replacement fonts may differ from the original. Overlapping/rotated regions and PDFs without editable text are for reading only. Password-protected PDFs require an unlocked copy. No OCR or general page-layout editor is included. PDF page text can still be searched and annotated.
 
@@ -286,6 +299,8 @@ For a PDF, hover over an editable text region and click **Edit text** (or double
 | `reader/documents.py` | Document loading, Markdown rendering, HTML sanitization |
 | `reader/editing.py` | Source buffers, encoding preservation, conflict detection, atomic writes |
 | `reader/source_formatting.py` | JSON, YAML and XML source beautification |
+| `reader/openapi_documents.py`, `reader/web/openapi-ui.js` | Safe API definition detection and offline Swagger UI preview |
+| `reader/api_requests.py`, `reader/web/api-requests.js` | Native HTTP transport for explicit Swagger Execute actions |
 | `reader/library.py` | Persistent document library, stars, reading marks, notes, and session restoration |
 | `reader/word_documents.py`, `reader/pdf_documents.py` | Word conversion, PDF pages, and simple PDF text replacement |
 | `reader/web/annotations.js`, `reader/web/library-ui.js`, `reader/web/library.css` | Text anchors and library/annotation controls |
@@ -314,13 +329,16 @@ node --test tests/scroll-sync.test.cjs
 .venv/bin/python tests/desktop_smoke.py
 .venv/bin/python tests/zoom_smoke.py
 .venv/bin/python tests/beautify_smoke.py
+.venv/bin/python tests/openapi_smoke.py
+.venv/bin/python tests/api_requests_smoke.py
+.venv/bin/python tests/api_transport_smoke.py
 .venv/bin/python tests/editor_smoke.py
 .venv/bin/python tests/builders_smoke.py
 .venv/bin/python tests/library_smoke.py
 .venv/bin/python tests/formats_smoke.py
 ```
 
-The last five checks require a graphical desktop and exercise the actual Qt/WebEngine window, reading, editing, live preview, saving, save-as, external changes, save/discard/cancel behavior, table/flowchart builders, diagram rendering, annotation persistence, both scroll directions, Word/PDF editing, and image insertion. The formats check also needs LibreOffice Writer. They use temporary files and save screenshots in `artifacts/`. Node is only needed for JavaScript unit tests, not to run the app.
+The smoke checks require a graphical desktop and exercise the actual Qt/WebEngine window, reading, editing, live preview, saving, save-as, external changes, save/discard/cancel behavior, table/flowchart builders, diagram rendering, annotation persistence, both scroll directions, Word/PDF editing, image insertion, and Swagger / OpenAPI previews. The formats check also needs LibreOffice Writer. They use temporary files and save screenshots in `artifacts/`. Node is only needed for JavaScript unit tests, not to run the app.
 
 After building, verify the packaged application on a graphical desktop:
 

@@ -2,4 +2,4 @@
 
 APP_NAME = "Khana"
 APP_ID = "io.khana.Khana"
-VERSION = "0.5.2"
+VERSION = "0.5.4"

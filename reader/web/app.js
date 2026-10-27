@@ -21,6 +21,18 @@
   const supportsBeautify = doc => ['JSON', 'YAML', 'XML'].includes(doc?.format);
   const pdf = ReaderPDF.create({ article, scroller, current: () => documents.get(activeId), native: () => bridge, toast,
     changed: source => { const doc = documents.get(activeId); doc.source = source; updateCaption(); renderFiles(); schedulePreview(doc); } });
+  const contentRoot = () => ReaderOpenAPI.contentRoot(article);
+  const apiRequests = ReaderApiRequests.create(() => bridge);
+  const api = ReaderOpenAPI.create({ article, current: () => documents.get(activeId),
+    requests: apiRequests,
+    theme: () => settings.theme, direction: () => settings.direction, openLink: href => bridge?.openLink(href, activeId),
+    ready: (doc, first) => { reading.mount(); renderOutline(doc);
+      if (first) {
+        scroller.scrollTo({ top: doc.apiScroll || 0, behavior: 'instant' });
+        reading.changed(!positions.has(doc.id));
+        sync.mount(doc.editMode ? 'editor' : 'preview');
+      }
+      if (!$('search-panel').hidden) search(); } });
 
   function toast(message, error = false) {
     clearTimeout(toastTimer);
@@ -50,6 +62,7 @@
       button.setAttribute('aria-pressed', String(selected));
     });
     ReaderBidi.apply(article, settings.direction, overrides.get(activeId));
+    api.preferences();
     ReaderDiagrams.refreshTheme(article, settings.theme);
     $('direction-status').textContent = { smart: 'Smart direction is on', rtl: 'Right-to-left text', ltr: 'Left-to-right text' }[settings.direction];
     if (save) bridge?.saveSettings(JSON.stringify(settings));
@@ -110,7 +123,7 @@
   function renderOutline(doc) {
     observer?.disconnect();
     $('outline').replaceChildren();
-    const headings = doc?.headings || [];
+    const headings = doc?.api && !doc.apiSource ? doc.api.operations.map(op => ({ id: op.id, title: `${op.method.toUpperCase()} ${op.path}`, level: 2 })) : doc?.headings || [];
     if (!headings.length) {
       const note = document.createElement('div');
       note.className = 'outline-empty'; note.textContent = 'No headings in this document.';
@@ -122,7 +135,7 @@
       button.dataset.target = heading.id;
       if (heading.level > 2) button.classList.add('nested');
       button.onclick = () => {
-        document.getElementById(heading.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        contentRoot().querySelector(`[id="${CSS.escape(heading.id)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         setActiveHeading(heading.id);
       };
       $('outline').append(button);
@@ -131,7 +144,7 @@
       const visible = entries.filter(entry => entry.isIntersecting);
       if (visible.length) setActiveHeading(visible[0].target.id);
     }, { root: scroller, rootMargin: '0px 0px -65% 0px', threshold: 0 });
-    article.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(heading => observer.observe(heading));
+    contentRoot().querySelectorAll('h1,h2,h3,h4,h5,h6,[data-api-operation]').forEach(heading => observer.observe(heading));
     setActiveHeading(headings[0].id);
   }
 
@@ -193,10 +206,17 @@
 
   function paintPreview(doc) {
     sync.reset();
+    api.dispose();
     const top = scroller.scrollTop;
     clearHighlights();
     article.innerHTML = doc?.html || '';
     article.classList.toggle('pdf-document', doc?.format === 'PDF');
+    const apiView = Boolean(doc?.api && !doc.apiSource);
+    if (doc) { doc.apiRendering = apiView; doc.apiScroll = top; }
+    article.classList.toggle('openapi-document', apiView);
+    $('api-preview-controls').hidden = !doc?.api;
+    $('api-preview-swagger').setAttribute('aria-pressed', String(apiView));
+    $('api-preview-source').setAttribute('aria-pressed', String(!apiView));
     article.hidden = !doc;
     $('empty-state').hidden = Boolean(doc);
     $('paper-end').hidden = !doc;
@@ -207,7 +227,8 @@
     $('reading-time').textContent = doc?.words ? `${formatNumber(Math.max(1, Math.ceil(doc.words / 200)))} min read` : 'Empty document';
     if (doc) {
       if (!doc.html.trim()) article.innerHTML = '<p class="empty-document">This file is empty.</p>';
-      enhanceDocument();
+      if (apiView) api.show(doc);
+      else enhanceDocument();
     }
     reading.mount();
     pdf.mount();
@@ -225,6 +246,7 @@
     showEditor(doc);
     updateCaption(); renderFiles();
     const target = refresh ? Math.min(positions.get(id) || 0, scroller.scrollHeight) : positions.get(id) || 0;
+    if (doc?.apiRendering) doc.apiScroll = target;
     scroller.scrollTo({ top: target, behavior: 'instant' });
     reading.changed(!positions.has(id));
     sync.mount('preview');
@@ -241,6 +263,7 @@
     clearTimeout(previewTimers.get(doc.id)); previewTimers.delete(doc.id);
     editors.get(doc.id)?.remove(); editors.delete(doc.id);
     doc.editMode = previous?.editMode ?? !doc.path;
+    doc.apiSource = previous?.apiSource || false;
     doc.editorDirection = previous?.editorDirection || (doc.format === 'Markdown' ? 'auto' : 'ltr');
     doc.revision = (previous?.revision || 0) + 1;
     doc.savedSource = doc.savedSource ?? doc.source;
@@ -359,7 +382,7 @@
   function receivePreview(payload) {
     const preview = JSON.parse(payload), doc = documents.get(preview.id);
     if (!doc || preview.revision !== doc.revision) return;
-    Object.assign(doc, { html: preview.html, headings: preview.headings, words: preview.words, previewPending: false });
+    Object.assign(doc, { html: preview.html, headings: preview.headings, words: preview.words, api: preview.api || null, previewPending: false });
     overrides.delete(doc.id);
     if (activeId === doc.id) {
       paintPreview(doc);
@@ -488,10 +511,10 @@
     const query = $('search-input').value.toLocaleLowerCase();
     if (!query || !activeId) return;
     // Search across inline markup, but keep separate paragraphs separated.
-    const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(contentRoot(), NodeFilter.SHOW_TEXT);
     const nodes = []; let node, full = '', previousBlock = null;
     while ((node = walker.nextNode())) {
-      if (node.parentElement.closest('button,.code-toolbar')) continue;
+      if (node.parentElement.closest('button,.code-toolbar,style,script')) continue;
       const block = node.parentElement.closest('p,h1,h2,h3,h4,h5,h6,li,td,th,pre');
       if (previousBlock && block !== previousBlock) full += '\n';
       previousBlock = block;
@@ -577,6 +600,12 @@
   $('save-as-button').onclick = () => saveDocument(true);
   $('read-mode').onclick = () => setEditMode(false);
   $('edit-mode').onclick = () => setEditMode(true);
+  for (const [id, source] of [['api-preview-swagger', false], ['api-preview-source', true]]) {
+    $(id).onclick = () => {
+      const doc = documents.get(activeId); if (!doc?.api) return;
+      doc.apiSource = source; paintPreview(doc); sync.mount('preview');
+    };
+  }
   $('beautify-button').onmousedown = event => event.preventDefault();
   $('beautify-button').onclick = beautifyDocument;
   document.querySelectorAll('[data-format]').forEach(button => {
@@ -732,6 +761,7 @@
       bridge.libraryChanged.connect(raw => reading.receive(raw));
       bridge.pdfPageReady.connect(raw => pdf.receive(raw));
       bridge.sourceFormatted.connect(receiveSourceFormatted);
+      bridge.apiResponse.connect(raw => apiRequests.receive(raw));
       bridge.command.connect(command);
       bridge.ready();
     });

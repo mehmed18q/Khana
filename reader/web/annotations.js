@@ -8,6 +8,7 @@
     return (value >>> 0).toString(16);
   };
   function textOf(element) {
+    if (element.dataset.apiOperation) return element.dataset.apiOperation;
     if (element.matches('.pdf-page')) return `Page ${Number(element.dataset.pdfPage) + 1}`;
     if (element.matches('.diagram-frame')) return normalize(element.querySelector('.diagram-source code')?.textContent || '');
     const clone = element.cloneNode(true);
@@ -16,12 +17,15 @@
   }
   function prepare(article, add, visit) {
     let heading = '';
-    const blocks = [...article.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,pre,.source-line,.pdf-block,.pdf-page,.table-scroll,.diagram-frame,dt,dd,figcaption,summary')].filter(node =>
+    const root = ReaderOpenAPI.contentRoot(article);
+    const selector = root !== article ? '[data-api-operation]' : 'h1,h2,h3,h4,h5,h6,p,li,pre,.source-line,.pdf-block,.pdf-page,.table-scroll,.diagram-frame,dt,dd,figcaption,summary';
+    const blocks = [...root.querySelectorAll(selector)].filter(node =>
       !node.matches('.empty-document,.structured-source') && (node.matches('.source-line') || !node.parentElement.closest('.table-scroll,pre,li,.diagram-frame,dt,dd,figcaption,summary')));
     return blocks.map((element, index) => {
+      element.querySelectorAll(':scope > .annotation-tools,:scope > .annotation-badges').forEach(node => node.remove());
       if (/^H[1-6]$/.test(element.tagName)) heading = element.id;
       const text = textOf(element);
-      const info = { element, index, tag: element.matches('.diagram-frame') ? 'diagram' : element.matches('.table-scroll') ? 'table' : element.tagName.toLowerCase(),
+      const info = { element, index, tag: element.dataset.apiOperation ? 'api-operation' : element.matches('.diagram-frame') ? 'diagram' : element.matches('.table-scroll') ? 'table' : element.tagName.toLowerCase(),
         text, hash: hash(text), heading };
       element.dataset.readingBlock = index;
       const tools = document.createElement('span'); tools.className = 'annotation-tools'; tools.dir = 'ltr';

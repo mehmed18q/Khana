@@ -47,9 +47,13 @@ def main():
             window = ReaderWindow(paths, settings_path=settings); window.showFullScreen()
             wait("!!window.readerApp && document.getElementById('library-list').children.length>0", 'library shell loads')
         def close():
+            nonlocal window
             window.close(); QTest.qWait(180)
             assert not window.isVisible(), 'Closing should not need to save an annotated document'
             window.page.deleteLater(); QTest.qWait(80)
+            # Destroy each profile/window after its page, before simulating a
+            # restart. Leaving closed windows for Python GC races WebEngine.
+            window.deleteLater(); QTest.qWait(80); window = None
         def add(kind, index, name, body=''):
             button = 2 if kind == 'note' else 1
             evaluate(f"document.querySelector('[data-reading-block=\"{index}\"] > .annotation-tools button:nth-child({button})').click()")

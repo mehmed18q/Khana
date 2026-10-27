@@ -64,7 +64,7 @@
       $('star-document').querySelector('span').textContent = entry?.starred ? 'Starred' : 'Star document';
       $('star-document').title = entry?.starred ? 'Unstar this document' : 'Star this document';
       $('add-mark').disabled = $('add-note').disabled = !canAdd();
-      article.querySelectorAll('.annotation-tools button').forEach(button => { button.disabled = !canAdd(); });
+      ReaderOpenAPI.contentRoot(article).querySelectorAll('.annotation-tools button').forEach(button => { button.disabled = !canAdd(); });
       $('annotations-button').disabled = !doc;
       $('annotation-count').textContent = items().length;
       $('resume-reading').disabled = !entry?.resumeId;
@@ -151,7 +151,7 @@
         });
     };
     document.addEventListener('click', event => {
-      if (!event.target.closest('.annotations-anchor,.annotation-badge')) { $('annotations-panel').hidden = true; $('annotations-button').setAttribute('aria-expanded', 'false'); }
+      if (!event.composedPath().some(node => node.matches?.('.annotations-anchor,.annotation-badge'))) { $('annotations-panel').hidden = true; $('annotations-button').setAttribute('aria-expanded', 'false'); }
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !$('annotations-panel').hidden && !document.querySelector('dialog[open]')) {

@@ -27,3 +27,8 @@
 .preview-pane .reading-scroll{overflow-anchor:none}
 
 .source-format-button{font-size:10px;letter-spacing:0;white-space:nowrap;padding:3px 7px;border:1px solid var(--line);border-radius:4px;margin-inline-start:auto;flex-shrink:0}
+.document.openapi-document{padding:20px 32px;direction:ltr;max-width:1100px;line-height:1.6}
+.api-notice{font:11px/1.7 'DejaVu Sans',sans-serif;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line);text-align:left}
+#api-preview-controls{display:flex;gap:3px;margin-inline-end:auto}
+#api-preview-controls button{font-size:10px;padding:0 7px}
+#api-preview-controls button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
