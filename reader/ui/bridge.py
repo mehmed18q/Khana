@@ -8,11 +8,11 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
-from PySide6.QtCore import QMimeData, QObject, QSettings, Qt, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import Property, QMimeData, QObject, QSettings, Qt, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QCursor, QDesktopServices, QDrag
 from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
-from reader import APP_NAME
+from reader import APP_NAME, VERSION
 from reader.api_requests import ApiRequests
 from reader.documents import (
     EXTENSIONS,
@@ -77,6 +77,10 @@ class Bridge(QObject):
         self.initialized = False
         self.api_requests = ApiRequests(self)
         self.api_requests.finished.connect(self.apiResponse)
+
+    @Property(str, constant=True)
+    def appVersion(self):
+        return VERSION
 
     @Slot(str, str, str)
     def executeApiRequest(self, document_id, request_id, raw):

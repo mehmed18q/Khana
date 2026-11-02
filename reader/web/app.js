@@ -785,6 +785,7 @@
   if (typeof QWebChannel === 'function' && window.qt?.webChannelTransport) {
     new QWebChannel(qt.webChannelTransport, (channel) => {
       bridge = channel.objects.native;
+      $('app-version').textContent = `/ ${bridge.appVersion}`;
       bridge.documentLoaded.connect(receiveDocument);
       bridge.documentSaved.connect(receiveSaved);
       bridge.documentClosed.connect(removeDocument);

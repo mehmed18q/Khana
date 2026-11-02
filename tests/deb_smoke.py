@@ -18,15 +18,17 @@ sys.path.insert(0, str(ROOT))
 import pymupdf
 from api_fixture import api_server, api_spec
 
+from reader import APP_NAME, VERSION
 from reader.source_formatting import beautify_source
 from reader.word_documents import load_word, save_word
 
 
 def main():
     _app = QCoreApplication.instance() or QCoreApplication([])
-    package = ROOT / "dist/khana_0.5.4-1_amd64.deb"
+    package = ROOT / f"dist/khana_{VERSION}-1_amd64.deb"
     fields = subprocess.check_output(["dpkg-deb", "--field", str(package)], text=True)
     assert "Package: khana\n" in fields and "Architecture: amd64\n" in fields
+    assert f"Version: {VERSION}-1\n" in fields
     with tempfile.TemporaryDirectory(prefix="khana-deb-") as temporary:
         folder = Path(temporary)
         payload = folder / "payload"
@@ -44,7 +46,7 @@ def main():
         executable = payload / "opt/khana/Khana"
         assert (
             subprocess.check_output([str(executable), "--version"], text=True).strip()
-            == "Khana 0.5.4"
+            == f"{APP_NAME} {VERSION}"
         )
         for size in (16, 22, 24, 32, 48, 64, 128, 256, 512):
             icon = QImage(
@@ -87,7 +89,7 @@ def main():
         try:
             running = PackagedApp(executable, folder, extra_env={"WAYLAND_DEBUG": "client"})
             assert running.evaluate(
-                "document.querySelector('.version-note').textContent.includes('0.5.4')"
+                f"document.getElementById('app-version').textContent === {json.dumps('/ ' + VERSION)}"
             )
             dimensions = "[document.querySelector('.topbar').getBoundingClientRect().width, document.querySelector('.sidebar').getBoundingClientRect().width]"
             before = running.evaluate(dimensions)

@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from reader import APP_ID, VERSION
+from reader import APP_ID, APP_NAME, VERSION
 
 
 def copy(source, target):
@@ -64,6 +64,14 @@ def main():
     bundle = ROOT / "build/onedir/Khana"
     if not (bundle / "Khana").is_file():
         parser.error("Missing unpacked build; run without --skip-build.")
+    bundle_version = subprocess.check_output(
+        [str(bundle / "Khana"), "--version"], text=True
+    ).strip()
+    if bundle_version != f"{APP_NAME} {VERSION}":
+        parser.error(
+            f"Unpacked build reports {bundle_version!r}; expected {APP_NAME} {VERSION}. "
+            "Rebuild without --skip-build."
+        )
     version = VERSION + "-1"
     staging = ROOT / "build/deb" / f"khana_{version}_amd64"
     if staging.exists():

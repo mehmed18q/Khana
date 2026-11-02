@@ -16,6 +16,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWebEngineCore import QWebEnginePage
 from PySide6.QtWidgets import QApplication
 
+from reader import VERSION
 from reader.ui.web import ReaderPage
 from reader.ui.window import ReaderWindow
 
@@ -61,6 +62,7 @@ def main():
                 "!!window.readerApp?.activeId && document.fonts.status === 'loaded'",
                 "desktop bridge, fonts and sample load",
             )
+            assert evaluate("document.getElementById('app-version').textContent") == f"/ {VERSION}"
             assert window.isFullScreen()
             print("PASS: starts fullscreen", flush=True)
 

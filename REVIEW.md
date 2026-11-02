@@ -149,3 +149,23 @@ Debian builds completed; both package integration checks and both SHA-256 files
 pass. The installer is `dist/khana_0.5.4-1_amd64.deb` and the portable executable
 is `dist/Khana`. Package checks use isolated temporary settings and do not install
 anything on the host. Their logs are in `artifacts/drag-fix/packages/`.
+
+## Version 0.6.0 — 2026-11-02
+
+The added multi-window workflow, tab transfers, reading panes and sidebar layout
+warrant a minor release after 0.5.4. The application version is now 0.6.0, with
+release notes in `CHANGELOG.md`. Earlier sections retain the versions of the
+builds they actually reviewed.
+
+`reader.VERSION` now supplies the sidebar through a constant WebChannel property
+as well as the CLI, Qt metadata and package builders. Package checks derive their
+expected version from the same source and compare installer metadata, the bundled
+CLI and the visible sidebar. The Debian builder rejects a stale executable before
+creating a package; rejection of the previous 0.5.4 build was verified explicitly.
+
+Ruff lint/format, ESLint, Prettier, all six Node test files, Python 3.10 syntax and
+HTML ID checks pass. The source desktop check and fresh portable/Debian package
+checks pass. Source, one-directory and portable CLIs report `Khana 0.6.0`; both
+artifact checksums verify. Outputs are `dist/Khana` and
+`dist/khana_0.6.0-1_amd64.deb`. Logs are in `artifacts/version-0.6.0/`.
+No package was installed or published.

@@ -2,6 +2,8 @@
 
 A local desktop reader and editor for mixed Persian and English documents. Open Markdown, HTML, Word, PDF, JSON, YAML, logs, configuration files, and XML. Edit supported content with a synchronized preview. Each prose paragraph is displayed in its own direction. The application interface is English; document content keeps its original language.
 
+Current version: **0.6.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+
 ## Installation
 
 | Method | Requirements | Desktop integration |
@@ -19,12 +21,12 @@ The verified environment is Ubuntu 26.04 x86_64 with Python 3.14. Windows source
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.5.4 these are `khana_0.5.4-1_amd64.deb` and `khana_0.5.4-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.6.0 these are `khana_0.6.0-1_amd64.deb` and `khana_0.6.0-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.5.4-1_amd64.deb.sha256
-sudo apt install ./khana_0.5.4-1_amd64.deb
+sha256sum -c khana_0.6.0-1_amd64.deb.sha256
+sudo apt install ./khana_0.6.0-1_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -122,10 +124,10 @@ Build on **Ubuntu 26.04 x86_64**. First follow the [Ubuntu source setup](#ubuntu
 sudo apt install curl dpkg desktop-file-utils
 .venv/bin/python -m pip install -r requirements-build.txt
 .venv/bin/python scripts/build_deb.py
-sudo apt install ./dist/khana_0.5.4-1_amd64.deb
+sudo apt install ./dist/khana_0.6.0-1_amd64.deb
 ```
 
-The build produces `dist/khana_0.5.4-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.6.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -165,12 +167,18 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.5.4-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.5.4-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.6.0-1_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.6.0-1_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 
-These names describe version 0.5.4. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+These names describe version 0.6.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+
+### Versioning
+
+`reader/__init__.py` defines the application version. The native app, sidebar, CLI and build scripts all read it; package checks verify that the executable, visible version and installer metadata agree. Debian packaging rejects an unpacked build whose version differs from the source, including with `--skip-build`.
+
+During the `0.x` series, new features advance the minor version (`0.6.0`); fixes to that release advance the patch version (`0.6.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
 
 ## Reading
 

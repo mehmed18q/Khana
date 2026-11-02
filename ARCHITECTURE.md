@@ -114,6 +114,11 @@ the mocked completion cases in `workspace_smoke.py` alone cannot cover it.
 
 ## State and resource policy
 
+`reader.VERSION` is the application version shared by the CLI, Qt metadata and
+package builders. The browser reads the bridge's constant `appVersion` property
+through WebChannel. It must not embed a separate version string. Debian packaging
+also checks the unpacked executable's version before creating installer metadata.
+
 | State | Lifetime |
 | --- | --- |
 | Source files | Written only by successful Save/Save As operations. |
