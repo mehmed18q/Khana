@@ -1,10 +1,12 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { transform, link } = require('../reader/web/formatting.js');
-const apply = (source, operation) => source.slice(0, operation.start) + operation.text + source.slice(operation.end);
+const apply = (source, operation) =>
+  source.slice(0, operation.start) + operation.text + source.slice(operation.end);
 
 test('bold wraps selected Persian and preserves the inner selection', () => {
-  const source = 'سلام English', op = transform(source, 0, 4, 'bold');
+  const source = 'سلام English',
+    op = transform(source, 0, 4, 'bold');
   assert.equal(apply(source, op), '**سلام** English');
   assert.equal(apply(source, op).slice(op.selectionStart, op.selectionEnd), 'سلام');
 });
@@ -53,18 +55,35 @@ test('HTML inline formatting inserts and removes tags', () => {
   assert.equal(transform('<em>text</em>', 4, 8, 'italic', 'HTML').text, 'text');
 });
 test('HTML lists contain list items and HTML code escapes source markup', () => {
-  assert.equal(transform('One\nTwo', 0, 7, 'bullet', 'HTML').text, '<ul>\n  <li>One</li>\n  <li>Two</li>\n</ul>');
-  assert.equal(transform('<b>x</b>', 0, 8, 'code-block', 'HTML').text, '<pre><code>&lt;b&gt;x&lt;/b&gt;</code></pre>');
+  assert.equal(
+    transform('One\nTwo', 0, 7, 'bullet', 'HTML').text,
+    '<ul>\n  <li>One</li>\n  <li>Two</li>\n</ul>'
+  );
+  assert.equal(
+    transform('<b>x</b>', 0, 8, 'code-block', 'HTML').text,
+    '<pre><code>&lt;b&gt;x&lt;/b&gt;</code></pre>'
+  );
 });
 test('Markdown links escape brackets and keep parenthesized destinations intact', () => {
-  assert.equal(link('', 0, 0, '[guide]', 'https://example.com/a(b)').text, '[\\[guide\\]](<https://example.com/a(b)>)');
+  assert.equal(
+    link('', 0, 0, '[guide]', 'https://example.com/a(b)').text,
+    '[\\[guide\\]](<https://example.com/a(b)>)'
+  );
   assert.equal(link('', 0, 0, 'Section', '#section').text, '[Section](<#section>)');
 });
 test('HTML links escape both the attribute and label', () => {
-  assert.equal(link('', 0, 0, '<Guide>', 'https://example.com/?a="b"', 'HTML').text, '<a href="https://example.com/?a=&quot;b&quot;">&lt;Guide&gt;</a>');
+  assert.equal(
+    link('', 0, 0, '<Guide>', 'https://example.com/?a="b"', 'HTML').text,
+    '<a href="https://example.com/?a=&quot;b&quot;">&lt;Guide&gt;</a>'
+  );
 });
 test('unsupported schemes and unescaped whitespace are rejected', () => {
-  for (const url of ['javascript:alert(1)', 'data:text/html,hi', 'file:///etc/passwd', 'hello world']) {
+  for (const url of [
+    'javascript:alert(1)',
+    'data:text/html,hi',
+    'file:///etc/passwd',
+    'hello world',
+  ]) {
     assert.throws(() => link('', 0, 0, 'link', url));
   }
 });

@@ -1,4 +1,5 @@
 """Editable document state and atomic source writes; independent of the window."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,7 +8,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QIODevice, QSaveFile
 
-from reader.documents import Document, MAX_FILE_BYTES, format_for_path
+from reader.documents import MAX_FILE_BYTES, Document, format_for_path
 
 
 class FileChangedError(OSError):
@@ -65,27 +66,40 @@ class EditSession:
         path = path.expanduser().resolve()
         target_format = format_for_path(path)
         if target_format != doc.format:
-            raise ValueError(f"Choose a {doc.format} extension. Save As preserves the source format.")
+            raise ValueError(
+                f"Choose a {doc.format} extension. Save As preserves the source format."
+            )
         if "\x00" in doc.source:
-            raise ValueError("The source contains a null character and cannot be saved as a text document.")
-        if doc.format == 'Word':
+            raise ValueError(
+                "The source contains a null character and cannot be saved as a text document."
+            )
+        if doc.format == "Word":
             from reader.word_documents import save_word
+
             original = Path(doc.path) if doc.path else None
-            if not self.dirty and original and original.suffix.lower() == path.suffix.lower() and fingerprint(original) == doc.fingerprint:
+            if (
+                not self.dirty
+                and original
+                and original.suffix.lower() == path.suffix.lower()
+                and fingerprint(original) == doc.fingerprint
+            ):
                 data = original.read_bytes()
             else:
                 data = save_word(doc.source, path.suffix)
-        elif doc.format == 'PDF':
+        elif doc.format == "PDF":
             from reader.pdf_documents import save_pdf
+
             data = save_pdf(doc.source)
         else:
             data = bytes.fromhex(doc.bom) + doc.source.replace("\n", doc.newline).encode(doc.codec)
         if len(data) > MAX_FILE_BYTES:
-            raise ValueError("This document exceeds the 5 MB file limit. Your edits are still open.")
+            raise ValueError(
+                "This document exceeds the 5 MB file limit. Your edits are still open."
+            )
         digest = atomic_write(path, data, expected)
         # Only a successful commit may change the active path or saved baseline.
         doc.path, doc.name = str(path), path.name
         doc.size, doc.fingerprint, doc.sample = len(data), digest, False
-        if doc.format in {'Word', 'PDF'}:
-            doc.encoding = 'Binary'
+        if doc.format in {"Word", "PDF"}:
+            doc.encoding = "Binary"
         self.saved_source = doc.source

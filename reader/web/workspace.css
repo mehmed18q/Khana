@@ -1,0 +1,102 @@
+.layout-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.layout-control select,
+.pane-heading select {
+  background: var(--paper);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 5px;
+  font: inherit;
+  min-width: 0;
+}
+.file-detach {
+  font-size: 15px;
+  padding: 4px;
+  opacity: 0.6;
+}
+.file-detach:hover {
+  opacity: 1;
+}
+.file-select {
+  touch-action: none;
+}
+.document-workspace[data-layout='columns'],
+.document-workspace[data-layout='rows'],
+.document-workspace[data-layout='grid'] {
+  display: grid;
+  gap: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.document-workspace[data-layout='columns'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+}
+.document-workspace[data-layout='rows'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.document-workspace[data-layout='grid'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.split-reading .preview-pane {
+  background: var(--bg);
+  overflow: hidden;
+}
+.split-reading .reading-scroll {
+  padding: 0 12px;
+}
+.split-reading .document {
+  padding: 25px 30px;
+  min-height: 100%;
+}
+.split-reading .paper-topline,
+.split-reading .paper-end {
+  display: none;
+}
+.split-reading .preview-toolbar {
+  flex-wrap: wrap;
+  min-height: 42px;
+}
+.pane-heading {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  min-height: 42px;
+  font-size: 11px;
+}
+.pane-heading select {
+  flex: 1;
+}
+.pane-heading button {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--accent);
+}
+.split-reading .document-toolbar {
+  flex-wrap: wrap;
+}
+.extra-pane .document {
+  width: 100%;
+  box-sizing: border-box;
+}
+.extra-pane .block-direction {
+  display: none;
+}
+.tab-dragging {
+  cursor: grabbing;
+}
+.tab-dragging .file-item {
+  opacity: 0.7;
+}

@@ -1,0 +1,20 @@
+{
+  "name": "khana-development",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write reader/web tests/*.test.cjs",
+    "format:check": "prettier --check reader/web tests/*.test.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "lint": "eslint reader/web tests/*.test.cjs eslint.config.mjs",
+    "check": "npm run lint && npm run format:check && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10"
+  },
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  }
+}

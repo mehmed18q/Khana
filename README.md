@@ -12,13 +12,13 @@ A local desktop reader and editor for mixed Persian and English documents. Open 
 
 The verified environment is Ubuntu 26.04 x86_64 with Python 3.14. Windows source commands are provided below, but a Windows build has not been tested or published. The Linux binaries are not intended for Windows, macOS, ARM, or older Ubuntu versions.
 
-**Downloads:** check [GitHub Releases](https://github.com/mehmed18q/markdown_tool/releases) for attached installers. If there is no `.deb` asset, [run from source](#run-from-source) or [build the installer](#build-the-ubuntu-installer). The `dist/`, `build/`, and `.venv/` directories are generated locally and are not included when cloning the repository or downloading its source ZIP.
+**Downloads:** check [GitHub Releases](https://github.com/mehmed18q/khana/releases) for attached installers. If there is no `.deb` asset, [run from source](#run-from-source) or [build the installer](#build-the-ubuntu-installer). The `dist/`, `build/`, and `.venv/` directories are generated locally and are not included when cloning the repository or downloading its source ZIP.
 
 ## Install on Ubuntu
 
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
-1. Open [Releases](https://github.com/mehmed18q/markdown_tool/releases) and expand the release's **Assets**.
+1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
 2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.5.4 these are `khana_0.5.4-1_amd64.deb` and `khana_0.5.4-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
@@ -63,8 +63,8 @@ sudo apt install git python3 python3-venv python3-pip libreoffice-writer \
 Then clone the repository and create a virtual environment:
 
 ```bash
-git clone https://github.com/mehmed18q/markdown_tool.git
-cd markdown_tool
+git clone https://github.com/mehmed18q/khana.git
+cd khana
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
@@ -78,15 +78,15 @@ Other Linux distributions need their corresponding Python and Qt runtime package
 Install a supported 64-bit Python version and Git first. In PowerShell:
 
 ```powershell
-git clone https://github.com/mehmed18q/markdown_tool.git
-cd markdown_tool
+git clone https://github.com/mehmed18q/khana.git
+cd khana
 py -m venv .venv
 .venv\Scripts\python.exe -m pip install --upgrade pip
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 .venv\Scripts\python.exe main.py
 ```
 
-No activation script or PowerShell execution-policy change is needed because these commands call the virtual environment's Python directly. If you do not use Git, choose **Code → Download ZIP** on the [repository page](https://github.com/mehmed18q/markdown_tool), extract it, open a terminal in the extracted folder, and start with the virtual-environment step.
+No activation script or PowerShell execution-policy change is needed because these commands call the virtual environment's Python directly. If you do not use Git, choose **Code → Download ZIP** on the [repository page](https://github.com/mehmed18q/khana), extract it, open a terminal in the extracted folder, and start with the virtual-environment step.
 
 ### First launch
 
@@ -95,6 +95,14 @@ Khana starts fullscreen with a sample document. Press **F11**, or click the F11 
 Drag the filename, empty space in the top bar, or the Khana logo to move the window to another monitor. Dragging from fullscreen restores a regular window first; press **F11** on the destination monitor to fill it again. Double-click the same header areas to toggle fullscreen. Header buttons keep their normal actions.
 
 Click **Open file** to read an existing document or **New document** to start writing. Use **Edit & Preview** for editing and live preview; **Save** and **Save As…** write your changes to disk.
+
+Opening another file from the file manager or command line sends it to the running Khana application. An already open file activates its existing tab and window; otherwise it opens in the most recently used window. Launching Khana without a filename brings its window forward. When no window is open, Khana starts normally.
+
+Drag a tab from **OPEN FILES** outside its window and release to move it to a new, independent window, or drop it onto another Khana window. **Escape** cancels the drag. The **↗** button beside each tab also moves it to a new window. Unsaved text, cursor/scroll position and completed Swagger responses move with the tab. Pending requests and previews finish before the transfer completes; they are never replayed. Moving the last tab closes its empty original window.
+
+In reading mode, use **Layout → Split vertically**, **Split horizontally**, or **Four panes** to read two or four files together. Each extra pane has its own file selector and scrollbar. **Focus** swaps that file into the main pane, where the outline, search, marks and editing controls apply. A file appears in one pane at a time. **Single page** restores the ordinary view; **Edit & Preview** also returns to a single document. Layouts apply to the current window and are not restored after restarting.
+
+Click the **OPEN FILES**, **LIBRARY**, or **ON THIS PAGE** heading to collapse or expand that sidebar section. Drag the handle between open sections to adjust their heights, or double-click it to give the two sections equal space. A focused handle also accepts **↑ / ↓** (hold **Shift** for larger steps), **Home**, and **End**; **Escape** cancels a drag. Section proportions and collapsed states are remembered across restarts and adapt to the window height.
 
 Use **Ctrl + mouse wheel** over the document to zoom only the preview. The **Preview zoom** buttons and **Ctrl++ / Ctrl+−** adjust magnification from 50% to 300%; click **Reset** or press **Ctrl+0** to reset to 100%. Text, images, tables, diagrams, and PDF pages scale together. The sidebar, toolbars, and source editor keep their size. The zoom level is remembered across restarts, and editor/preview scroll synchronization remains available.
 
@@ -125,7 +133,7 @@ The build downloads eight small X11 libraries from the Ubuntu archive, verifies 
 
 ## Portable desktop app
 
-If a `Khana` executable is attached to [Releases](https://github.com/mehmed18q/markdown_tool/releases), download it with `SHA256SUMS`. From the download folder:
+If a `Khana` executable is attached to [Releases](https://github.com/mehmed18q/khana/releases), download it with `SHA256SUMS`. From the download folder:
 
 ```bash
 sha256sum -c SHA256SUMS
@@ -153,7 +161,7 @@ The single executable includes Python and the app's resources and can be moved t
 
 ## Publishing downloads (maintainers)
 
-Build outputs are excluded by `.gitignore`; pushing the source does not publish an installer. After building and verifying a version, create a [GitHub Release](https://github.com/mehmed18q/markdown_tool/releases) for that version and attach:
+Build outputs are excluded by `.gitignore`; pushing the source does not publish an installer. After building and verifying a version, create a [GitHub Release](https://github.com/mehmed18q/khana/releases) for that version and attach:
 
 | Asset | Purpose |
 | --- | --- |
@@ -286,7 +294,9 @@ To call an API, expand an endpoint, click **Try it out**, fill in its parameters
 
 **Authorize** supports the security schemes defined in the document: **Bearer**, **Basic**, and **API Key** in a header, query or cookie. Public operations need no authorization. For **OAuth2**, paste an existing access token; browser sign-in, token acquisition and automatic refresh are not implemented. Logout removes the selected credentials. Authorization is held in memory for each open document, survives preview changes, and is discarded when that document or the app is closed; it is never written to the source, library or settings.
 
-Under **Request settings**, optionally set a full **Server URL override**, including any base path such as `/v1`. This is useful for relative server URLs and local test servers. Applying a different base URL clears authorization. **Cancel requests** cancels pending requests for the current document; switching previews/documents also cancels pending requests. Cancellation cannot undo a request already received by the server. Each request has a 30-second timeout and a 10 MB request/response limit. HTTPS certificate verification remains enabled, cookies are not shared or saved automatically, and redirects are displayed without automatically following them.
+Switching tabs, changing the reading layout, or switching between Swagger and Source keeps the mounted Swagger view in memory: expanded operations, parameters, request bodies, responses, authorization and server selection remain available. Requests continue while another tab is active. Closing/reloading the file or changing its API definition rebuilds its preview; runtime state is not saved across app restarts.
+
+Under **Request settings**, optionally set a full **Server URL override**, including any base path such as `/v1`. This is useful for relative server URLs and local test servers. Applying a different base URL clears authorization. **Cancel requests** cancels pending requests for the current document; closing/reloading it or changing its definition also cancels them. Cancellation cannot undo a request already received by the server. Each request has a 30-second timeout and a 10 MB request/response limit. HTTPS certificate verification remains enabled, cookies are not shared or saved automatically, and redirects are displayed without automatically following them.
 
 For a PDF, hover over an editable text region and click **Edit text** (or double-click the region). Enter replacement text, choose **Apply**, review the page, then **Save** or **Save As…**. Text is replaced within its existing region; longer replacements may shrink to fit, and replacements that do not fit are rejected. Replacement fonts may differ from the original. Overlapping/rotated regions and PDFs without editable text are for reading only. Password-protected PDFs require an unlocked copy. No OCR or general page-layout editor is included. PDF page text can still be searched and annotated.
 
@@ -295,7 +305,12 @@ For a PDF, hover over an editable text region and click **Edit text** (or double
 | Path | Responsibility |
 | --- | --- |
 | `main.py` | Application entry point |
-| `reader/desktop.py` | Qt window, file dialogs, document sessions, preview workers, save/close prompts |
+| `reader/desktop.py`, `reader/resources.py` | Application composition, CLI and bundled resource paths |
+| `reader/ui/window.py`, `reader/ui/web.py` | Qt window lifetime, offline resources, navigation and native drops |
+| `reader/ui/bridge.py`, `reader/ui/workspace.py` | WebChannel commands, document ownership, save/close prompts and acknowledged tab transfers |
+| `reader/ui/jobs.py`, `reader/ui/workers.py` | Background work, preview coalescing and late-result suppression |
+| `reader/preferences.py`, `reader/ui/settings.py` | Validated reading preferences and native configuration location |
+| `reader/instance.py` | Single-instance locking and forwarding file opens over local IPC |
 | `reader/documents.py` | Document loading, Markdown rendering, HTML sanitization |
 | `reader/editing.py` | Source buffers, encoding preservation, conflict detection, atomic writes |
 | `reader/source_formatting.py` | JSON, YAML and XML source beautification |
@@ -305,7 +320,13 @@ For a PDF, hover over an editable text region and click **Edit text** (or double
 | `reader/word_documents.py`, `reader/pdf_documents.py` | Word conversion, PDF pages, and simple PDF text replacement |
 | `reader/web/annotations.js`, `reader/web/library-ui.js`, `reader/web/library.css` | Text anchors and library/annotation controls |
 | `reader/web/bidi.js` | Direction detection and inline isolation |
-| `reader/web/app.js` | Reading interface and document state |
+| `reader/web/app.js` | View composition, document state, preview revisions and command dispatch |
+| `reader/web/source-editor.js` | Source editor, cursor, formatting and undo-preserving edits |
+| `reader/web/search.js`, `reader/web/outline.js`, `reader/web/file-list.js` | Search, heading navigation and file tabs |
+| `reader/web/window-controls.js` | Native move, minimize and fullscreen gestures |
+| `reader/web/pdf-pages.js` | Shared PDF page loading and disposal for all reading panes |
+| `reader/web/workspace.js`, `reader/web/workspace.css` | Multiple reading panes and their document views |
+| `reader/web/sidebar.js`, `reader/web/sidebar.css` | Persistent collapsible and resizable sidebar sections |
 | `reader/web/preview-zoom.js` | Preview magnification, wheel/keyboard controls, and reading-position anchoring |
 | `reader/web/scroll-sync.js`, `reader/web/pdf-ui.js`, `reader/web/formats.css` | Bidirectional scroll mapping, PDF controls, and source-line presentation |
 | `reader/web/formatting.js` | Selection transformations for formatting and links |
@@ -317,28 +338,36 @@ For a PDF, hover over an editable text region and click **Edit text** (or double
 
 The renderer is shared by the reading view and live preview. Source buffers stay separate from rendered HTML so saving never replaces the original source with the sanitized preview.
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for dependency boundaries, session and worker lifecycles, the tab-transfer protocol, and extension guidance.
+
 ## Checks
 
+Install development tools once (Node 20.19+, 22.13+ or 24+):
+
 ```bash
-.venv/bin/python -m unittest discover -s tests -p 'test_*.py' -v
-node --test tests/bidi.test.cjs
-node --test tests/formatting.test.cjs
-node --test tests/insertions.test.cjs
-node --test tests/annotations.test.cjs
-node --test tests/scroll-sync.test.cjs
-.venv/bin/python tests/desktop_smoke.py
-.venv/bin/python tests/zoom_smoke.py
-.venv/bin/python tests/beautify_smoke.py
-.venv/bin/python tests/openapi_smoke.py
-.venv/bin/python tests/api_requests_smoke.py
-.venv/bin/python tests/api_transport_smoke.py
-.venv/bin/python tests/editor_smoke.py
-.venv/bin/python tests/builders_smoke.py
-.venv/bin/python tests/library_smoke.py
-.venv/bin/python tests/formats_smoke.py
+.venv/bin/python -m pip install -r requirements-dev.txt
+npm ci
 ```
 
-The smoke checks require a graphical desktop and exercise the actual Qt/WebEngine window, reading, editing, live preview, saving, save-as, external changes, save/discard/cancel behavior, table/flowchart builders, diagram rendering, annotation persistence, both scroll directions, Word/PDF editing, image insertion, and Swagger / OpenAPI previews. The formats check also needs LibreOffice Writer. They use temporary files and save screenshots in `artifacts/`. Node is only needed for JavaScript unit tests, not to run the app.
+Run static checks, formatting checks and unit tests:
+
+```bash
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py' -v
+npm run check
+```
+
+Use `.venv/bin/ruff format .` and `npm run format` to apply the configured style. Vendored libraries and fonts are excluded.
+
+Run all 12 desktop checks sequentially, or choose named checks:
+
+```bash
+.venv/bin/python scripts/smoke.py
+.venv/bin/python scripts/smoke.py workspace formats
+```
+
+The smoke checks require a graphical desktop and exercise the actual Qt/WebEngine window, reading, editing, live preview, saving, save-as, external changes, save/discard/cancel behavior, table/flowchart builders, diagram rendering, annotation persistence, both scroll directions, Word/PDF editing, image insertion, and Swagger / OpenAPI previews. The formats check also needs LibreOffice Writer. They use temporary files and save screenshots in `artifacts/`. The runner keeps logs and `results.json` in a timestamped `artifacts/checks/` directory; `--output` selects another directory. Node is only needed for development checks, not to run the app. Run builds separately from GUI checks.
 
 After building, verify the packaged application on a graphical desktop:
 

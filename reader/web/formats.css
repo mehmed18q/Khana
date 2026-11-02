@@ -1,34 +1,246 @@
-.source-mirror{position:fixed;top:-100000px;left:0;visibility:hidden;pointer-events:none;box-sizing:border-box;height:auto;border:0;z-index:-1}
-.sync-control{display:flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer}.sync-control input{accent-color:var(--accent);margin:0}
-.document .structured-source{margin:0;border:0;border-radius:0;overflow:visible}
-.document .structured-source>code{overflow:visible;padding:15px 8px 15px 48px;white-space:normal}
-.structured-source .source-line{display:block;position:relative;min-height:1.85em;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext;direction:ltr}
-.source-line::before{content:attr(data-line-number);position:absolute;right:calc(100% + 12px);width:35px;text-align:right;color:var(--muted);font-size:10px;user-select:none}
-.document .source-line>.annotation-tools{right:-25px;left:auto;top:0}.source-line>.annotation-badges{position:absolute;right:0;top:0;margin:0;opacity:.7}
-.document .structured-source .code-toolbar{position:sticky;top:0;z-index:4}
-.new-document-controls select{width:72px}
-.word-editing-note{padding:7px 13px;font:10px/1.6 Reader,sans-serif;color:var(--muted);border-bottom:1px solid var(--line)}
-.document.pdf-document{padding:12px;background:var(--bg);border:0;box-shadow:none;max-width:1100px}
-.pdf-page{position:relative;margin:0 0 22px;background:white;box-shadow:var(--shadow);direction:ltr}
-.document .pdf-image{width:100%;height:100%;display:block;border-radius:0}
-.pdf-loading{position:absolute;inset:45% 10% auto;text-align:center;color:#53635a;font-size:13px}
-.pdf-block{position:absolute;overflow:visible;color:transparent;font-size:12px;line-height:1.2}
-.pdf-text{display:block;width:100%;height:100%;overflow:hidden;white-space:pre-wrap;color:transparent;user-select:text}
-.pdf-edit{display:none;position:absolute;top:0;right:0;padding:3px 7px;background:var(--accent);color:var(--paper);border-radius:4px;font:10px Reader,sans-serif;z-index:5}.pdf-edit::before{content:attr(data-label)}
-.pdf-block:hover>.pdf-edit,.pdf-edit:focus-visible{display:block}.editing-pdf .pdf-block[data-editable=true]{outline:1px dashed #739b7780;cursor:text}
-.pdf-block>.annotation-tools{right:-27px;top:0}.pdf-block>.annotation-badges{position:absolute;top:100%;right:0;z-index:3}
-.editing-pdf .reading-scroll{padding:0 30px}
+.source-mirror {
+  position: fixed;
+  top: -100000px;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  box-sizing: border-box;
+  height: auto;
+  border: 0;
+  z-index: -1;
+}
+.sync-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sync-control input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+.document .structured-source {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+.document .structured-source > code {
+  overflow: visible;
+  padding: 15px 8px 15px 48px;
+  white-space: normal;
+}
+.structured-source .source-line {
+  display: block;
+  position: relative;
+  min-height: 1.85em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+  direction: ltr;
+}
+.source-line::before {
+  content: attr(data-line-number);
+  position: absolute;
+  right: calc(100% + 12px);
+  width: 35px;
+  text-align: right;
+  color: var(--muted);
+  font-size: 10px;
+  user-select: none;
+}
+.document .source-line > .annotation-tools {
+  right: -25px;
+  left: auto;
+  top: 0;
+}
+.source-line > .annotation-badges {
+  position: absolute;
+  right: 0;
+  top: 0;
+  margin: 0;
+  opacity: 0.7;
+}
+.document .structured-source .code-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+.new-document-controls select {
+  width: 72px;
+}
+.word-editing-note {
+  padding: 7px 13px;
+  font:
+    10px/1.6 Reader,
+    sans-serif;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.document.pdf-document {
+  padding: 12px;
+  background: var(--bg);
+  border: 0;
+  box-shadow: none;
+  max-width: 1100px;
+}
+.pdf-page {
+  position: relative;
+  margin: 0 0 22px;
+  background: white;
+  box-shadow: var(--shadow);
+  direction: ltr;
+}
+.document .pdf-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 0;
+}
+.pdf-loading {
+  position: absolute;
+  inset: 45% 10% auto;
+  text-align: center;
+  color: #53635a;
+  font-size: 13px;
+}
+.pdf-block {
+  position: absolute;
+  overflow: visible;
+  color: transparent;
+  font-size: 12px;
+  line-height: 1.2;
+}
+.pdf-text {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  white-space: pre-wrap;
+  color: transparent;
+  user-select: text;
+}
+.pdf-edit {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 3px 7px;
+  background: var(--accent);
+  color: var(--paper);
+  border-radius: 4px;
+  font:
+    10px Reader,
+    sans-serif;
+  z-index: 5;
+}
+.pdf-edit::before {
+  content: attr(data-label);
+}
+.pdf-block:hover > .pdf-edit,
+.pdf-edit:focus-visible {
+  display: block;
+}
+.editing-pdf .pdf-block[data-editable='true'] {
+  outline: 1px dashed #739b7780;
+  cursor: text;
+}
+.pdf-block > .annotation-tools {
+  right: -27px;
+  top: 0;
+}
+.pdf-block > .annotation-badges {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 3;
+}
+.editing-pdf .reading-scroll {
+  padding: 0 30px;
+}
 
-.preview-pane{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0}
-.preview-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:3px;padding:4px 13px;min-height:33px;flex-shrink:0;border-bottom:1px solid var(--line);background:var(--paper);color:var(--muted);font-size:10px}
-.preview-toolbar>span{margin-inline-end:8px}.preview-toolbar button{height:24px;min-width:26px;padding:0 5px;border-radius:4px;font-size:14px}
-#preview-zoom-value{min-width:49px;text-align:center;font-size:11px;font-variant-numeric:tabular-nums}
-#preview-zoom-reset{font-size:10px;margin-inline-start:6px;border:1px solid var(--line);padding:0 8px}
-.preview-pane .reading-scroll{overflow-anchor:none}
+.preview-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 4px 13px;
+  min-height: 33px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 10px;
+}
+.preview-toolbar > span {
+  margin-inline-end: 8px;
+}
+.preview-toolbar button {
+  height: 24px;
+  min-width: 26px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+#preview-zoom-value {
+  min-width: 49px;
+  text-align: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+#preview-zoom-reset {
+  font-size: 10px;
+  margin-inline-start: 6px;
+  border: 1px solid var(--line);
+  padding: 0 8px;
+}
+.preview-pane .reading-scroll {
+  overflow-anchor: none;
+}
 
-.source-format-button{font-size:10px;letter-spacing:0;white-space:nowrap;padding:3px 7px;border:1px solid var(--line);border-radius:4px;margin-inline-start:auto;flex-shrink:0}
-.document.openapi-document{padding:20px 32px;direction:ltr;max-width:1100px;line-height:1.6}
-.api-notice{font:11px/1.7 'DejaVu Sans',sans-serif;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line);text-align:left}
-#api-preview-controls{display:flex;gap:3px;margin-inline-end:auto}
-#api-preview-controls button{font-size:10px;padding:0 7px}
-#api-preview-controls button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
+.source-format-button {
+  font-size: 10px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+.document.openapi-document {
+  padding: 20px 32px;
+  direction: ltr;
+  max-width: 1100px;
+  line-height: 1.6;
+}
+.api-notice {
+  font:
+    11px/1.7 'DejaVu Sans',
+    sans-serif;
+  color: var(--muted);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+#api-preview-controls {
+  display: flex;
+  gap: 3px;
+  margin-inline-end: auto;
+}
+#api-preview-controls button {
+  font-size: 10px;
+  padding: 0 7px;
+}
+#api-preview-controls button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

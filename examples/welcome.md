@@ -21,10 +21,12 @@ This paragraph is written in English. It keeps its own left-to-right direction, 
 ```python
 from pathlib import Path
 
+
 def read_document(file_path: str) -> str:
     # خواندن فایل با پشتیبانی از فارسی
     document = Path(file_path)
     return document.read_text(encoding="utf-8")
+
 
 print(read_document("یادداشت‌ها.md"))
 ```

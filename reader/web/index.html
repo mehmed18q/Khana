@@ -1,164 +1,738 @@
 <!doctype html>
 <html lang="en" dir="ltr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' qrc:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' file: data:; connect-src 'none'; object-src 'none'; base-uri 'none'">
-  <title>Khana</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="editor.css">
-  <link rel="stylesheet" href="builders.css">
-  <link rel="stylesheet" href="library.css">
-  <link rel="stylesheet" href="formats.css">
-  <script src="qrc:///qtwebchannel/qwebchannel.js" defer></script>
-  <script src="bidi.js" defer></script>
-  <script src="api-requests.js" defer></script>
-  <script src="openapi-ui.js" defer></script>
-  <script src="formatting.js" defer></script>
-  <script src="insertions.js" defer></script>
-  <script src="vendor/mermaid.min.js" defer></script>
-  <script src="diagrams.js" defer></script>
-  <script src="builders.js" defer></script>
-  <script src="annotations.js" defer></script>
-  <script src="library-ui.js" defer></script>
-  <script src="scroll-sync.js" defer></script>
-  <script src="preview-zoom.js" defer></script>
-  <script src="pdf-ui.js" defer></script>
-  <script src="app.js" defer></script>
-</head>
-<body>
-  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
-    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8M8 17h5"/></symbol>
-    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
-    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 13a9 9 0 0 1-10-10 9 9 0 1 0 10 10Z"/></symbol>
-    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/></symbol>
-    <symbol id="i-focus" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></symbol>
-    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
-    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
-    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 3v4"/></symbol>
-    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
-    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
-    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M5 7a8 8 0 0 1 13-2l2 3M4 16l2 3a8 8 0 0 0 13-2"/></symbol>
-    <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 5h16M12 5v15m-4 0h8M4 8V5m16 3V5"/></symbol>
-    <symbol id="i-direction" viewBox="0 0 24 24"><path d="M18 3v12m-4-12v12m4-12h-7a4 4 0 0 0 0 8h3M4 20h16m-3-3 3 3-3 3"/></symbol>
-    <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2ZM7 3v6h10V3M7 21v-8h10v8"/></symbol>
-    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m16 3 5 5-12 12-6 1 1-6ZM14 5l5 5"/></symbol>
-    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 20c-3-2-6-3-10-2V4c4-1 7 0 10 2 3-2 6-3 10-2v14c-4-1-7 0-10 2Zm0-14v14"/></symbol>
-    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></symbol>
-    <symbol id="i-mark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4Z"/></symbol>
-    <symbol id="i-note" viewBox="0 0 24 24"><path d="M4 3h16v13l-5 5H4Zm11 18v-5h5M8 8h8M8 12h6"/></symbol>
-  </defs></svg>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' qrc:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' file: data:; connect-src 'none'; object-src 'none'; base-uri 'none'"
+    />
+    <title>Khana</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="editor.css" />
+    <link rel="stylesheet" href="builders.css" />
+    <link rel="stylesheet" href="library.css" />
+    <link rel="stylesheet" href="formats.css" />
+    <link rel="stylesheet" href="workspace.css" />
+    <link rel="stylesheet" href="sidebar.css" />
+    <script src="qrc:///qtwebchannel/qwebchannel.js" defer></script>
+    <script src="bidi.js" defer></script>
+    <script src="api-requests.js" defer></script>
+    <script src="openapi-ui.js" defer></script>
+    <script src="formatting.js" defer></script>
+    <script src="insertions.js" defer></script>
+    <script src="vendor/mermaid.min.js" defer></script>
+    <script src="diagrams.js" defer></script>
+    <script src="builders.js" defer></script>
+    <script src="annotations.js" defer></script>
+    <script src="library-ui.js" defer></script>
+    <script src="scroll-sync.js" defer></script>
+    <script src="preview-zoom.js" defer></script>
+    <script src="pdf-pages.js" defer></script>
+    <script src="pdf-ui.js" defer></script>
+    <script src="workspace.js" defer></script>
+    <script src="sidebar.js" defer></script>
+    <script src="search.js" defer></script>
+    <script src="outline.js" defer></script>
+    <script src="file-list.js" defer></script>
+    <script src="source-editor.js" defer></script>
+    <script src="window-controls.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-file" viewBox="0 0 24 24">
+          <path
+            d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8M8 17h5"
+          />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m16 16 5 5" />
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24">
+          <path d="M21 13a9 9 0 0 1-10-10 9 9 0 1 0 10 10Z" />
+        </symbol>
+        <symbol id="i-sun" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1" />
+        </symbol>
+        <symbol id="i-focus" viewBox="0 0 24 24">
+          <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6" /></symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" /></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24">
+          <rect x="5" y="10" width="14" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 3v4" />
+        </symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24">
+          <rect x="8" y="8" width="12" height="13" rx="2" />
+          <path d="M16 8V3H3v13h5" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24">
+          <path d="M20 7v5h-5M4 17v-5h5M5 7a8 8 0 0 1 13-2l2 3M4 16l2 3a8 8 0 0 0 13-2" />
+        </symbol>
+        <symbol id="i-text" viewBox="0 0 24 24">
+          <path d="M4 5h16M12 5v15m-4 0h8M4 8V5m16 3V5" />
+        </symbol>
+        <symbol id="i-direction" viewBox="0 0 24 24">
+          <path d="M18 3v12m-4-12v12m4-12h-7a4 4 0 0 0 0 8h3M4 20h16m-3-3 3 3-3 3" />
+        </symbol>
+        <symbol id="i-save" viewBox="0 0 24 24">
+          <path
+            d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2ZM7 3v6h10V3M7 21v-8h10v8"
+          />
+        </symbol>
+        <symbol id="i-edit" viewBox="0 0 24 24">
+          <path d="m16 3 5 5-12 12-6 1 1-6ZM14 5l5 5" />
+        </symbol>
+        <symbol id="i-book" viewBox="0 0 24 24">
+          <path d="M12 20c-3-2-6-3-10-2V4c4-1 7 0 10 2 3-2 6-3 10-2v14c-4-1-7 0-10 2Zm0-14v14" />
+        </symbol>
+        <symbol id="i-star" viewBox="0 0 24 24">
+          <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+        </symbol>
+        <symbol id="i-mark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4Z" /></symbol>
+        <symbol id="i-note" viewBox="0 0 24 24">
+          <path d="M4 3h16v13l-5 5H4Zm11 18v-5h5M8 8h8M8 12h6" />
+        </symbol>
+      </defs>
+    </svg>
 
-  <div class="app-shell">
-    <aside class="sidebar" aria-label="Files and document outline">
-      <div class="brand" data-window-drag title="Drag to move window. Double-click to toggle fullscreen."><img src="icon.svg" alt="" width="45" height="45" draggable="false"><div><span class="brand-name">Khana<span class="brand-dot">.</span></span><span class="brand-tagline">A little clarity. In every language.</span></div></div>
-      <button id="open-file" class="open-button"><svg><use href="#i-plus"/></svg><span>Open file</span><kbd>Ctrl O</kbd></button>
-      <div class="new-document-controls"><button id="new-file" title="New document (Ctrl+N)"><svg><use href="#i-plus"/></svg>New document</button><select id="new-format" aria-label="New document format"><option value="Markdown">MD</option><option value="HTML">HTML</option><option value="Word">Word</option><option value="JSON">JSON</option><option value="YAML">YAML</option><option value="LOG">LOG</option><option value="CONF">CONF</option><option value="XML">XML</option></select></div>
-      <div class="file-drop-hint">or drop a file here <span dir="ltr">documents &amp; text</span></div>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Files and document outline">
+        <div
+          class="brand"
+          data-window-drag
+          title="Drag to move window. Double-click to toggle fullscreen."
+        >
+          <img src="icon.svg" alt="" width="45" height="45" draggable="false" />
+          <div>
+            <span class="brand-name">Khana<span class="brand-dot">.</span></span
+            ><span class="brand-tagline">A little clarity. In every language.</span>
+          </div>
+        </div>
+        <button id="open-file" class="open-button">
+          <svg><use href="#i-plus" /></svg><span>Open file</span><kbd>Ctrl O</kbd>
+        </button>
+        <div class="new-document-controls">
+          <button id="new-file" title="New document (Ctrl+N)">
+            <svg><use href="#i-plus" /></svg>New document</button
+          ><select id="new-format" aria-label="New document format">
+            <option value="Markdown">MD</option>
+            <option value="HTML">HTML</option>
+            <option value="Word">Word</option>
+            <option value="JSON">JSON</option>
+            <option value="YAML">YAML</option>
+            <option value="LOG">LOG</option>
+            <option value="CONF">CONF</option>
+            <option value="XML">XML</option>
+          </select>
+        </div>
+        <div class="file-drop-hint">
+          or drop a file here <span dir="ltr">documents &amp; text</span>
+        </div>
 
-      <section class="files-section"><div class="section-label"><span>OPEN FILES</span><span id="file-count" class="count-badge">0</span></div><div id="file-list" class="file-list"></div></section>
-      <section class="library-section" aria-label="Saved document library"><div class="library-heading"><div class="section-label">LIBRARY</div><div class="library-filter" role="group" aria-label="Library filter"><button id="library-all" class="active" aria-pressed="true">All</button><button id="library-starred" aria-pressed="false">Starred</button></div></div><div id="library-list" class="library-list"></div></section>
-      <section class="outline-section"><div class="section-label"><span>ON THIS PAGE</span><svg><use href="#i-book"/></svg></div><nav id="outline" aria-label="Document outline"></nav></section>
-      <div class="sidebar-bottom"><button id="sample-button" class="text-button"><svg><use href="#i-book"/></svg>Meet Khana</button><div class="local-note"><span class="status-dot"></span>Local documents<svg><use href="#i-lock"/></svg></div><div class="version-note">Khana <span dir="ltr">/ 0.5.4</span><span>Read. Write. Make it yours.</span></div></div>
-    </aside>
+        <div id="sidebar-sections" class="sidebar-sections">
+          <section class="sidebar-section files-section" data-sidebar-section="files">
+            <h2 class="sidebar-heading">
+              <button
+                id="files-toggle"
+                class="sidebar-toggle"
+                aria-expanded="true"
+                aria-controls="files-content"
+              >
+                <svg class="sidebar-chevron"><use href="#i-chevron" /></svg><span>OPEN FILES</span
+                ><span id="file-count" class="count-badge">0</span>
+              </button>
+            </h2>
+            <div id="files-content" class="sidebar-section-content">
+              <div id="file-list" class="file-list"></div>
+            </div>
+            <div
+              class="sidebar-resizer"
+              role="separator"
+              tabindex="0"
+              aria-orientation="horizontal"
+              aria-controls="files-content"
+              aria-label="Resize Open files"
+            ></div>
+          </section>
+          <section
+            class="sidebar-section library-section"
+            data-sidebar-section="library"
+            aria-label="Saved document library"
+          >
+            <h2 class="sidebar-heading">
+              <button
+                id="library-toggle"
+                class="sidebar-toggle"
+                aria-expanded="true"
+                aria-controls="library-content"
+              >
+                <svg class="sidebar-chevron"><use href="#i-chevron" /></svg><span>LIBRARY</span>
+              </button>
+            </h2>
+            <div id="library-content" class="sidebar-section-content">
+              <div class="library-filter" role="group" aria-label="Library filter">
+                <button id="library-all" class="active" aria-pressed="true">All</button
+                ><button id="library-starred" aria-pressed="false">Starred</button>
+              </div>
+              <div id="library-list" class="library-list"></div>
+            </div>
+            <div
+              class="sidebar-resizer"
+              role="separator"
+              tabindex="0"
+              aria-orientation="horizontal"
+              aria-controls="library-content"
+              aria-label="Resize Library"
+            ></div>
+          </section>
+          <section class="sidebar-section outline-section" data-sidebar-section="outline">
+            <h2 class="sidebar-heading">
+              <button
+                id="outline-toggle"
+                class="sidebar-toggle"
+                aria-expanded="true"
+                aria-controls="outline-content"
+              >
+                <svg class="sidebar-chevron"><use href="#i-chevron" /></svg><span>ON THIS PAGE</span
+                ><svg class="sidebar-heading-icon"><use href="#i-book" /></svg>
+              </button>
+            </h2>
+            <div id="outline-content" class="sidebar-section-content">
+              <nav id="outline" aria-label="Document outline"></nav>
+            </div>
+            <div
+              class="sidebar-resizer"
+              role="separator"
+              tabindex="0"
+              aria-orientation="horizontal"
+              aria-controls="outline-content"
+              aria-label="Resize On this page"
+              hidden
+            ></div>
+          </section>
+        </div>
+        <div class="sidebar-bottom">
+          <button id="sample-button" class="text-button">
+            <svg><use href="#i-book" /></svg>Meet Khana
+          </button>
+          <div class="local-note">
+            <span class="status-dot"></span>Local documents<svg><use href="#i-lock" /></svg>
+          </div>
+          <div class="version-note">
+            Khana <span dir="ltr">/ 0.5.4</span><span>Read. Write. Make it yours.</span>
+          </div>
+        </div>
+      </aside>
 
-    <main class="main-panel">
-      <header class="topbar" data-window-drag title="Drag to move window. Double-click to toggle fullscreen."><div class="breadcrumb"><svg><use href="#i-file"/></svg><span id="current-filename" dir="auto">Khana</span><span id="sample-badge" class="sample-badge" hidden>Sample</span></div><div class="top-actions">
-        <button id="reload-button" class="icon-button" title="Reload from disk (Ctrl+R)" aria-label="Reload file"><svg><use href="#i-refresh"/></svg></button>
-        <button id="search-button" class="icon-button" title="Find in document (Ctrl+F)" aria-label="Search"><svg><use href="#i-search"/></svg></button>
-        <span class="toolbar-divider"></span>
-        <button id="theme-button" class="icon-button" title="Toggle theme" aria-label="Dark theme"><svg><use href="#i-moon"/></svg></button>
-        <button id="focus-button" class="icon-button" title="Focus mode (Ctrl+Shift+F)" aria-label="Focus mode" aria-pressed="false"><svg><use href="#i-focus"/></svg></button>
-        <button id="fullscreen-button" class="fullscreen-button" title="Toggle fullscreen (F11)">F11</button>
-        <button id="minimize-button" class="icon-button" title="Minimize" aria-label="Minimize"><svg viewBox="0 0 24 24"><path d="M5 16h14"/></svg></button>
-        <button id="quit-button" class="icon-button quit-button" title="Close app" aria-label="Close app"><svg><use href="#i-close"/></svg></button>
-      </div></header>
+      <main class="main-panel">
+        <header
+          class="topbar"
+          data-window-drag
+          title="Drag to move window. Double-click to toggle fullscreen."
+        >
+          <div class="breadcrumb">
+            <svg><use href="#i-file" /></svg><span id="current-filename" dir="auto">Khana</span
+            ><span id="sample-badge" class="sample-badge" hidden>Sample</span>
+          </div>
+          <div class="top-actions">
+            <button
+              id="reload-button"
+              class="icon-button"
+              title="Reload from disk (Ctrl+R)"
+              aria-label="Reload file"
+            >
+              <svg><use href="#i-refresh" /></svg>
+            </button>
+            <button
+              id="search-button"
+              class="icon-button"
+              title="Find in document (Ctrl+F)"
+              aria-label="Search"
+            >
+              <svg><use href="#i-search" /></svg>
+            </button>
+            <span class="toolbar-divider"></span>
+            <button
+              id="theme-button"
+              class="icon-button"
+              title="Toggle theme"
+              aria-label="Dark theme"
+            >
+              <svg><use href="#i-moon" /></svg>
+            </button>
+            <button
+              id="focus-button"
+              class="icon-button"
+              title="Focus mode (Ctrl+Shift+F)"
+              aria-label="Focus mode"
+              aria-pressed="false"
+            >
+              <svg><use href="#i-focus" /></svg>
+            </button>
+            <button
+              id="fullscreen-button"
+              class="fullscreen-button"
+              title="Toggle fullscreen (F11)"
+            >
+              F11
+            </button>
+            <button id="minimize-button" class="icon-button" title="Minimize" aria-label="Minimize">
+              <svg viewBox="0 0 24 24"><path d="M5 16h14" /></svg>
+            </button>
+            <button
+              id="quit-button"
+              class="icon-button quit-button"
+              title="Close app"
+              aria-label="Close app"
+            >
+              <svg><use href="#i-close" /></svg>
+            </button>
+          </div>
+        </header>
 
-      <div id="search-panel" class="search-panel" hidden><svg><use href="#i-search"/></svg><input id="search-input" placeholder="Find in this document…" aria-label="Search text" dir="auto"><span id="search-count" aria-live="polite"></span><button id="search-prev" class="icon-button" title="Previous match" aria-label="Previous match">↑</button><button id="search-next" class="icon-button" title="Next match" aria-label="Next match">↓</button><button id="search-close" class="icon-button" aria-label="Close search"><svg><use href="#i-close"/></svg></button></div>
+        <div id="search-panel" class="search-panel" hidden>
+          <svg><use href="#i-search" /></svg
+          ><input
+            id="search-input"
+            placeholder="Find in this document…"
+            aria-label="Search text"
+            dir="auto"
+          /><span id="search-count" aria-live="polite"></span
+          ><button
+            id="search-prev"
+            class="icon-button"
+            title="Previous match"
+            aria-label="Previous match"
+          >
+            ↑</button
+          ><button id="search-next" class="icon-button" title="Next match" aria-label="Next match">
+            ↓</button
+          ><button id="search-close" class="icon-button" aria-label="Close search">
+            <svg><use href="#i-close" /></svg>
+          </button>
+        </div>
 
-      <div class="document-toolbar"><div class="segmented view-switch" role="group" aria-label="Document view"><button id="read-mode" class="active"><svg><use href="#i-book"/></svg>Read</button><button id="edit-mode" title="Edit source and preview (Ctrl+E)"><svg><use href="#i-edit"/></svg>Edit &amp; Preview</button></div><span id="save-status" class="save-status" aria-live="polite">Saved</span><div class="save-actions"><button id="save-as-button" class="secondary-button" title="Save As (Ctrl+Shift+S)">Save As…</button><button id="save-button" class="save-button" title="Save (Ctrl+S)"><svg><use href="#i-save"/></svg>Save</button></div></div>
-      <div class="reading-toolbar"><div class="reading-label"><span class="status-dot"></span><span id="mode-label">Reading mode</span></div><div class="reading-controls"><span id="direction-label" class="control-label">Text direction</span><div class="segmented" role="group" aria-label="Text direction"><button data-direction="smart" class="active" title="Detect direction for each block">Smart</button><button data-direction="rtl" title="Right-to-left text">RTL</button><button data-direction="ltr" title="Left-to-right text">LTR</button></div><span class="toolbar-divider"></span><div class="appearance-anchor"><button id="appearance-button" class="appearance-button" aria-expanded="false"><svg><use href="#i-text"/></svg>Appearance</button><div id="appearance-panel" class="appearance-panel" hidden><div class="popover-heading">Make yourself comfortable</div><label for="font-size">Font size <output id="font-value">17</output></label><input id="font-size" type="range" min="14" max="24" value="17"><label for="line-height">Line spacing <output id="line-value">2</output></label><input id="line-height" type="range" min="1.6" max="2.6" step="0.1" value="2"><label class="checkbox-label"><input id="wide-page" type="checkbox">Wider page</label><button id="reset-appearance" class="text-button">Reset appearance</button></div></div></div></div>
+        <div class="document-toolbar">
+          <div class="segmented view-switch" role="group" aria-label="Document view">
+            <button id="read-mode" class="active">
+              <svg><use href="#i-book" /></svg>Read</button
+            ><button id="edit-mode" title="Edit source and preview (Ctrl+E)">
+              <svg><use href="#i-edit" /></svg>Edit &amp; Preview
+            </button>
+          </div>
+          <label class="layout-control"
+            >Layout
+            <select id="reading-layout" aria-label="Reading layout">
+              <option value="single">Single page</option>
+              <option value="columns">Split vertically</option>
+              <option value="rows">Split horizontally</option>
+              <option value="grid">Four panes</option>
+            </select></label
+          ><span id="save-status" class="save-status" aria-live="polite">Saved</span>
+          <div class="save-actions">
+            <button id="save-as-button" class="secondary-button" title="Save As (Ctrl+Shift+S)">
+              Save As…</button
+            ><button id="save-button" class="save-button" title="Save (Ctrl+S)">
+              <svg><use href="#i-save" /></svg>Save
+            </button>
+          </div>
+        </div>
+        <div class="reading-toolbar">
+          <div class="reading-label">
+            <span class="status-dot"></span><span id="mode-label">Reading mode</span>
+          </div>
+          <div class="reading-controls">
+            <span id="direction-label" class="control-label">Text direction</span>
+            <div class="segmented" role="group" aria-label="Text direction">
+              <button data-direction="smart" class="active" title="Detect direction for each block">
+                Smart</button
+              ><button data-direction="rtl" title="Right-to-left text">RTL</button
+              ><button data-direction="ltr" title="Left-to-right text">LTR</button>
+            </div>
+            <span class="toolbar-divider"></span>
+            <div class="appearance-anchor">
+              <button id="appearance-button" class="appearance-button" aria-expanded="false">
+                <svg><use href="#i-text" /></svg>Appearance
+              </button>
+              <div id="appearance-panel" class="appearance-panel" hidden>
+                <div class="popover-heading">Make yourself comfortable</div>
+                <label for="font-size">Font size <output id="font-value">17</output></label
+                ><input id="font-size" type="range" min="14" max="24" value="17" /><label
+                  for="line-height"
+                  >Line spacing <output id="line-value">2</output></label
+                ><input
+                  id="line-height"
+                  type="range"
+                  min="1.6"
+                  max="2.6"
+                  step="0.1"
+                  value="2"
+                /><label class="checkbox-label"
+                  ><input id="wide-page" type="checkbox" />Wider page</label
+                ><button id="reset-appearance" class="text-button">Reset appearance</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div class="memory-toolbar" aria-label="Reading marks and notes">
-        <button id="star-document" title="Star this document" aria-pressed="false"><svg><use href="#i-star"/></svg><span>Star document</span></button>
-        <button id="add-mark" title="Add a reading mark (Ctrl+M)"><svg><use href="#i-mark"/></svg>Add mark</button>
-        <button id="add-note" title="Add a note (Ctrl+Shift+M)"><svg><use href="#i-note"/></svg>Add note</button>
-        <div class="annotations-anchor"><button id="annotations-button" aria-expanded="false" aria-controls="annotations-panel">Marks &amp; Notes <span id="annotation-count">0</span></button><section id="annotations-panel" class="annotations-panel" aria-label="Document marks and notes" hidden><h3>Marks &amp; Notes</h3><div id="annotation-list"></div></section></div>
-        <button id="resume-reading" title="Go to your last visited mark or note">Resume</button><span id="memory-status" class="memory-status" role="status"></span>
+        <div class="memory-toolbar" aria-label="Reading marks and notes">
+          <button id="star-document" title="Star this document" aria-pressed="false">
+            <svg><use href="#i-star" /></svg><span>Star document</span>
+          </button>
+          <button id="add-mark" title="Add a reading mark (Ctrl+M)">
+            <svg><use href="#i-mark" /></svg>Add mark
+          </button>
+          <button id="add-note" title="Add a note (Ctrl+Shift+M)">
+            <svg><use href="#i-note" /></svg>Add note
+          </button>
+          <div class="annotations-anchor">
+            <button id="annotations-button" aria-expanded="false" aria-controls="annotations-panel">
+              Marks &amp; Notes <span id="annotation-count">0</span>
+            </button>
+            <section
+              id="annotations-panel"
+              class="annotations-panel"
+              aria-label="Document marks and notes"
+              hidden
+            >
+              <h3>Marks &amp; Notes</h3>
+              <div id="annotation-list"></div>
+            </section>
+          </div>
+          <button id="resume-reading" title="Go to your last visited mark or note">Resume</button
+          ><span id="memory-status" class="memory-status" role="status"></span>
+        </div>
+        <div id="document-workspace" class="document-workspace">
+          <section id="editor-pane" class="editor-pane" aria-label="Source editor" hidden>
+            <div class="editor-heading">
+              <span id="editor-name">SOURCE</span
+              ><button
+                id="beautify-button"
+                class="source-format-button"
+                type="button"
+                title="Format document (Ctrl+Shift+I)"
+                hidden
+              >
+                Format document</button
+              ><label
+                >Direction
+                <select id="editor-direction" aria-label="Editor text direction">
+                  <option value="auto">Auto</option>
+                  <option value="ltr">LTR</option>
+                  <option value="rtl">RTL</option>
+                </select></label
+              >
+            </div>
+            <div
+              id="format-toolbar"
+              class="format-toolbar"
+              role="toolbar"
+              aria-label="Text formatting"
+            >
+              <button data-format="bold" title="Bold (Ctrl+B)" aria-label="Bold">
+                <strong>B</strong>
+              </button>
+              <button data-format="italic" title="Italic (Ctrl+I)" aria-label="Italic">
+                <em>I</em>
+              </button>
+              <button
+                data-format="strike"
+                title="Strikethrough (Ctrl+Shift+X)"
+                aria-label="Strikethrough"
+              >
+                <s>S</s>
+              </button>
+              <span class="format-divider"></span>
+              <button data-format="h1" title="Heading 1" aria-label="Heading 1">H1</button>
+              <button data-format="h2" title="Heading 2" aria-label="Heading 2">H2</button>
+              <button data-format="h3" title="Heading 3" aria-label="Heading 3">H3</button>
+              <span class="format-divider"></span>
+              <button data-format="link" title="Insert link (Ctrl+K)" aria-label="Insert link">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="m10 13 4-4m-6 5-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0m2 4 1-1a3.5 3.5 0 0 1 5 5l-4 4a3.5 3.5 0 0 1-5 0"
+                  />
+                </svg>
+              </button>
+              <button
+                data-format="image"
+                title="Insert image from your computer"
+                aria-label="Insert image"
+              >
+                Image
+              </button>
+              <button data-format="code" title="Inline code (Ctrl+`)" aria-label="Inline code">
+                &lt;/&gt;
+              </button>
+              <button data-format="code-block" title="Code block" aria-label="Code block">
+                { }
+              </button>
+              <span class="format-divider"></span>
+              <button data-format="quote" title="Blockquote" aria-label="Blockquote">❝</button>
+              <button data-format="bullet" title="Bulleted list" aria-label="Bulleted list">
+                • List
+              </button>
+              <button data-format="numbered" title="Numbered list" aria-label="Numbered list">
+                1. List
+              </button>
+              <button data-format="table" title="Insert table" aria-label="Insert table">
+                ▦ Table
+              </button>
+              <button
+                data-format="flowchart"
+                title="Insert flowchart"
+                aria-label="Insert flowchart"
+              >
+                ◇ Flowchart
+              </button>
+              <button data-format="rule" title="Horizontal rule" aria-label="Horizontal rule">
+                ―
+              </button>
+            </div>
+            <div id="word-editing-note" class="word-editing-note" hidden>
+              Word uses an HTML editing view. Advanced layout may change when saved; use Save As to
+              keep the original.
+            </div>
+            <div id="editor-container" class="editor-container"></div>
+            <div class="editor-footer">
+              <span id="cursor-position">Ln 1, Col 1</span
+              ><label
+                id="sync-control"
+                class="sync-control"
+                title="Keep source and preview scrolling together"
+                ><input id="sync-scroll" type="checkbox" checked />Sync scroll</label
+              ><span id="preview-status" role="status">Live preview</span>
+            </div>
+          </section>
+          <section class="preview-pane" aria-label="Document preview">
+            <div class="preview-toolbar" role="group" aria-label="Document preview controls">
+              <div id="api-preview-controls" role="group" aria-label="API preview" hidden>
+                <button id="api-preview-swagger" aria-pressed="true">Swagger UI</button
+                ><button id="api-preview-source" aria-pressed="false">Source</button>
+              </div>
+              <span>Preview zoom</span
+              ><button
+                id="preview-zoom-out"
+                title="Zoom out (Ctrl+−)"
+                aria-label="Zoom out preview"
+              >
+                −</button
+              ><output id="preview-zoom-value" aria-label="Preview zoom level" aria-live="polite"
+                >100%</output
+              ><button id="preview-zoom-in" title="Zoom in (Ctrl++)" aria-label="Zoom in preview">
+                +</button
+              ><button
+                id="preview-zoom-reset"
+                title="Reset zoom (Ctrl+0)"
+                aria-label="Reset preview zoom to 100%"
+              >
+                Reset
+              </button>
+            </div>
+            <div id="reading-scroll" class="reading-scroll">
+              <div class="paper-topline">
+                <span
+                  ><svg><use href="#i-book" /></svg>A quiet place for your words.</span
+                ><span id="reading-time">—</span>
+              </div>
+              <div id="empty-state" class="empty-state" hidden>
+                <img src="icon.svg" alt="" width="72" height="72" />
+                <h1>A new page. A fresh start.</h1>
+                <p>Open a document or text file.<br />Settle in. Khana takes care of the rest.</p>
+                <button id="empty-open" class="open-button">Open file</button>
+              </div>
+              <article
+                id="document"
+                class="document"
+                dir="rtl"
+                aria-label="Document content"
+                tabindex="0"
+              ></article>
+              <div id="paper-end" class="paper-end">
+                <span></span><svg><use href="#i-book" /></svg><span></span>
+              </div>
+            </div>
+          </section>
+        </div>
+        <footer class="statusbar">
+          <div>
+            <span id="word-count">0 words</span><span class="status-separator">·</span
+            ><span id="encoding" dir="ltr">UTF-8</span><span class="status-separator">·</span
+            ><span id="document-format">Markdown</span><span class="status-separator">·</span
+            ><span id="direction-status">Smart direction is on</span>
+          </div>
+          <span class="developer-credit" dir="ltr">© 2026 · Development by Sadeq Kiomarsi</span>
+          <div>
+            <span id="progress-label">0% read</span>
+            <div class="progress-track"><span id="progress-bar"></span></div>
+          </div>
+        </footer>
+      </main>
+    </div>
+    <dialog id="link-dialog" class="link-dialog" aria-labelledby="link-dialog-title">
+      <form id="link-form" method="dialog">
+        <h2 id="link-dialog-title">Insert link</h2>
+        <p>Link to a website, a heading, or another document.</p>
+        <label for="link-label">Display text</label
+        ><input id="link-label" dir="auto" autocomplete="off" placeholder="Link text" />
+        <label for="link-url">URL or path</label
+        ><input
+          id="link-url"
+          dir="ltr"
+          autocomplete="off"
+          placeholder="https://example.com"
+          required
+        />
+        <p id="link-error" class="link-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="link-cancel" class="secondary-button" type="button">Cancel</button
+          ><button class="save-button" type="submit">Insert link</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="table-dialog" class="builder-dialog" aria-labelledby="table-dialog-title">
+      <form id="table-form" method="dialog">
+        <div class="builder-title">
+          <div>
+            <h2 id="table-dialog-title">Insert table</h2>
+            <p>Choose a size, then fill in your headers and cells.</p>
+          </div>
+          <span class="builder-symbol">▦</span>
+        </div>
+        <div class="builder-options">
+          <label
+            >Columns<input
+              id="table-columns"
+              type="number"
+              min="1"
+              max="12"
+              value="3"
+              required /></label
+          ><label
+            >Data rows<input
+              id="table-rows"
+              type="number"
+              min="1"
+              max="50"
+              value="3"
+              required /></label
+          ><span>Header row is included separately.</span>
+        </div>
+        <div id="table-grid" class="table-grid" aria-label="Table cells"></div>
+        <p class="builder-help">
+          You can paste tab-separated cells from a spreadsheet. Up to 12 columns and 50 data rows.
+        </p>
+        <p id="table-error" class="builder-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="table-cancel" class="secondary-button" type="button">Cancel</button
+          ><button id="table-insert" class="save-button" type="submit">Insert table</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="flow-dialog" class="builder-dialog flow-dialog" aria-labelledby="flow-dialog-title">
+      <form id="flow-form" method="dialog">
+        <div class="builder-title">
+          <div>
+            <h2 id="flow-dialog-title">Insert flowchart</h2>
+            <p>Describe your steps and connect them. Add decisions to create branches.</p>
+          </div>
+          <span class="builder-symbol">◇</span>
+        </div>
+        <div class="builder-options">
+          <label class="grow"
+            >Title<input id="flow-title" maxlength="150" value="Process flow" dir="auto" /></label
+          ><label
+            >Layout<select id="flow-direction">
+              <option value="TD">Top to bottom</option>
+              <option value="LR">Left to right</option>
+              <option value="RL">Right to left</option>
+              <option value="BT">Bottom to top</option>
+            </select></label
+          >
+        </div>
+        <div class="builder-section-title">
+          <h3>Steps</h3>
+          <button id="flow-add-node" class="secondary-button" type="button">+ Add step</button>
+        </div>
+        <div id="flow-nodes" class="flow-nodes"></div>
+        <div class="builder-section-title">
+          <h3>Connections</h3>
+          <button id="flow-add-edge" class="secondary-button" type="button">
+            + Add connection
+          </button>
+        </div>
+        <div id="flow-edges" class="flow-edges"></div>
+        <p class="builder-help">
+          Use connection labels such as Yes / No for decisions. You can edit the generated Mermaid
+          source later.
+        </p>
+        <p id="flow-error" class="builder-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="flow-cancel" class="secondary-button" type="button">Cancel</button
+          ><button id="flow-insert" class="save-button" type="submit">Insert flowchart</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog
+      id="annotation-dialog"
+      class="link-dialog annotation-dialog"
+      aria-labelledby="annotation-dialog-title"
+    >
+      <form id="annotation-form" method="dialog">
+        <h2 id="annotation-dialog-title">Add mark</h2>
+        <p>Keep a place in this document. Your source file stays unchanged.</p>
+        <div id="annotation-context" class="annotation-context" dir="auto"></div>
+        <label for="annotation-name">Name</label
+        ><input id="annotation-name" maxlength="160" required dir="auto" />
+        <div id="annotation-body-group">
+          <label for="annotation-body">Note</label
+          ><textarea id="annotation-body" maxlength="10000" dir="auto"></textarea>
+        </div>
+        <p id="annotation-error" class="link-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="annotation-cancel" class="secondary-button" type="button">Cancel</button
+          ><button id="annotation-save" class="save-button" type="submit">Save mark</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="loading" class="loading" role="status" hidden>
+      <span class="spinner"></span>Opening document…
+    </div>
+    <dialog
+      id="pdf-dialog"
+      class="link-dialog annotation-dialog"
+      aria-labelledby="pdf-dialog-title"
+    >
+      <form id="pdf-form">
+        <h2 id="pdf-dialog-title">Edit PDF text</h2>
+        <p>
+          Replace this text region. Longer text may use a smaller font to fit. The rest of the page
+          stays in place.
+        </p>
+        <label for="pdf-text-input">Text</label
+        ><textarea id="pdf-text-input" dir="auto" maxlength="20000"></textarea>
+        <p id="pdf-error" class="link-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="pdf-cancel" type="button" class="secondary-button">Cancel</button
+          ><button id="pdf-apply" type="submit" class="save-button">Apply</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <div class="drop-overlay">
+      <div>
+        <svg><use href="#i-file" /></svg>
+        <h2>Drop your document here</h2>
+        <p>Make room for a little reading.</p>
       </div>
-      <div id="document-workspace" class="document-workspace">
-      <section id="editor-pane" class="editor-pane" aria-label="Source editor" hidden><div class="editor-heading"><span id="editor-name">SOURCE</span><button id="beautify-button" class="source-format-button" type="button" title="Format document (Ctrl+Shift+I)" hidden>Format document</button><label>Direction <select id="editor-direction" aria-label="Editor text direction"><option value="auto">Auto</option><option value="ltr">LTR</option><option value="rtl">RTL</option></select></label></div><div id="format-toolbar" class="format-toolbar" role="toolbar" aria-label="Text formatting">
-        <button data-format="bold" title="Bold (Ctrl+B)" aria-label="Bold"><strong>B</strong></button>
-        <button data-format="italic" title="Italic (Ctrl+I)" aria-label="Italic"><em>I</em></button>
-        <button data-format="strike" title="Strikethrough (Ctrl+Shift+X)" aria-label="Strikethrough"><s>S</s></button>
-        <span class="format-divider"></span>
-        <button data-format="h1" title="Heading 1" aria-label="Heading 1">H1</button>
-        <button data-format="h2" title="Heading 2" aria-label="Heading 2">H2</button>
-        <button data-format="h3" title="Heading 3" aria-label="Heading 3">H3</button>
-        <span class="format-divider"></span>
-        <button data-format="link" title="Insert link (Ctrl+K)" aria-label="Insert link"><svg viewBox="0 0 24 24"><path d="m10 13 4-4m-6 5-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0m2 4 1-1a3.5 3.5 0 0 1 5 5l-4 4a3.5 3.5 0 0 1-5 0"/></svg></button>
-        <button data-format="image" title="Insert image from your computer" aria-label="Insert image">Image</button>
-        <button data-format="code" title="Inline code (Ctrl+`)" aria-label="Inline code">&lt;/&gt;</button>
-        <button data-format="code-block" title="Code block" aria-label="Code block">{ }</button>
-        <span class="format-divider"></span>
-        <button data-format="quote" title="Blockquote" aria-label="Blockquote">❝</button>
-        <button data-format="bullet" title="Bulleted list" aria-label="Bulleted list">• List</button>
-        <button data-format="numbered" title="Numbered list" aria-label="Numbered list">1. List</button>
-        <button data-format="table" title="Insert table" aria-label="Insert table">▦ Table</button>
-        <button data-format="flowchart" title="Insert flowchart" aria-label="Insert flowchart">◇ Flowchart</button>
-        <button data-format="rule" title="Horizontal rule" aria-label="Horizontal rule">―</button>
-      </div><div id="word-editing-note" class="word-editing-note" hidden>Word uses an HTML editing view. Advanced layout may change when saved; use Save As to keep the original.</div><div id="editor-container" class="editor-container"></div><div class="editor-footer"><span id="cursor-position">Ln 1, Col 1</span><label id="sync-control" class="sync-control" title="Keep source and preview scrolling together"><input id="sync-scroll" type="checkbox" checked>Sync scroll</label><span id="preview-status" role="status">Live preview</span></div></section>
-      <section class="preview-pane" aria-label="Document preview">
-      <div class="preview-toolbar" role="group" aria-label="Document preview controls"><div id="api-preview-controls" role="group" aria-label="API preview" hidden><button id="api-preview-swagger" aria-pressed="true">Swagger UI</button><button id="api-preview-source" aria-pressed="false">Source</button></div><span>Preview zoom</span><button id="preview-zoom-out" title="Zoom out (Ctrl+−)" aria-label="Zoom out preview">−</button><output id="preview-zoom-value" aria-label="Preview zoom level" aria-live="polite">100%</output><button id="preview-zoom-in" title="Zoom in (Ctrl++)" aria-label="Zoom in preview">+</button><button id="preview-zoom-reset" title="Reset zoom (Ctrl+0)" aria-label="Reset preview zoom to 100%">Reset</button></div>
-      <div id="reading-scroll" class="reading-scroll"><div class="paper-topline"><span><svg><use href="#i-book"/></svg>A quiet place for your words.</span><span id="reading-time">—</span></div><div id="empty-state" class="empty-state" hidden><img src="icon.svg" alt="" width="72" height="72"><h1>A new page. A fresh start.</h1><p>Open a document or text file.<br>Settle in. Khana takes care of the rest.</p><button id="empty-open" class="open-button">Open file</button></div><article id="document" class="document" dir="rtl" aria-label="Document content" tabindex="0"></article><div id="paper-end" class="paper-end"><span></span><svg><use href="#i-book"/></svg><span></span></div></div>
-      </section>
-      </div>
-      <footer class="statusbar"><div><span id="word-count">0 words</span><span class="status-separator">·</span><span id="encoding" dir="ltr">UTF-8</span><span class="status-separator">·</span><span id="document-format">Markdown</span><span class="status-separator">·</span><span id="direction-status">Smart direction is on</span></div><span class="developer-credit" dir="ltr">© 2026 · Development by Sadeq Kiomarsi</span><div><span id="progress-label">0% read</span><div class="progress-track"><span id="progress-bar"></span></div></div></footer>
-    </main>
-  </div>
-  <dialog id="link-dialog" class="link-dialog" aria-labelledby="link-dialog-title">
-    <form id="link-form" method="dialog"><h2 id="link-dialog-title">Insert link</h2><p>Link to a website, a heading, or another document.</p>
-      <label for="link-label">Display text</label><input id="link-label" dir="auto" autocomplete="off" placeholder="Link text">
-      <label for="link-url">URL or path</label><input id="link-url" dir="ltr" autocomplete="off" placeholder="https://example.com" required>
-      <p id="link-error" class="link-error" role="alert" hidden></p>
-      <div class="dialog-actions"><button id="link-cancel" class="secondary-button" type="button">Cancel</button><button class="save-button" type="submit">Insert link</button></div>
-    </form>
-  </dialog>
-  <dialog id="table-dialog" class="builder-dialog" aria-labelledby="table-dialog-title">
-    <form id="table-form" method="dialog"><div class="builder-title"><div><h2 id="table-dialog-title">Insert table</h2><p>Choose a size, then fill in your headers and cells.</p></div><span class="builder-symbol">▦</span></div>
-      <div class="builder-options"><label>Columns<input id="table-columns" type="number" min="1" max="12" value="3" required></label><label>Data rows<input id="table-rows" type="number" min="1" max="50" value="3" required></label><span>Header row is included separately.</span></div>
-      <div id="table-grid" class="table-grid" aria-label="Table cells"></div>
-      <p class="builder-help">You can paste tab-separated cells from a spreadsheet. Up to 12 columns and 50 data rows.</p>
-      <p id="table-error" class="builder-error" role="alert" hidden></p>
-      <div class="dialog-actions"><button id="table-cancel" class="secondary-button" type="button">Cancel</button><button id="table-insert" class="save-button" type="submit">Insert table</button></div>
-    </form>
-  </dialog>
-  <dialog id="flow-dialog" class="builder-dialog flow-dialog" aria-labelledby="flow-dialog-title">
-    <form id="flow-form" method="dialog"><div class="builder-title"><div><h2 id="flow-dialog-title">Insert flowchart</h2><p>Describe your steps and connect them. Add decisions to create branches.</p></div><span class="builder-symbol">◇</span></div>
-      <div class="builder-options"><label class="grow">Title<input id="flow-title" maxlength="150" value="Process flow" dir="auto"></label><label>Layout<select id="flow-direction"><option value="TD">Top to bottom</option><option value="LR">Left to right</option><option value="RL">Right to left</option><option value="BT">Bottom to top</option></select></label></div>
-      <div class="builder-section-title"><h3>Steps</h3><button id="flow-add-node" class="secondary-button" type="button">+ Add step</button></div><div id="flow-nodes" class="flow-nodes"></div>
-      <div class="builder-section-title"><h3>Connections</h3><button id="flow-add-edge" class="secondary-button" type="button">+ Add connection</button></div><div id="flow-edges" class="flow-edges"></div>
-      <p class="builder-help">Use connection labels such as Yes / No for decisions. You can edit the generated Mermaid source later.</p>
-      <p id="flow-error" class="builder-error" role="alert" hidden></p>
-      <div class="dialog-actions"><button id="flow-cancel" class="secondary-button" type="button">Cancel</button><button id="flow-insert" class="save-button" type="submit">Insert flowchart</button></div>
-    </form>
-  </dialog>
-  <dialog id="annotation-dialog" class="link-dialog annotation-dialog" aria-labelledby="annotation-dialog-title"><form id="annotation-form" method="dialog">
-    <h2 id="annotation-dialog-title">Add mark</h2><p>Keep a place in this document. Your source file stays unchanged.</p>
-    <div id="annotation-context" class="annotation-context" dir="auto"></div>
-    <label for="annotation-name">Name</label><input id="annotation-name" maxlength="160" required dir="auto">
-    <div id="annotation-body-group"><label for="annotation-body">Note</label><textarea id="annotation-body" maxlength="10000" dir="auto"></textarea></div>
-    <p id="annotation-error" class="link-error" role="alert" hidden></p>
-    <div class="dialog-actions"><button id="annotation-cancel" class="secondary-button" type="button">Cancel</button><button id="annotation-save" class="save-button" type="submit">Save mark</button></div>
-  </form></dialog>
-  <div id="loading" class="loading" role="status" hidden><span class="spinner"></span>Opening document…</div>
-  <dialog id="pdf-dialog" class="link-dialog annotation-dialog" aria-labelledby="pdf-dialog-title"><form id="pdf-form">
-    <h2 id="pdf-dialog-title">Edit PDF text</h2><p>Replace this text region. Longer text may use a smaller font to fit. The rest of the page stays in place.</p>
-    <label for="pdf-text-input">Text</label><textarea id="pdf-text-input" dir="auto" maxlength="20000"></textarea>
-    <p id="pdf-error" class="link-error" role="alert" hidden></p><div class="dialog-actions"><button id="pdf-cancel" type="button" class="secondary-button">Cancel</button><button id="pdf-apply" type="submit" class="save-button">Apply</button></div>
-  </form></dialog>
-  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <div class="drop-overlay"><div><svg><use href="#i-file"/></svg><h2>Drop your document here</h2><p>Make room for a little reading.</p></div></div>
-</body>
+    </div>
+  </body>
 </html>

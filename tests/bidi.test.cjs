@@ -7,7 +7,10 @@ test('Persian prose remains RTL when starting with an English product name', () 
   assert.equal(detectDirection('Python را نصب کنید و برنامه را اجرا کنید.'), 'rtl');
 });
 test('English paragraphs stay LTR with an embedded Persian word', () => {
-  assert.equal(detectDirection('This paragraph is English, even with a word like خوانا inside it.'), 'ltr');
+  assert.equal(
+    detectDirection('This paragraph is English, even with a word like خوانا inside it.'),
+    'ltr'
+  );
 });
 test('Neutral text inherits a useful direction and technical content stays LTR', () => {
   assert.equal(detectDirection('۱۲۳۴'), 'rtl');
@@ -17,5 +20,8 @@ test('Neutral text inherits a useful direction and technical content stays LTR',
   assert.equal(firstDirection('سلام'), 'rtl');
 });
 test('A long URL does not decide the direction of Persian prose', () => {
-  assert.equal(detectDirection('https://example.com/a-very-long-path/to/something نشانی وب است.'), 'rtl');
+  assert.equal(
+    detectDirection('https://example.com/a-very-long-path/to/something نشانی وب است.'),
+    'rtl'
+  );
 });
