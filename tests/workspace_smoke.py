@@ -303,8 +303,8 @@ def main():
                 identifier = evaluate("readerApp.activeId", target)
 
                 def execute(_actions):
-                    if cancelled:
-                        manager.drag_cancelled = True
+                    if not cancelled:
+                        buttons.return_value = Qt.MouseButton.NoButton
                     return Qt.DropAction.IgnoreAction
 
                 point = QPoint(-10000, -10000) if outside else target.frameGeometry().center()
@@ -312,7 +312,7 @@ def main():
                     patch(
                         "reader.ui.bridge.QApplication.mouseButtons",
                         return_value=Qt.MouseButton.LeftButton,
-                    ),
+                    ) as buttons,
                     patch("reader.ui.bridge.QDrag.exec", side_effect=execute),
                     patch("reader.ui.bridge.QCursor.pos", return_value=point),
                 ):

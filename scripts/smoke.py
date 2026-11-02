@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DESKTOP_CHECKS = (
     "desktop",
     "workspace",
+    "tab_drag",
     "sidebar",
     "api_requests",
     "api_transport",

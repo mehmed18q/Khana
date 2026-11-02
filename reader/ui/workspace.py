@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QEvent, QObject, Qt, QTimer
+from PySide6.QtCore import QObject, QTimer
 from PySide6.QtWidgets import QApplication
 
 from reader.editing import EditSession
@@ -43,12 +43,6 @@ class WindowManager(QObject):
         self.recent = None
         self.transfers: dict[tuple[ReaderWindow, str], TabTransfer] = {}
         self.dragging = None
-        self.drag_cancelled = False
-
-    def eventFilter(self, watched, event):
-        if event.type() == QEvent.Type.KeyPress and event.key() == Qt.Key.Key_Escape:
-            self.drag_cancelled = True
-        return False
 
     def path_owner(self, path, exclude=None):
         """A queued open reserves its path before the worker finishes loading it."""

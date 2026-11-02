@@ -360,7 +360,7 @@ npm run check
 
 Use `.venv/bin/ruff format .` and `npm run format` to apply the configured style. Vendored libraries and fonts are excluded.
 
-Run all 12 desktop checks sequentially, or choose named checks:
+Run all 13 desktop checks sequentially, or choose named checks:
 
 ```bash
 .venv/bin/python scripts/smoke.py
@@ -368,6 +368,8 @@ Run all 12 desktop checks sequentially, or choose named checks:
 ```
 
 The smoke checks require a graphical desktop and exercise the actual Qt/WebEngine window, reading, editing, live preview, saving, save-as, external changes, save/discard/cancel behavior, table/flowchart builders, diagram rendering, annotation persistence, both scroll directions, Word/PDF editing, image insertion, and Swagger / OpenAPI previews. The formats check also needs LibreOffice Writer. They use temporary files and save screenshots in `artifacts/`. The runner keeps logs and `results.json` in a timestamped `artifacts/checks/` directory; `--output` selects another directory. Node is only needed for development checks, not to run the app. Run builds separately from GUI checks.
+
+The `tab_drag` check runs the real Qt drag loop and checks cancellation, outside release, repeated transfers and preservation of unsaved text. On Linux it needs an X11/XWayland `DISPLAY` and Qt's XCB libraries (system-installed or cached by the Linux build script). Synthetic Qt input cannot establish a Wayland compositor drag, so this check uses XWayland even in a Wayland desktop session.
 
 After building, verify the packaged application on a graphical desktop:
 

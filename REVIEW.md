@@ -118,3 +118,34 @@ PDF rendering/editing/saving and Wayland/X11 identity. Both SHA-256 files verify
 Outputs are `dist/Khana` and `dist/khana_0.5.4-1_amd64.deb`; package logs are in
 `artifacts/refactor/packages/`. The consolidated report is
 `artifacts/refactor/results.json`. No package was installed or published.
+
+## Native tab-drag crash — 2026-11-02
+
+The installed build crashed with SIGSEGV when starting a tab drag. Its core
+backtrace enters Shiboken's QObject wrapper/type discovery from an application
+event filter during `QDrag.exec`. The Python filter registered to observe Escape
+was wrapping Qt's private drag objects while their lifetime changed, before its
+Python callback could execute. A real native drag reproduced the same stack and
+exit status 139; removing that filter made the same operation complete normally.
+
+The bridge now lets Qt handle cancellation and object cleanup, checks button
+release before detaching an ignored drop, and rejects reentrant drag requests.
+The manager no longer installs a global Python event filter. The previous
+workspace test mocked `QDrag.exec`, so it could not detect this native crash.
+The new `tab_drag_smoke.py` invokes the real drag loop and requires its completion
+timer to run inside that loop, preventing an early platform rejection from being
+reported as success.
+
+Validation: all 63 Python unit tests, native drag and workspace integration
+checks pass. Native scenarios cover Escape, release inside/outside the source,
+reentrant requests, repeated transfers, last-tab window closure after
+acknowledgment, and preservation of an unsaved Persian buffer and its dirty state.
+The native check uses X11/XWayland because synthetic Qt input lacks the pointer
+serial needed to start a compositor drag on Wayland; it does not establish
+physical Wayland drag coverage. Logs are in `artifacts/drag-fix/`.
+
+Ruff lint/format and whitespace checks pass. Fresh one-directory, portable and
+Debian builds completed; both package integration checks and both SHA-256 files
+pass. The installer is `dist/khana_0.5.4-1_amd64.deb` and the portable executable
+is `dist/Khana`. Package checks use isolated temporary settings and do not install
+anything on the host. Their logs are in `artifacts/drag-fix/packages/`.

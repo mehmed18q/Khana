@@ -104,6 +104,14 @@ acknowledgment removes the origin's buffer. An early acknowledgment is ignored.
 Timeout or invalid preparation removes any delivered copy and unlocks the origin.
 Save, reload, close and quit respect this transition.
 
+Qt owns the native `QDrag` event loop and drag-object cleanup. Do not install a
+Python application-wide event filter to observe drag cancellation: wrapping
+Qt's internal objects during their lifetime changes can crash PySide/Shiboken
+before the Python callback runs. An ignored drop detaches only after the left
+mouse button is released outside the source. The manager rejects reentrant
+drag requests. `tab_drag_smoke.py` exercises the real loop on X11/XWayland;
+the mocked completion cases in `workspace_smoke.py` alone cannot cover it.
+
 ## State and resource policy
 
 | State | Lifetime |
@@ -155,7 +163,8 @@ npm run check
 runner executes checks sequentially, records per-check logs and `results.json`
 under `artifacts/checks/`, and terminates timed-out processes. A subset can be run
 as `python scripts/smoke.py workspace formats`. GUI checks need an active desktop;
-Word checks also need LibreOffice Writer. Keep builds and GUI checks separate to
+the native drag check needs X11/XWayland and Qt's XCB libraries, and Word checks
+also need LibreOffice Writer. Keep builds and GUI checks separate to
 reduce timing contention. After building both packages, run
 `python scripts/smoke.py bundle deb`. Packaged checks isolate configuration and
 IPC and do not install the package into the system.

@@ -636,36 +636,37 @@ class Bridge(QObject):
 
     @Slot(str, str, str)
     def startTabDrag(self, document_id, source, view_state):
+        manager = self.window.manager
+        if manager.dragging:
+            return
         if (
             document_id not in self.sessions
             or not QApplication.mouseButtons() & Qt.MouseButton.LeftButton
         ):
             self.command.emit("tab-drag-finished")
             return
-        manager = self.window.manager
         drag = QDrag(self.window.view)
         mime = QMimeData()
         mime.setData("application/x-khana-tab", document_id.encode())
         drag.setMimeData(mime)
         drag.setPixmap(self.window.windowIcon().pixmap(32, 32))
         manager.dragging = (self.window, document_id, source, view_state)
-        manager.drag_cancelled = False
-        QApplication.instance().installEventFilter(manager)
         try:
+            # A Python application-wide event filter can crash Shiboken while
+            # Qt creates/destroys its private drag objects. Let Qt own the drag
+            # loop and cancellation; only a released mouse can detach a tab.
             action = drag.exec(Qt.DropAction.MoveAction)
             if (
                 action == Qt.DropAction.IgnoreAction
-                and not manager.drag_cancelled
+                and not QApplication.mouseButtons() & Qt.MouseButton.LeftButton
                 and not self.window.frameGeometry().contains(QCursor.pos())
             ):
                 manager.transfer(
                     self.window, document_id, source, view_state, position=QCursor.pos()
                 )
         finally:
-            QApplication.instance().removeEventFilter(manager)
             manager.dragging = None
             self.command.emit("tab-drag-finished")
-            drag.deleteLater()
 
     @Slot()
     def quit(self):
