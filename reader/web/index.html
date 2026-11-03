@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="formats.css" />
     <link rel="stylesheet" href="workspace.css" />
     <link rel="stylesheet" href="sidebar.css" />
+    <link rel="stylesheet" href="line-numbers.css" />
     <script src="qrc:///qtwebchannel/qwebchannel.js" defer></script>
     <script src="bidi.js" defer></script>
     <script src="api-requests.js" defer></script>
@@ -27,6 +28,7 @@
     <script src="annotations.js" defer></script>
     <script src="library-ui.js" defer></script>
     <script src="scroll-sync.js" defer></script>
+    <script src="line-numbers.js" defer></script>
     <script src="preview-zoom.js" defer></script>
     <script src="pdf-pages.js" defer></script>
     <script src="pdf-ui.js" defer></script>
@@ -104,7 +106,17 @@
     </svg>
 
     <div class="app-shell">
-      <aside class="sidebar" aria-label="Files and document outline">
+      <aside id="sidebar-panel" class="sidebar" aria-label="Files and document outline">
+        <div
+          id="sidebar-width-resizer"
+          class="sidebar-width-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Sidebar width"
+          aria-controls="sidebar-panel"
+          tabindex="0"
+          title="Drag to resize sidebar. Arrow keys adjust width; double-click to reset."
+        ></div>
         <div
           class="brand"
           data-window-drag
@@ -261,6 +273,16 @@
             </button>
             <span class="toolbar-divider"></span>
             <button
+              id="go-to-line-button"
+              class="icon-button"
+              title="Go to line (Ctrl+G)"
+              aria-label="Go to line"
+            >
+              <svg viewBox="0 0 24 24">
+                <path d="M11 6h10M11 12h10M11 18h10M3 9l3 3-3 3M2 12h5" />
+              </svg>
+            </button>
+            <button
               id="theme-button"
               class="icon-button"
               title="Toggle theme"
@@ -271,8 +293,8 @@
             <button
               id="focus-button"
               class="icon-button"
-              title="Focus mode (Ctrl+Shift+F)"
-              aria-label="Focus mode"
+              title="Reading fullscreen — hide menus and toolbars (Ctrl+Shift+F)"
+              aria-label="Reading fullscreen"
               aria-pressed="false"
             >
               <svg><use href="#i-focus" /></svg>
@@ -503,7 +525,7 @@
             </div>
             <div id="editor-container" class="editor-container"></div>
             <div class="editor-footer">
-              <span id="cursor-position">Ln 1, Col 1</span
+              <button id="cursor-position" title="Go to line (Ctrl+G)">Ln 1, Col 1</button
               ><label
                 id="sync-control"
                 class="sync-control"
@@ -577,6 +599,31 @@
         </footer>
       </main>
     </div>
+    <div class="fullscreen-exit-zone" id="fullscreen-exit-zone" hidden>
+      <button id="exit-focus-button" title="Exit reading fullscreen (Escape)">
+        <svg aria-hidden="true"><use href="#i-focus" /></svg>Exit fullscreen <kbd>Esc</kbd>
+      </button>
+    </div>
+    <dialog id="go-to-line-dialog" class="link-dialog" aria-labelledby="go-to-line-title">
+      <form id="go-to-line-form" method="dialog" novalidate>
+        <h2 id="go-to-line-title">Go to line</h2>
+        <p id="go-to-line-hint"></p>
+        <label for="go-to-line-input">Line number</label>
+        <input
+          id="go-to-line-input"
+          type="text"
+          inputmode="numeric"
+          dir="ltr"
+          autocomplete="off"
+          aria-describedby="go-to-line-hint go-to-line-error"
+        />
+        <p id="go-to-line-error" class="link-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="go-to-line-cancel" class="secondary-button" type="button">Cancel</button>
+          <button class="save-button" type="submit">Go to line</button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="link-dialog" class="link-dialog" aria-labelledby="link-dialog-title">
       <form id="link-form" method="dialog">
         <h2 id="link-dialog-title">Insert link</h2>

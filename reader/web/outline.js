@@ -23,8 +23,23 @@
         return;
       }
       for (const heading of headings) {
-        const button = document.createElement('button');
-        button.textContent = heading.title;
+        const button = document.createElement('button'),
+          title = document.createElement('span'),
+          target = contentRoot().querySelector(`[id="${CSS.escape(heading.id)}"]`),
+          sourceLine = target?.dataset.sourceLine;
+        title.className = 'outline-title';
+        title.textContent = heading.title;
+        title.dir = 'auto';
+        button.append(title);
+        if (sourceLine !== undefined && /^\d+$/.test(sourceLine)) {
+          const number = document.createElement('span'),
+            line = Number(sourceLine) + 1;
+          number.className = 'outline-line';
+          number.dir = 'ltr';
+          number.textContent = `Ln ${line}`;
+          button.title = `${heading.title} · Line ${line}`;
+          button.append(number);
+        }
         button.dir = 'auto';
         button.dataset.target = heading.id;
         if (heading.level > 2) button.classList.add('nested');

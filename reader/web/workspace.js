@@ -29,6 +29,7 @@
       section.append(header, scroll);
       workspace.append(section);
       const pane = { section, select, focus, scroll, article, id: null, rendered: null };
+      pane.lineNumbers = ReaderLineNumbers.createReading({ article, scroller: scroll });
       pane.pdf = ReaderPDFPages.create({
         article,
         scroller: scroll,
@@ -147,6 +148,7 @@
         remember(pane);
         pane.pdf.dispose();
         pane.section.remove();
+        pane.lineNumbers.dispose();
       }
       while (panes.length < count) panes.push(makePane());
       render();

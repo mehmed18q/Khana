@@ -1,5 +1,48 @@
+.sidebar {
+  position: relative;
+  min-width: 0;
+}
+.sidebar-width-resizer {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: -4px;
+  width: 8px;
+  z-index: 20;
+  cursor: col-resize;
+  touch-action: none;
+}
+.sidebar-width-resizer:hover,
+.sidebar-width-resizer:focus-visible,
+.resizing-sidebar-width .sidebar-width-resizer {
+  background: var(--accent-soft);
+  outline: none;
+  border-inline: 1px solid var(--accent);
+}
+body.resizing-sidebar-width,
+body.resizing-sidebar-width * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
 .sidebar > :not(.sidebar-sections) {
   flex-shrink: 0;
+}
+#outline button {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.outline-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.outline-line {
+  flex: none;
+  font-size: 9px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0.75;
 }
 .sidebar-sections {
   display: flex;

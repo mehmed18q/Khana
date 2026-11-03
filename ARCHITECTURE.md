@@ -60,6 +60,7 @@ global declaration.
 | `source-editor.js` | Textarea lifecycle, cursor state, editing mode, undo-preserving source operations, formatting and link/builder dialogs. |
 | `search.js` | Search results, highlight ranges, result navigation and search-panel controls. |
 | `outline.js` | Heading buttons and the active-heading observer. |
+| `line-numbers.js` | Visible editor/reading line numbers and shared, wrap-aware source measurements for navigation and scroll sync. |
 | `file-list.js` | File rows, dirty indicators, close/detach buttons and drag gestures. |
 | `window-controls.js` | Native move, minimize and fullscreen gestures. |
 | `workspace.js` | Extra reading panes and their mounted document views. |

@@ -214,8 +214,9 @@ def main():
             evaluate(
                 "document.getElementById('theme-button').click(); document.getElementById('reset-appearance').click(); document.getElementById('focus-button').click()"
             )
-            assert evaluate("document.body.classList.contains('focus-mode')")
+            wait_for("document.body.classList.contains('focus-mode')", "reading fullscreen enters")
             evaluate("document.getElementById('focus-button').click()")
+            wait_for("!document.body.classList.contains('focus-mode')", "reading fullscreen exits")
             window.toggle_fullscreen()
             assert not window.isFullScreen()
             window.resize(1000, 740)

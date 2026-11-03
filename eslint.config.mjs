@@ -11,6 +11,7 @@ const readerGlobals = [
   'ReaderFormatting',
   'ReaderInsertions',
   'ReaderLibrary',
+  'ReaderLineNumbers',
   'ReaderOpenAPI',
   'ReaderOutline',
   'ReaderPDF',

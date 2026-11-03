@@ -190,5 +190,108 @@
     restore();
     return { restore, snapshot };
   }
-  window.ReaderSidebar = { create };
+  function createWidth({ changed }) {
+    const shell = document.querySelector('.app-shell'),
+      handle = document.getElementById('sidebar-width-resizer'),
+      minimum = 220,
+      defaultWidth = 264;
+    let width = defaultWidth,
+      drag = null;
+    const maximum = () => Math.max(minimum, Math.min(560, shell.clientWidth - 620));
+    const displayed = () => Math.min(width, maximum());
+    function layout() {
+      const value = displayed();
+      shell.style.setProperty('--sidebar-width', `${value}px`);
+      handle.setAttribute('aria-valuemin', minimum);
+      handle.setAttribute('aria-valuemax', maximum());
+      handle.setAttribute('aria-valuenow', value);
+      handle.setAttribute('aria-valuetext', `${value} pixels`);
+    }
+    function resize(value) {
+      width = Math.round(Math.max(minimum, Math.min(maximum(), value)));
+      layout();
+    }
+    function finish(cancel = false) {
+      if (!drag) return;
+      const previous = drag;
+      drag = null;
+      if (cancel) width = previous.before;
+      document.body.classList.remove('resizing-sidebar-width');
+      if (handle.hasPointerCapture(previous.pointer))
+        handle.releasePointerCapture(previous.pointer);
+      layout();
+      if (!cancel) changed(width);
+    }
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || !event.isPrimary || drag) return;
+      event.preventDefault();
+      handle.focus();
+      drag = {
+        before: width,
+        start: displayed(),
+        x: event.clientX,
+        pointer: event.pointerId,
+      };
+      handle.setPointerCapture(event.pointerId);
+      document.body.classList.add('resizing-sidebar-width');
+    });
+    handle.addEventListener('pointermove', (event) => {
+      if (drag?.pointer !== event.pointerId) return;
+      if (!(event.buttons & 1)) {
+        finish(true);
+        return;
+      }
+      resize(drag.start + event.clientX - drag.x);
+    });
+    handle.addEventListener('pointerup', (event) => {
+      if (drag?.pointer === event.pointerId) finish();
+    });
+    ['pointercancel', 'lostpointercapture'].forEach((name) =>
+      handle.addEventListener(name, () => finish(true))
+    );
+    handle.addEventListener('dblclick', () => {
+      finish(true);
+      resize(defaultWidth);
+      changed(width);
+    });
+    handle.addEventListener('keydown', (event) => {
+      const step = event.shiftKey ? 48 : 16;
+      const value = {
+        ArrowLeft: displayed() - step,
+        ArrowRight: displayed() + step,
+        Home: minimum,
+        End: maximum(),
+      }[event.key];
+      if (value === undefined) return;
+      event.preventDefault();
+      finish(true);
+      resize(value);
+      changed(width);
+    });
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (event.key === 'Escape' && drag) {
+          event.preventDefault();
+          finish(true);
+        }
+      },
+      true
+    );
+    window.addEventListener('blur', () => finish(true));
+    window.addEventListener('resize', () => {
+      finish(true);
+      layout();
+    });
+    function restore(value) {
+      finish(true);
+      width = Number.isFinite(value)
+        ? Math.round(Math.max(minimum, Math.min(560, value)))
+        : defaultWidth;
+      layout();
+    }
+    restore();
+    return { restore };
+  }
+  window.ReaderSidebar = { create, createWidth };
 })();

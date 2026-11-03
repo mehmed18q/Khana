@@ -8,6 +8,7 @@
     editors,
     workspace,
     sync,
+    lineNumbers,
     native,
     toast,
     updateCaption,
@@ -15,7 +16,8 @@
     renderFiles,
     schedulePreview,
   }) {
-    let linkContext = null;
+    let linkContext = null,
+      lineContext = null;
     const supportsFormatting = (doc) => ['Markdown', 'HTML', 'Word'].includes(doc?.format);
     const supportsBeautify = (doc) => ['JSON', 'YAML', 'XML'].includes(doc?.format);
     function ensureEditor(doc) {
@@ -75,6 +77,7 @@
       editors.set(doc.id, editor);
       $('editor-container').append(editor);
       sync.bind(editor);
+      lineNumbers.bind(editor);
       return editor;
     }
 
@@ -86,6 +89,7 @@
       $('editor-pane').hidden = !enabled || doc?.format === 'PDF';
       $('format-toolbar').hidden = !supportsFormatting(doc);
       $('beautify-button').hidden = !enabled || !supportsBeautify(doc);
+      $('go-to-line-button').disabled = !doc || doc.format === 'PDF' || Boolean(doc.moving);
       $('word-editing-note').hidden = doc?.format !== 'Word';
       $('sync-control').hidden = !enabled || doc?.format === 'PDF';
       $('read-mode').classList.toggle('active', !enabled);
@@ -118,12 +122,81 @@
     }
 
     function updateCursor() {
+      lineNumbers.refresh();
       const editor = editors.get(current());
       if (!editor) return;
       const before = editor.value.slice(0, editor.selectionStart).split('\n');
       $('cursor-position').textContent =
         `Ln ${before.length}, Col ${[...before.at(-1)].length + 1}`;
     }
+
+    const sourceOf = (doc) => (editors.get(doc.id)?.value ?? doc.source).replace(/\r\n?/g, '\n');
+    function goToLine() {
+      const doc = documents.get(current());
+      if (!doc || doc.moving || document.querySelector('dialog[open]')) return;
+      if (doc.format === 'PDF') {
+        toast('Go to line is available for documents with editable source text.');
+        return;
+      }
+      const editor = editors.get(doc.id),
+        count = sourceOf(doc).split('\n').length,
+        line = editor ? editor.value.slice(0, editor.selectionStart).split('\n').length : 1;
+      lineContext = { id: doc.id, focus: document.activeElement };
+      $('go-to-line-hint').textContent = `Enter a line number from 1 to ${count}.`;
+      $('go-to-line-input').value = line;
+      $('go-to-line-input').removeAttribute('aria-invalid');
+      $('go-to-line-error').hidden = true;
+      $('go-to-line-dialog').showModal();
+      $('go-to-line-input').focus();
+      $('go-to-line-input').select();
+    }
+    $('cursor-position').onclick = goToLine;
+    $('go-to-line-button').onclick = goToLine;
+    $('go-to-line-cancel').onclick = () => $('go-to-line-dialog').close();
+    $('go-to-line-dialog').addEventListener('close', () => {
+      if ($('go-to-line-dialog').open) return;
+      if (lineContext?.focus?.isConnected) lineContext.focus.focus({ preventScroll: true });
+      lineContext = null;
+    });
+    $('go-to-line-input').addEventListener('input', () => {
+      $('go-to-line-input').removeAttribute('aria-invalid');
+      $('go-to-line-error').hidden = true;
+    });
+    $('go-to-line-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const doc = documents.get(current());
+      if (!doc || doc.id !== lineContext?.id || doc.moving) {
+        $('go-to-line-dialog').close();
+        return;
+      }
+      const input = $('go-to-line-input'),
+        value = input.value
+          .trim()
+          .replace(/[۰-۹٠-٩]/g, (digit) => String(digit.charCodeAt(0) & 15)),
+        line = Number(value),
+        source = sourceOf(doc),
+        count = source.split('\n').length;
+      if (!/^\d+$/.test(value) || !Number.isSafeInteger(line) || line < 1 || line > count) {
+        $('go-to-line-error').textContent = `Enter a whole line number from 1 to ${count}.`;
+        $('go-to-line-error').hidden = false;
+        input.setAttribute('aria-invalid', 'true');
+        input.focus();
+        return;
+      }
+      lineContext = null;
+      $('go-to-line-dialog').close();
+      if (!doc.editMode) {
+        sync.revealPreviewLine(line - 1);
+        return;
+      }
+      const editor = editors.get(doc.id);
+      let offset = 0;
+      for (let i = 1; i < line; i++) offset = editor.value.indexOf('\n', offset) + 1;
+      editor.setSelectionRange(offset, offset);
+      editor.focus({ preventScroll: true });
+      updateCursor();
+      sync.revealLine(line - 1);
+    });
 
     function applySourceEdit(editor, operation) {
       if (!operation || editor.readOnly) return false;
@@ -325,6 +398,7 @@
       setMode: setEditMode,
       format: formatSelection,
       beautify: beautifyDocument,
+      goToLine,
       receiveFormatted: receiveSourceFormatted,
     };
   }

@@ -22,6 +22,8 @@ class ReaderWindow(QMainWindow):
         self.restore_session = restore_session
         self.allow_close = False
         self.close_pending = False
+        self.focus_mode = False
+        self.before_focus_state = self.windowState()
         self.setWindowTitle(APP_NAME)
         self.setWindowIcon(QIcon(str(WEB / "icon.svg")))
         self.resize(1320, 900)
@@ -50,9 +52,30 @@ class ReaderWindow(QMainWindow):
         self.view.load(QUrl.fromLocalFile(str(WEB / "index.html")))
 
     def toggle_fullscreen(self):
+        if self.focus_mode:
+            self.set_focus_mode(False)
+            return
         self.showNormal() if self.isFullScreen() else self.showFullScreen()
 
+    def set_focus_mode(self, enabled):
+        if enabled == self.focus_mode:
+            return
+        self.focus_mode = enabled
+        if enabled:
+            self.before_focus_state = self.windowState()
+            self.showFullScreen()
+        else:
+            self.setWindowState(self.before_focus_state)
+        self.bridge.focusModeChanged.emit(enabled)
+
     def changeEvent(self, event):
+        if (
+            event.type() == QEvent.Type.WindowStateChange
+            and self.focus_mode
+            and not self.isFullScreen()
+        ):
+            self.focus_mode = False
+            self.bridge.focusModeChanged.emit(False)
         if event.type() == QEvent.Type.ActivationChange and self.isActiveWindow():
             self.manager.recent = self
         super().changeEvent(event)

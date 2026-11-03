@@ -17,14 +17,9 @@
     }
     return points.at(-1)[other];
   }
-  function create({ article, scroller, editor, current, enabled }) {
-    const mirror = document.createElement('div');
-    mirror.setAttribute('aria-hidden', 'true');
-    mirror.className = 'source-mirror';
-    document.body.append(mirror);
+  function create({ article, scroller, editor, current, enabled, lineNumbers }) {
     let points = [],
       metrics = [],
-      cacheKey = '',
       frame = 0,
       paused = false,
       driver = 'preview';
@@ -36,44 +31,9 @@
       editor() &&
       !current().previewPending &&
       !current().apiRendering;
-    function sourceMetrics() {
-      const field = editor(),
-        css = getComputedStyle(field);
-      const key = [field.value, field.clientWidth, css.font, css.padding, field.dir].join('\0');
-      if (key === cacheKey) return;
-      cacheKey = key;
-      for (const name of [
-        'font',
-        'lineHeight',
-        'letterSpacing',
-        'padding',
-        'tabSize',
-        'whiteSpace',
-        'overflowWrap',
-        'wordBreak',
-        'textAlign',
-        'unicodeBidi',
-      ])
-        mirror.style[name] = css[name];
-      mirror.dir = field.dir;
-      mirror.style.width = `${field.clientWidth}px`;
-      mirror.replaceChildren();
-      const lines = field.value.split('\n'),
-        stride = Math.max(1, Math.ceil(lines.length / 10000));
-      const fragment = document.createDocumentFragment();
-      for (let i = 0; i < lines.length; i += stride) {
-        const span = document.createElement('div');
-        span.dataset.line = i;
-        span.textContent = lines.slice(i, i + stride).join('\n') || '\u200b';
-        fragment.append(span);
-      }
-      mirror.append(fragment);
-      metrics = [...mirror.children].map((span) => [Number(span.dataset.line), span.offsetTop]);
-      metrics.push([lines.length, mirror.scrollHeight - parseFloat(css.paddingBottom)]);
-    }
     function rebuild() {
       if (!active()) return;
-      sourceMetrics();
+      metrics = lineNumbers.metrics(editor());
       const top = scroller.getBoundingClientRect().top,
         candidates = [];
       ReaderOpenAPI.contentRoot(article)
@@ -184,6 +144,39 @@
       mount,
       preview() {
         mount('editor', true);
+      },
+      revealLine(line) {
+        const field = editor();
+        if (!field) return;
+        move(field, lineNumbers.lineTop(field, line) - field.clientHeight / 3);
+        mount('editor', true);
+      },
+      revealPreviewLine(line) {
+        const anchors = [
+          ...ReaderOpenAPI.contentRoot(article).querySelectorAll('[data-source-line]'),
+        ]
+          .filter((node) => node.getClientRects().length && !node.closest('.diagram-source'))
+          .sort((a, b) => Number(a.dataset.sourceLine) - Number(b.dataset.sourceLine));
+        const target =
+          anchors.findLast((node) => Number(node.dataset.sourceLine) <= line) || anchors[0];
+        article.focus({ preventScroll: true });
+        if (!target) {
+          move(scroller, 0);
+          return;
+        }
+        const rect = target.getBoundingClientRect(),
+          start = Number(target.dataset.sourceLine),
+          end = Number(target.dataset.sourceEnd),
+          fraction = end > start ? Math.max(0, Math.min(1, (line - start) / (end - start))) : 0;
+        move(
+          scroller,
+          scroller.scrollTop +
+            rect.top -
+            scroller.getBoundingClientRect().top +
+            rect.height * fraction -
+            scroller.clientHeight / 3
+        );
+        mount('preview');
       },
       resize() {
         mount();

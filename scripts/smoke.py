@@ -18,6 +18,7 @@ DESKTOP_CHECKS = (
     "workspace",
     "tab_drag",
     "sidebar",
+    "navigation",
     "api_requests",
     "api_transport",
     "openapi",

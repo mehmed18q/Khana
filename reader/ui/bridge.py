@@ -40,6 +40,7 @@ class Bridge(QObject):
     errorOccurred = Signal(str)
     busyChanged = Signal(bool)
     settingsLoaded = Signal(str)
+    focusModeChanged = Signal(bool)
     libraryChanged = Signal(str)
     pdfPageReady = Signal(str)
     sourceFormatted = Signal(str)
@@ -106,6 +107,7 @@ class Bridge(QObject):
         except ValueError:
             preferences = {}
         self.settingsLoaded.emit(json.dumps(normalize_preferences(preferences)))
+        self.focusModeChanged.emit(self.window.focus_mode)
         entries = self.publish_library()
         if self.library_error:
             self.errorOccurred.emit(f"Reading library unavailable: {self.library_error}")
@@ -603,6 +605,10 @@ class Bridge(QObject):
     @Slot()
     def toggleFullscreen(self):
         self.window.toggle_fullscreen()
+
+    @Slot()
+    def toggleFocusMode(self):
+        self.window.set_focus_mode(not self.window.focus_mode)
 
     @Slot()
     def startWindowMove(self):

@@ -12,6 +12,7 @@
     wide: false,
     syncScroll: true,
     previewZoom: 100,
+    sidebarWidth: 264,
   };
   let settings = { ...defaults },
     bridge,
@@ -33,12 +34,18 @@
     native: () => bridge,
     toast,
   });
+  const lineNumbers = ReaderLineNumbers.createEditor({
+    container: $('editor-container'),
+    current: () => editors.get(activeId),
+  });
+  ReaderLineNumbers.createReading({ article, scroller });
   const sync = ReaderScrollSync.create({
     article,
     scroller,
     current: () => documents.get(activeId),
     editor: () => editors.get(activeId),
     enabled: () => settings.syncScroll,
+    lineNumbers,
   });
   const zoom = ReaderPreviewZoom.create({
     article,
@@ -108,6 +115,12 @@
     },
   });
   settings.sidebar = sidebar.snapshot();
+  const sidebarWidth = ReaderSidebar.createWidth({
+    changed: (width) => {
+      settings.sidebarWidth = width;
+      bridge?.saveSettings(JSON.stringify(settings));
+    },
+  });
 
   const find = ReaderSearch.create({
     article,
@@ -134,6 +147,7 @@
     editors,
     workspace,
     sync,
+    lineNumbers,
     native: () => bridge,
     toast,
     updateCaption,
@@ -564,11 +578,33 @@
     $('progress-bar').style.width = `${value}%`;
   }
 
-  function focusMode() {
-    const enabled = document.body.classList.toggle('focus-mode');
+  let beforeFocus = null;
+  function applyFocusMode(enabled) {
+    if (enabled === document.body.classList.contains('focus-mode')) return;
+    if (enabled) {
+      beforeFocus = document.activeElement;
+      find.close();
+      $('appearance-panel').hidden = true;
+      $('appearance-button').setAttribute('aria-expanded', 'false');
+      $('annotations-panel').hidden = true;
+      $('annotations-button').setAttribute('aria-expanded', 'false');
+    }
+    document.body.classList.toggle('focus-mode', enabled);
     $('focus-button').setAttribute('aria-pressed', String(enabled));
     $('focus-button').classList.toggle('active', enabled);
+    $('fullscreen-exit-zone').hidden = !enabled;
+    if (enabled) {
+      const target = beforeFocus?.closest('.source-editor') || article;
+      target.focus({ preventScroll: true });
+      toast('Reading fullscreen · Press Esc to return.');
+    } else if (beforeFocus?.isConnected && beforeFocus.getClientRects().length) {
+      beforeFocus.focus({ preventScroll: true });
+    }
     requestAnimationFrame(updateProgress);
+  }
+
+  function focusMode() {
+    bridge?.toggleFocusMode();
   }
 
   function requestQuit() {
@@ -592,6 +628,7 @@
       },
       edit: () => sourceEditor.setMode(!documents.get(activeId)?.editMode),
       beautify: () => sourceEditor.beautify(),
+      'go-to-line': () => sourceEditor.goToLine(),
       empty: () => showDocument(null),
       'add-mark': () => reading.add('mark'),
       'add-note': () => reading.add('note'),
@@ -657,6 +694,7 @@
     preferences();
   };
   $('focus-button').onclick = focusMode;
+  $('exit-focus-button').onclick = focusMode;
   $('sync-scroll').onchange = () => {
     settings.syncScroll = $('sync-scroll').checked;
     preferences();
@@ -730,6 +768,8 @@
             e: 'edit',
             KeyF: 'search',
             f: 'search',
+            KeyG: 'go-to-line',
+            g: 'go-to-line',
             KeyR: 'reload',
             r: 'reload',
             KeyM: 'add-mark',
@@ -810,6 +850,7 @@
           settings = { ...defaults, ...JSON.parse(raw) };
           sidebar.restore(settings.sidebar);
           settings.sidebar = sidebar.snapshot();
+          sidebarWidth.restore(settings.sidebarWidth);
           preferences(false);
         } catch {
           preferences(false);
@@ -824,6 +865,7 @@
       bridge.sourceFormatted.connect(sourceEditor.receiveFormatted);
       bridge.apiResponse.connect((raw) => apiRequests.receive(raw));
       bridge.command.connect(command);
+      bridge.focusModeChanged.connect(applyFocusMode);
       bridge.ready();
     });
   } else {

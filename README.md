@@ -2,7 +2,7 @@
 
 A local desktop reader and editor for mixed Persian and English documents. Open Markdown, HTML, Word, PDF, JSON, YAML, logs, configuration files, and XML. Edit supported content with a synchronized preview. Each prose paragraph is displayed in its own direction. The application interface is English; document content keeps its original language.
 
-Current version: **0.6.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Current version: **0.7.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 ## Installation
 
@@ -21,12 +21,12 @@ The verified environment is Ubuntu 26.04 x86_64 with Python 3.14. Windows source
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.6.0 these are `khana_0.6.0-1_amd64.deb` and `khana_0.6.0-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.7.0 these are `khana_0.7.0-1_amd64.deb` and `khana_0.7.0-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.6.0-1_amd64.deb.sha256
-sudo apt install ./khana_0.6.0-1_amd64.deb
+sha256sum -c khana_0.7.0-1_amd64.deb.sha256
+sudo apt install ./khana_0.7.0-1_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -106,6 +106,16 @@ In reading mode, use **Layout → Split vertically**, **Split horizontally**, or
 
 Click the **OPEN FILES**, **LIBRARY**, or **ON THIS PAGE** heading to collapse or expand that sidebar section. Drag the handle between open sections to adjust their heights, or double-click it to give the two sections equal space. A focused handle also accepts **↑ / ↓** (hold **Shift** for larger steps), **Home**, and **End**; **Escape** cancels a drag. Section proportions and collapsed states are remembered across restarts and adapt to the window height.
 
+Drag the sidebar's right edge to change its width. The width is remembered across restarts and adjusts to smaller windows. Double-click the edge to reset it; a focused edge supports **← / →**, **Shift** for larger steps, **Home**, **End**, and **Escape** to cancel a drag.
+
+Choose **Reading fullscreen** in the top bar or press **Ctrl+Shift+F** to fill the screen with your current reading or editing workspace. The sidebar, header, toolbars and status bars are hidden. Press **Escape**, **F11**, or **Ctrl+Shift+F** to restore the previous window state, or move the pointer to the top center to reveal **Exit fullscreen**.
+
+Press **Ctrl+G** or choose **Go to line** in the top bar, enter a source line number, and press **Enter**. In reading mode it scrolls to the corresponding content; in editing mode it places the caret at that line and scrolls it into view. It preserves the current mode and accepts English, Persian and Arabic digits. Click **Ln / Col** in the editor footer for the same dialog. PDFs do not have source text lines.
+
+The **ON THIS PAGE** outline shows each heading's source line number beside its title, matching **Go to line**. These numbers update with the live preview as you edit.
+
+The editor has a line-number gutter with the current line highlighted. Wrapped screen rows keep their original source line number. The reading gutter shows the source line at the start of each rendered block (and source rows for structured text), so formatting, omitted Markdown syntax and blank source lines can produce gaps. Both gutters follow scrolling and layout changes; reading numbers also work in split panes. PDFs use page navigation instead of source line numbers.
+
 Use **Ctrl + mouse wheel** over the document to zoom only the preview. The **Preview zoom** buttons and **Ctrl++ / Ctrl+−** adjust magnification from 50% to 300%; click **Reset** or press **Ctrl+0** to reset to 100%. Text, images, tables, diagrams, and PDF pages scale together. The sidebar, toolbars, and source editor keep their size. The zoom level is remembered across restarts, and editor/preview scroll synchronization remains available.
 
 You can pass files at startup when running from source:
@@ -124,10 +134,10 @@ Build on **Ubuntu 26.04 x86_64**. First follow the [Ubuntu source setup](#ubuntu
 sudo apt install curl dpkg desktop-file-utils
 .venv/bin/python -m pip install -r requirements-build.txt
 .venv/bin/python scripts/build_deb.py
-sudo apt install ./dist/khana_0.6.0-1_amd64.deb
+sudo apt install ./dist/khana_0.7.0-1_amd64.deb
 ```
 
-The build produces `dist/khana_0.6.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.7.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -167,18 +177,18 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.6.0-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.6.0-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.7.0-1_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.7.0-1_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 
-These names describe version 0.6.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+These names describe version 0.7.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
 
 ### Versioning
 
 `reader/__init__.py` defines the application version. The native app, sidebar, CLI and build scripts all read it; package checks verify that the executable, visible version and installer metadata agree. Debian packaging rejects an unpacked build whose version differs from the source, including with `--skip-build`.
 
-During the `0.x` series, new features advance the minor version (`0.6.0`); fixes to that release advance the patch version (`0.6.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
+During the `0.x` series, new features advance the minor version (`0.7.0`); fixes to that release advance the patch version (`0.7.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
 
 ## Reading
 
@@ -238,12 +248,13 @@ Reading information is local to this device, in `library.sqlite3` beside `settin
 | Ctrl+R | Reload from disk |
 | Ctrl+M | Add a reading mark |
 | Ctrl+Shift+M | Add a note |
-| Ctrl+Shift+F | Toggle focus mode |
+| Ctrl+Shift+F | Toggle reading fullscreen (hide menus and toolbars) |
+| Ctrl+G | Go to source line in the current reading or editing mode |
 | F11 | Toggle fullscreen |
 | Ctrl++ / Ctrl+− | Zoom the document preview in / out |
 | Ctrl+0 | Reset preview zoom to 100% |
 | Ctrl+Shift+I | Format JSON, YAML or XML source in editing mode |
-| Escape | Close appearance/search, or leave focus mode |
+| Escape | Close a dialog, appearance/search, or leave reading fullscreen |
 
 ## Tables and flowcharts
 

@@ -1,0 +1,60 @@
+.editor-container {
+  position: relative;
+  --line-gutter-width: 42px;
+}
+.source-editor {
+  padding-left: calc(var(--line-gutter-width) + 16px);
+}
+.line-numbers {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  color: var(--muted);
+  font:
+    11px/16px 'DejaVu Sans Mono',
+    monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  z-index: 2;
+}
+.line-numbers > span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding-right: 9px;
+}
+.editor-line-numbers {
+  width: var(--line-gutter-width);
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+}
+.line-numbers .current-line {
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+.reading-frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.reading-line-numbers {
+  width: 54px;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+}
+.has-line-numbers > .reading-scroll {
+  padding-left: 62px;
+}
+.has-line-numbers .source-line::before {
+  display: none;
+}
+.has-line-numbers .document .structured-source > code {
+  padding-left: 8px;
+}

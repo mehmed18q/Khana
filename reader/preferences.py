@@ -12,6 +12,7 @@ DEFAULTS = {
     "wide": False,
     "syncScroll": True,
     "previewZoom": 100,
+    "sidebarWidth": 264,
 }
 SIDEBAR_SECTIONS = ("files", "library", "outline")
 
@@ -42,6 +43,7 @@ def normalize_preferences(values: object) -> dict:
         ("fontSize", 14, 24, True),
         ("lineHeight", 1.6, 2.6, False),
         ("previewZoom", 50, 300, True),
+        ("sidebarWidth", 220, 560, True),
     ):
         result[key] = bounded_number(
             values.get(key), DEFAULTS[key], minimum, maximum, integer=integer

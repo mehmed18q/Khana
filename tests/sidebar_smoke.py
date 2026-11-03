@@ -98,6 +98,40 @@ def main():
 
         try:
             launch()
+            width_script = "document.querySelector('.sidebar').getBoundingClientRect().width"
+            handle = window.windowHandle()
+            start = point("#sidebar-width-resizer")
+            before = evaluate(width_script)
+            QTest.mousePress(handle, Qt.MouseButton.LeftButton, pos=start)
+            QTest.mouseMove(handle, start + QPoint(110, 0))
+            QTest.qWait(100)
+            QTest.mouseRelease(handle, Qt.MouseButton.LeftButton, pos=start + QPoint(110, 0))
+            QTest.qWait(100)
+            assert abs(evaluate(width_script) - before - 110) < 2
+            assert evaluate("readerApp.settings.sidebarWidth") == round(before + 110)
+            print("PASS: horizontal drag widens sidebar and saves the width", flush=True)
+            evaluate("document.getElementById('sidebar-width-resizer').focus()")
+            QTest.keyClick(window.view.focusProxy() or window.view, Qt.Key.Key_Left)
+            QTest.qWait(100)
+            assert abs(evaluate(width_script) - before - 94) < 2
+            before = evaluate(width_script)
+            start = point("#sidebar-width-resizer")
+            QTest.mousePress(handle, Qt.MouseButton.LeftButton, pos=start)
+            QTest.mouseMove(handle, start + QPoint(60, 0))
+            QTest.qWait(100)
+            QTest.keyClick(window.view.focusProxy() or window.view, Qt.Key.Key_Escape)
+            QTest.mouseRelease(handle, Qt.MouseButton.LeftButton, pos=start + QPoint(60, 0))
+            QTest.qWait(100)
+            assert abs(evaluate(width_script) - before) < 2
+            window.resize(860, 600)
+            QTest.qWait(200)
+            assert evaluate(width_script) <= 240
+            assert evaluate("readerApp.settings.sidebarWidth") == before
+            assert evaluate("document.documentElement.scrollWidth<=innerWidth")
+            window.resize(1320, 900)
+            QTest.qWait(200)
+            assert abs(evaluate(width_script) - before) < 2
+            print("PASS: width keyboard control, cancellation and window bounds", flush=True)
             original = height("library-content")
             evaluate(
                 "window.savedTab=document.querySelector('.file-item');document.getElementById('file-list').scrollTop=60"
@@ -175,12 +209,14 @@ def main():
             assert evaluate("document.getElementById('new-format').value==='HTML'")
             print("PASS: dark format menu has matching colors and remains functional", flush=True)
             saved = json.loads(evaluate("JSON.stringify(readerApp.settings.sidebar)"))
+            saved_width = evaluate("readerApp.settings.sidebarWidth")
             QTest.qWait(100)
             window.bridge.settings.sync()
             assert json.loads(window.bridge.settings.value("reading"))["sidebar"] == saved
             close()
             launch()
             assert json.loads(evaluate("JSON.stringify(readerApp.settings.sidebar)")) == saved
+            assert evaluate(width_script) == saved_width
             assert evaluate(
                 "document.getElementById('library-content').hidden && document.body.dataset.theme==='dark'"
             )

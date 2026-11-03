@@ -91,6 +91,33 @@ def main():
             assert running.evaluate(
                 f"document.getElementById('app-version').textContent === {json.dumps('/ ' + VERSION)}"
             )
+            running.wait(
+                "!!document.querySelector('.reading-line-numbers [data-line=\"1\"]') && document.querySelector('#outline .outline-line')?.textContent==='Ln 1'",
+                "packaged reading gutter and outline show source line numbers",
+            )
+            running.evaluate("document.getElementById('edit-mode').click()")
+            running.wait(
+                "!!document.querySelector('.editor-line-numbers [data-line=\"1\"]')",
+                "packaged editor gutter loads",
+            )
+            running.evaluate("readerApp.command('go-to-line')")
+            running.evaluate(
+                "document.getElementById('go-to-line-input').value='3'; document.getElementById('go-to-line-form').requestSubmit()"
+            )
+            running.wait(
+                "document.getElementById('cursor-position').textContent==='Ln 3, Col 1' && document.querySelector('.editor-line-numbers .current-line')?.textContent==='3'",
+                "packaged Go to line updates the editor and gutter",
+            )
+            running.evaluate("document.getElementById('focus-button').click()")
+            running.wait(
+                "document.body.classList.contains('focus-mode') && !document.querySelector('.topbar').getClientRects().length",
+                "packaged reading fullscreen hides the chrome",
+            )
+            running.evaluate("document.getElementById('exit-focus-button').click()")
+            running.wait(
+                "!document.body.classList.contains('focus-mode')", "packaged fullscreen exits"
+            )
+            running.evaluate("document.getElementById('read-mode').click()")
             dimensions = "[document.querySelector('.topbar').getBoundingClientRect().width, document.querySelector('.sidebar').getBoundingClientRect().width]"
             before = running.evaluate(dimensions)
             x, y = running.evaluate(
