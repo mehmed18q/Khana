@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.0 — 2026-11-07
+
+### Added
+
+- Find and Find All in reading and editing modes, with a separate results dialog
+  that focuses the selected match in the main document or source editor.
+- Undoable Replace and Replace All for source text, opened with Ctrl+H or the
+  expandable replacement row beside the search field.
+- Match case and Unicode-aware Whole word icon controls inside the search field,
+  including Persian letters and half-spaces, plus F3 / Shift+F3 navigation.
+
+### Fixed
+
+- Editing searches now use the latest source buffer, including unsaved changes
+  and source content omitted from the rendered preview.
+- Reading searches correctly handle inline formatting, displayed HTML whitespace,
+  Unicode offsets, hidden content and Swagger endpoint text.
+- Search navigation keeps its position across preview updates, and result counts
+  and replacement operations no longer stop at 2,000 matches.
+
 ## 0.7.0 — 2026-11-03
 
 ### Added

@@ -148,6 +148,49 @@ def main():
             original = "# Reading\n\nA place to remember.\n\nیادداشت روی متن فارسی و English.\n"
             source.write_text(original)
             running = PackagedApp(executable, folder, [source])
+            running.evaluate(
+                "readerApp.command('search'); document.getElementById('search-input').value='place to remember'; readerApp.search()"
+            )
+            assert running.evaluate(
+                "document.getElementById('search-count').textContent==='1 of 1' && document.getElementById('replace-controls').hidden"
+            )
+            running.evaluate("document.getElementById('search-all').click()")
+            assert running.evaluate(
+                "document.getElementById('search-results-dialog').open && document.querySelectorAll('.search-result').length===1"
+            )
+            running.evaluate("document.querySelector('.search-result').click()")
+            assert running.evaluate(
+                "!document.getElementById('search-results-dialog').open && document.activeElement.id==='document'"
+            )
+            running.evaluate(
+                "readerApp.command('replace'); document.getElementById('search-input').value='remember'; document.getElementById('search-case').click(); document.getElementById('search-word').click(); readerApp.search()"
+            )
+            assert running.evaluate(
+                "!document.getElementById('replace-controls').hidden && document.getElementById('search-case').getAttribute('aria-pressed')==='true' && document.getElementById('search-word').getAttribute('aria-pressed')==='true'"
+            )
+            running.evaluate(
+                "document.getElementById('replace-input').value='recall'; document.getElementById('search-replace-all').click(); readerApp.command('save')"
+            )
+            running.wait(
+                "document.getElementById('save-status').textContent==='Saved'",
+                "packaged Replace All saves the edited source",
+            )
+            assert source.read_text() == original.replace("remember", "recall")
+            running.evaluate(
+                "document.querySelector('.source-editor:not([hidden])').focus(); document.execCommand('undo'); readerApp.command('save')"
+            )
+            running.wait(
+                "document.getElementById('save-status').textContent==='Saved'",
+                "packaged replacement undo saves the original source",
+            )
+            assert source.read_text() == original
+            running.evaluate(
+                "document.getElementById('search-close').click(); document.getElementById('read-mode').click()"
+            )
+            print(
+                "PASS: packaged search icons, result dialog, focus, replacement and undo",
+                flush=True,
+            )
             running.evaluate("document.getElementById('star-document').click()")
             running.wait(
                 "document.getElementById('star-document').getAttribute('aria-pressed')==='true'",
