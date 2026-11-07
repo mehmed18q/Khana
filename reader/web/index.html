@@ -320,27 +320,115 @@
           </div>
         </header>
 
-        <div id="search-panel" class="search-panel" hidden>
-          <svg><use href="#i-search" /></svg
-          ><input
-            id="search-input"
-            placeholder="Find in this document…"
-            aria-label="Search text"
-            dir="auto"
-          /><span id="search-count" aria-live="polite"></span
-          ><button
-            id="search-prev"
-            class="icon-button"
-            title="Previous match"
-            aria-label="Previous match"
-          >
-            ↑</button
-          ><button id="search-next" class="icon-button" title="Next match" aria-label="Next match">
-            ↓</button
-          ><button id="search-close" class="icon-button" aria-label="Close search">
-            <svg><use href="#i-close" /></svg>
-          </button>
+        <div
+          id="search-panel"
+          class="search-panel"
+          role="search"
+          aria-label="Find and replace"
+          hidden
+        >
+          <div class="search-row">
+            <button
+              id="search-toggle-replace"
+              class="icon-button"
+              title="Show Replace (Ctrl+H)"
+              aria-label="Show Replace"
+              aria-expanded="false"
+              aria-controls="replace-controls"
+            >
+              <svg aria-hidden="true"><use href="#i-chevron" /></svg>
+            </button>
+            <div class="search-field">
+              <input
+                id="search-input"
+                placeholder="Find in this document…"
+                aria-label="Search text"
+                dir="auto"
+                spellcheck="false"
+              />
+              <div class="search-input-actions" role="group" aria-label="Search options">
+                <button
+                  id="search-case"
+                  class="search-option"
+                  title="Match case"
+                  aria-label="Match case"
+                  aria-pressed="false"
+                >
+                  <span aria-hidden="true">Aa</span>
+                </button>
+                <button
+                  id="search-word"
+                  class="search-option"
+                  title="Match whole word"
+                  aria-label="Match whole word"
+                  aria-pressed="false"
+                >
+                  <span class="whole-word-icon" aria-hidden="true">ab</span>
+                </button>
+              </div>
+            </div>
+            <button id="search-next" class="secondary-button" title="Next match (Enter / F3)">
+              Find
+            </button>
+            <button
+              id="search-all"
+              class="secondary-button"
+              aria-haspopup="dialog"
+              aria-controls="search-results-dialog"
+            >
+              Find All
+            </button>
+            <button
+              id="search-prev"
+              class="icon-button"
+              title="Previous match (Shift+Enter / Shift+F3)"
+              aria-label="Previous match"
+            >
+              ↑
+            </button>
+            <button id="search-close" class="icon-button" aria-label="Close search">
+              <svg><use href="#i-close" /></svg>
+            </button>
+          </div>
+          <div id="replace-controls" class="replace-controls" hidden>
+            <div class="search-row">
+              <input
+                id="replace-input"
+                placeholder="Replace with…"
+                aria-label="Replacement text"
+                dir="auto"
+                spellcheck="false"
+              />
+              <button id="search-replace" class="secondary-button">Replace</button>
+              <button id="search-replace-all" class="secondary-button">Replace All</button>
+            </div>
+            <p id="replace-status" class="search-status" role="status" aria-live="polite"></p>
+          </div>
+          <div class="search-meta">
+            <span id="search-scope"></span>
+            <span id="search-count" role="status" aria-live="polite"></span>
+          </div>
         </div>
+        <dialog
+          id="search-results-dialog"
+          class="search-results-dialog"
+          aria-labelledby="search-results-title"
+          aria-describedby="search-results-summary"
+        >
+          <div class="search-results-heading">
+            <h2 id="search-results-title">Find All</h2>
+            <button
+              id="search-results-close"
+              class="icon-button"
+              aria-label="Close results"
+              title="Close results (Escape)"
+            >
+              <svg aria-hidden="true"><use href="#i-close" /></svg>
+            </button>
+          </div>
+          <p id="search-results-summary" class="search-results-summary"></p>
+          <div id="search-results" class="search-results" aria-label="All matches"></div>
+        </dialog>
 
         <div class="document-toolbar">
           <div class="segmented view-switch" role="group" aria-label="Document view">

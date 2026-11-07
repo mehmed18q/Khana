@@ -15,6 +15,7 @@
     updateProgress,
     renderFiles,
     schedulePreview,
+    searchChanged,
   }) {
     let linkContext = null,
       lineContext = null;
@@ -42,6 +43,7 @@
         updateCursor();
         if (wasDirty !== doc.dirty) renderFiles();
         schedulePreview(doc);
+        searchChanged('input');
       });
       editor.addEventListener('compositionend', () => schedulePreview(doc));
       editor.addEventListener('keydown', (event) => {
@@ -108,6 +110,7 @@
       $('preview-status').textContent = doc?.previewPending ? 'Updating preview…' : 'Live preview';
       updateCursor();
       document.body.classList.toggle('editing-pdf', enabled && doc?.format === 'PDF');
+      searchChanged('view');
     }
 
     function setEditMode(enabled) {
@@ -205,7 +208,7 @@
       // Chromium's insertText editing command keeps the textarea's undo history.
       // Assigning .value or setRangeText here would break undo for toolbar edits.
       if (!document.execCommand('insertText', false, operation.text)) {
-        toast('Could not apply formatting. Select the source text and try again.', true);
+        toast('Could not edit the source text. Select the text and try again.', true);
         return false;
       }
       editor.setSelectionRange(operation.selectionStart, operation.selectionEnd);
@@ -400,6 +403,7 @@
       beautify: beautifyDocument,
       goToLine,
       receiveFormatted: receiveSourceFormatted,
+      applyEdit: applySourceEdit,
     };
   }
   window.ReaderSourceEditor = { create };

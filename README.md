@@ -197,7 +197,8 @@ During the `0.x` series, new features advance the minor version (`0.7.0`); fixes
 - **Smart** detects each paragraph, heading, list item, and table cell independently. A Persian sentence beginning with an English product name remains right to left. Primarily English paragraphs remain left to right.
 - Code blocks remain left to right. English phrases, inline code, paths, and URLs are isolated from surrounding Persian text. English phrases spanning emphasis or links are kept together.
 - **RTL** and **LTR** override the document direction. Hover beside a paragraph or heading to cycle that individual block through RTL, LTR, and automatic direction. These overrides last while the file remains open and reset when it is reloaded.
-- Search highlights text across inline formatting. Use Enter / Shift+Enter or the arrow buttons to move through matches. Up to 2,000 matches are highlighted.
+- **Find** (Ctrl+F) searches the displayed document in reading mode and the latest source text in editing mode. Reading search spans inline formatting and follows displayed HTML whitespace. The **Aa** (Match case) and **ab** (Whole word) icon buttons sit inside the search field; whole words recognize Persian letters, combining marks and half-spaces. **Find All** opens a dialog with clickable results, source line/column numbers in editing mode and **Show more** for long lists. Selecting a result closes the dialog and focuses its location in the document or editor. Counts and navigation include every match.
+- Use **Find**, **Enter / Shift+Enter** in the search field, or **F3 / Shift+F3** to move forward/backward with wraparound. **Escape** closes search and returns focus to the document or editor.
 - Adjust font size, line spacing, page width, light/dark theme, or focus mode. Preferences stay on your device: installed/portable builds use `~/.config/Khana/Khana/settings.ini`, while source runs use `.local/settings.ini` in the project.
 - **Reload** reads a file again after changes in another editor. If you have local edits, choose Save, Discard, or Cancel before reloading.
 
@@ -220,6 +221,7 @@ Reading information is local to this device, in `library.sqlite3` beside `settin
 - The formatting and image toolbar appears only for **Markdown**, **HTML**, and **Word**. JSON, YAML, LOG, CONF, XML, and PDF do not display text-formatting controls; formatting shortcuts do not insert markup into data files.
 - **Image** opens a local file picker. Markdown and HTML use an absolute `file:///…` URL, including files outside the document folder. Images can be inserted before saving a draft. Moving or deleting that image later breaks the reference; Word embeds images when saved.
 - Each document keeps its own source buffer and undo history while switching tabs or reading modes. Standard Ctrl+Z / Ctrl+Shift+Z editing shortcuts work in the source field.
+- The replacement row is collapsed when opening **Find**. Use the chevron beside the search field or **Ctrl+H** to expand it and enter editing mode. **Replace** changes the current match and advances; **Replace All** changes every match in the active document as one undoable edit. Matching uses the same case/whole-word options. Search and replacement text are literal, including `$` and backslashes; an empty replacement deletes matches. Use **Save** to write the result. In the replacement field, **Enter** replaces one and **Ctrl+Enter** replaces all. PDF text replacement uses the page's **Edit text** control.
 - The editor has independent **Auto / LTR / RTL** direction controls. The reading toolbar controls the preview direction.
 - The source toolbar provides **Bold**, **Italic**, **Strikethrough**, **H1–H3**, **Link**, **Inline code**, **Code block**, **Quote**, **Bulleted list**, **Numbered list**, and **Horizontal rule**. Select source text and choose a button; without a selection, inline tools insert a selected placeholder. Headings and Markdown lists act on the selected/current lines.
 - Formatting inserts Markdown syntax in Markdown documents and HTML tags in HTML documents. The result appears in the preview. Toolbar operations are undoable with Ctrl+Z. The link dialog supports a label and an HTTP(S), mailto, heading, or relative document destination.
@@ -245,6 +247,8 @@ Reading information is local to this device, in `library.sqlite3` beside `settin
 | Ctrl+` | Inline code |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo source editing |
 | Ctrl+F | Find in the current document |
+| Ctrl+H | Find and replace source text |
+| F3 / Shift+F3 | Next / previous search match |
 | Ctrl+R | Reload from disk |
 | Ctrl+M | Add a reading mark |
 | Ctrl+Shift+M | Add a note |
@@ -379,7 +383,7 @@ npm run check
 
 Use `.venv/bin/ruff format .` and `npm run format` to apply the configured style. Vendored libraries and fonts are excluded.
 
-Run all 13 desktop checks sequentially, or choose named checks:
+Run the desktop checks sequentially, or choose named checks:
 
 ```bash
 .venv/bin/python scripts/smoke.py

@@ -91,7 +91,7 @@
         reading.changed(!positions.has(doc.id));
         sync.mount(doc.editMode ? 'editor' : 'preview');
       }
-      if (!$('search-panel').hidden) find.search();
+      if (!$('search-panel').hidden) find.search({ navigate: false });
     },
   });
 
@@ -126,7 +126,11 @@
     article,
     scroller,
     contentRoot,
-    current: () => activeId,
+    current: () => documents.get(activeId),
+    editor: () => (document.body.classList.contains('editing') ? editors.get(activeId) : null),
+    applyEdit: (field, operation) => sourceEditor.applyEdit(field, operation),
+    edit: () => sourceEditor.setMode(true),
+    lineNumbers,
     formatNumber,
   });
   const outline = ReaderOutline.create({ contentRoot, scroller });
@@ -154,6 +158,7 @@
     updateProgress,
     renderFiles: () => files.render(),
     schedulePreview,
+    searchChanged: (kind) => find.changed(kind),
   });
   ReaderWindowControls.create({ native: () => bridge });
 
@@ -355,7 +360,7 @@
   function paintPreview(doc) {
     sync.reset();
     const top = scroller.scrollTop;
-    find.clear();
+    find.clearPreview();
     article.innerHTML = doc?.html || '';
     article.classList.toggle('pdf-document', doc?.format === 'PDF');
     const apiView = Boolean(doc?.api && !doc.apiSource);
@@ -387,7 +392,7 @@
     outline.render(doc);
     preferences(false);
     scroller.scrollTo({ top, behavior: 'instant' });
-    if (!$('search-panel').hidden) find.search();
+    if (!$('search-panel').hidden) find.search({ navigate: false });
     requestAnimationFrame(updateProgress);
   }
 
@@ -409,7 +414,7 @@
     reading.changed(!positions.has(id));
     sync.mount('preview');
     if (id) bridge?.activateDocument(id);
-    if (!$('search-panel').hidden) find.search();
+    if (!$('search-panel').hidden) find.search({ navigate: false });
     requestAnimationFrame(updateProgress);
   }
 
@@ -634,6 +639,7 @@
       'add-note': () => reading.add('note'),
       'resume-annotation': () => reading.resume(),
       search: () => find.open(),
+      replace: () => find.open(true),
       focus: focusMode,
       reload: () => {
         const doc = documents.get(activeId);
@@ -768,6 +774,8 @@
             e: 'edit',
             KeyF: 'search',
             f: 'search',
+            KeyH: 'replace',
+            h: 'replace',
             KeyG: 'go-to-line',
             g: 'go-to-line',
             KeyR: 'reload',
@@ -782,6 +790,11 @@
       }
     }
     if (document.querySelector('dialog[open]')) return;
+    if (event.key === 'F3') {
+      event.preventDefault();
+      find.next(event.shiftKey ? -1 : 1);
+      return;
+    }
     if (event.key === 'Escape') {
       if (!$('appearance-panel').hidden) {
         $('appearance-panel').hidden = true;

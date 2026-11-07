@@ -97,6 +97,20 @@ def main():
             )
             assert evaluate(shadow + ".querySelector('.info .description p').dir==='rtl'")
             assert evaluate("document.querySelectorAll('#outline button').length===24")
+            click("search-button")
+            evaluate(
+                "document.getElementById('search-input').value='Khana Example'; readerApp.search()"
+            )
+            assert evaluate("document.getElementById('search-count').textContent==='1 of 1'")
+            assert evaluate(
+                "[...CSS.highlights.get('reader-current')][0].toString()==='Khana Example'"
+            )
+            evaluate(
+                "document.getElementById('search-input').value='/items/23'; readerApp.search()"
+            )
+            assert evaluate("document.getElementById('search-count').textContent==='1 of 1'")
+            click("search-close")
+            print("PASS: reading search reaches text inside the Swagger shadow root", flush=True)
             evaluate(shadow + ".querySelector('.opblock-summary-control').click()")
             wait(
                 shadow + ".querySelectorAll('.responses-table').length>0",

@@ -19,6 +19,7 @@ DESKTOP_CHECKS = (
     "tab_drag",
     "sidebar",
     "navigation",
+    "search",
     "api_requests",
     "api_transport",
     "openapi",
