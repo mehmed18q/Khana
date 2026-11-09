@@ -13,6 +13,12 @@
     if (element.matches('.diagram-frame'))
       return normalize(element.querySelector('.diagram-source code')?.textContent || '');
     const clone = element.cloneNode(true);
+    // Use one stable TeX source, instead of duplicated HTML/MathML glyph text.
+    clone.querySelectorAll('.math-expression').forEach((node) => {
+      node.textContent = node.dataset.mathSource ?? node.textContent;
+    });
+    if (clone.matches('.math-expression'))
+      return normalize(clone.dataset.mathSource || clone.textContent);
     clone
       .querySelectorAll('button,.annotation-badges,.code-toolbar,.annotation-tools')
       .forEach((node) => node.remove());
@@ -24,7 +30,7 @@
     const selector =
       root !== article
         ? '[data-api-operation]'
-        : 'h1,h2,h3,h4,h5,h6,p,li,pre,.source-line,.pdf-block,.pdf-page,.table-scroll,.diagram-frame,dt,dd,figcaption,summary';
+        : 'h1,h2,h3,h4,h5,h6,p,li,pre,.source-line,.pdf-block,.pdf-page,.table-scroll,.diagram-frame,div.math-display,dt,dd,figcaption,summary';
     const blocks = [...root.querySelectorAll(selector)].filter(
       (node) =>
         !node.matches('.empty-document,.structured-source') &&

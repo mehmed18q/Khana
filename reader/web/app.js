@@ -6,6 +6,7 @@
   const icon = (name) => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const defaults = {
     theme: 'light',
+    palette: 'forest',
     direction: 'smart',
     fontSize: 17,
     lineHeight: 2,
@@ -13,6 +14,8 @@
     syncScroll: true,
     previewZoom: 100,
     sidebarWidth: 264,
+    sidebarCollapsed: false,
+    headerCollapsed: false,
   };
   let settings = { ...defaults },
     bridge,
@@ -25,6 +28,22 @@
     previewTimers = new Map();
   const article = $('document'),
     scroller = $('reading-scroll');
+  const theme = ReaderTheme.create({
+    settings: () => settings,
+    changed: (values) => {
+      Object.assign(settings, values);
+      preferences();
+    },
+    systemChanged: () => preferences(false),
+  });
+  const contextMenu = ReaderContextMenu.create();
+  const categories = ReaderCategories.create({
+    native: () => bridge,
+    menu: contextMenu,
+    entry: (path) => reading.entry(path),
+    toast,
+    icon,
+  });
   const reading = ReaderLibrary.create({
     article,
     scroller,
@@ -32,6 +51,36 @@
     documents,
     sourceOf,
     native: () => bridge,
+    toast,
+    categories,
+    bindFileMenu: (row, target, select) => fileMenu.bind(row, target, select),
+  });
+  const selection = ReaderFileSelection.create({
+    items: (scope) => (scope === 'files' ? reading.orderedDocuments() : reading.visibleEntries()),
+    entry: (path) => reading.entry(path),
+    categories,
+    startTabDrag: (id) => {
+      const doc = documents.get(id);
+      if (!doc || doc.moving || !bridge) return;
+      document.body.classList.add('tab-dragging');
+      bridge.startTabDrag(id, sourceOf(doc), '{}');
+    },
+  });
+  const fileMenu = ReaderFileMenu.create({
+    documents,
+    native: () => bridge,
+    libraryEntry: (path) => reading.entry(path),
+    orderedEntries: () => reading.visibleEntries(),
+    orderedDocuments: () => reading.orderedDocuments(),
+    showDocument,
+    closeDocument,
+    closeDocuments,
+    detachDocument,
+    saveDocument,
+    splitDocuments,
+    menu: contextMenu,
+    categories,
+    selection,
     toast,
   });
   const lineNumbers = ReaderLineNumbers.createEditor({
@@ -80,7 +129,7 @@
     article,
     current: () => documents.get(activeId),
     requests: apiRequests,
-    theme: () => settings.theme,
+    theme: theme.effective,
     direction: () => settings.direction,
     openLink: (href, id) => bridge?.openLink(href, id),
     ready: (doc, first) => {
@@ -101,7 +150,7 @@
     activate: showDocument,
     api,
     native: () => bridge,
-    settings: () => settings,
+    settings: () => ({ ...settings, theme: theme.effective() }),
     positions,
   });
   $('reading-layout').onchange = () => {
@@ -118,6 +167,10 @@
   const sidebarWidth = ReaderSidebar.createWidth({
     changed: (width) => {
       settings.sidebarWidth = width;
+      bridge?.saveSettings(JSON.stringify(settings));
+    },
+    collapsedChanged: (collapsed) => {
+      settings.sidebarCollapsed = collapsed;
       bridge?.saveSettings(JSON.stringify(settings));
     },
   });
@@ -144,6 +197,10 @@
     detachDocument,
     icon,
     formatNumber,
+    bindFileMenu: fileMenu.bind,
+    orderedDocuments: () => reading.orderedDocuments(),
+    libraryEntry: (path) => reading.entry(path),
+    categories,
   });
   const sourceEditor = ReaderSourceEditor.create({
     documents,
@@ -161,6 +218,20 @@
     searchChanged: (kind) => find.changed(kind),
   });
   ReaderWindowControls.create({ native: () => bridge });
+  const header = ReaderHeader.create({
+    changed: (collapsed) => {
+      settings.headerCollapsed = collapsed;
+      bridge?.saveSettings(JSON.stringify(settings));
+    },
+    beforeChange: () => {
+      theme.close();
+      $('appearance-panel').hidden = true;
+      $('appearance-button').setAttribute('aria-expanded', 'false');
+      $('annotations-panel').hidden = true;
+      $('annotations-button').setAttribute('aria-expanded', 'false');
+    },
+    afterChange: updateProgress,
+  });
 
   function toast(message, error = false) {
     clearTimeout(toastTimer);
@@ -176,8 +247,7 @@
   }
 
   function preferences(save = true) {
-    document.body.dataset.theme = settings.theme;
-    document.documentElement.style.colorScheme = settings.theme;
+    theme.apply();
     document.documentElement.style.setProperty('--font-size', `${settings.fontSize}px`);
     document.documentElement.style.setProperty('--line-height', settings.lineHeight);
     document.documentElement.style.setProperty('--paper-width', settings.wide ? '1100px' : '860px');
@@ -188,11 +258,6 @@
     $('wide-page').checked = settings.wide;
     $('sync-scroll').checked = settings.syncScroll;
     zoom.restore(settings.previewZoom);
-    $('theme-button').innerHTML = icon(settings.theme === 'dark' ? 'sun' : 'moon');
-    $('theme-button').setAttribute(
-      'aria-label',
-      settings.theme === 'dark' ? 'Light theme' : 'Dark theme'
-    );
     document.querySelectorAll('button[data-direction]').forEach((button) => {
       const selected = button.dataset.direction === settings.direction;
       button.classList.toggle('active', selected);
@@ -201,7 +266,7 @@
     ReaderBidi.apply(article, settings.direction, overrides.get(activeId));
     api.preferences();
     workspace.preferences();
-    ReaderDiagrams.refreshTheme(article, settings.theme);
+    ReaderDiagrams.refreshTheme(article, theme.effective());
     $('direction-status').textContent = {
       smart: 'Smart direction is on',
       rtl: 'Right-to-left text',
@@ -257,8 +322,42 @@
     } else removeDocument(id);
   }
 
+  function closeDocuments(ids) {
+    const docs = ids.map((id) => documents.get(id)).filter(Boolean);
+    if (!bridge || docs.some((doc) => doc.closing || doc.moving)) return;
+    docs.forEach((doc) => {
+      doc.closing = true;
+    });
+    bridge.closeFiles(
+      JSON.stringify(Object.fromEntries(docs.map((doc) => [doc.id, sourceOf(doc)]))),
+      () => {
+        docs.forEach((doc) => {
+          doc.closing = false;
+        });
+      }
+    );
+  }
+
+  function splitDocuments(targets, mode) {
+    const previous = activeId;
+    const docs = targets
+      .map((target) =>
+        target.id
+          ? documents.get(target.id)
+          : [...documents.values()].find((doc) => doc.path === target.path)
+      )
+      .filter(Boolean);
+    if (targets.length === 1 && !docs.length) {
+      bridge?.openLibraryInLayout(targets[0].path, mode);
+      return;
+    }
+    sourceEditor.setMode(false);
+    if (docs.length) showDocument(docs[0].id);
+    workspace.setLayout(mode, [...docs.map((doc) => doc.id), previous]);
+  }
+
   function removeDocument(id) {
-    const keys = [...documents.keys()];
+    const keys = reading.orderedDocuments().map((doc) => doc.id);
     const index = keys.indexOf(id);
     api.dispose(id);
     documents.delete(id);
@@ -270,7 +369,7 @@
     editors.delete(id);
     if (activeId === id) {
       activeId = null;
-      const remaining = [...documents.keys()];
+      const remaining = reading.orderedDocuments().map((doc) => doc.id);
       showDocument(remaining[Math.min(index, remaining.length - 1)] || null);
     } else {
       files.render();
@@ -280,6 +379,7 @@
   }
 
   function enhanceDocument() {
+    ReaderMath.mount(article);
     ReaderBidi.prepare(article);
     // Keep direction controls out of nested list items and table cells: their
     // parent paragraph/table can be adjusted using the global direction control.
@@ -349,7 +449,7 @@
       };
     });
     ReaderDiagrams.mount(article, {
-      theme: settings.theme,
+      theme: theme.effective(),
       copy: (source) => {
         bridge?.copyText(source);
         toast('Diagram source copied');
@@ -471,6 +571,10 @@
     if (doc) doc.dirty = sourceOf(doc) !== doc.savedSource;
     $('current-filename').textContent = doc?.name || 'Khana';
     $('current-filename').title = doc?.path || 'Not saved to disk';
+    $('current-file-icon').innerHTML = doc ? ReaderFileIcons.markup(doc) : icon('book');
+    $('compact-file-icon').innerHTML = $('current-file-icon').innerHTML;
+    $('compact-filename').textContent = (doc?.name || 'Khana') + (doc?.dirty ? ' •' : '');
+    $('compact-filename').title = $('current-filename').title;
     $('sample-badge').hidden = !doc?.sample;
     $('reload-button').disabled = !doc?.path || Boolean(doc?.moving);
     $('save-button').disabled = $('save-as-button').disabled =
@@ -561,8 +665,8 @@
     toast(`Saved ${doc.name}`);
   }
 
-  function saveDocument(saveAs = false) {
-    const doc = documents.get(activeId);
+  function saveDocument(saveAs = false, id = activeId) {
+    const doc = documents.get(id);
     if (!doc || doc.saving || doc.moving) return;
     doc.saving = true;
     updateCaption();
@@ -587,6 +691,7 @@
   function applyFocusMode(enabled) {
     if (enabled === document.body.classList.contains('focus-mode')) return;
     if (enabled) {
+      theme.close();
       beforeFocus = document.activeElement;
       find.close();
       $('appearance-panel').hidden = true;
@@ -653,6 +758,15 @@
 
   function command(name) {
     if (document.querySelector('dialog[open]') && name !== 'quit-request') return;
+    if (name.startsWith('layout-mode:')) {
+      sourceEditor.setMode(false);
+      workspace.setLayout(name.slice('layout-mode:'.length));
+      return;
+    }
+    if (name.startsWith('detach-request:')) {
+      detachDocument(name.slice('detach-request:'.length));
+      return;
+    }
     if (name.startsWith('transfer-started:') || name.startsWith('transfer-failed:')) {
       const id = name.slice(name.indexOf(':') + 1),
         doc = documents.get(id);
@@ -695,10 +809,6 @@
   }
   $('sample-button').onclick = () => bridge?.openSample();
   $('reload-button').onclick = () => command('reload');
-  $('theme-button').onclick = () => {
-    settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
-    preferences();
-  };
   $('focus-button').onclick = focusMode;
   $('exit-focus-button').onclick = focusMode;
   $('sync-scroll').onchange = () => {
@@ -806,11 +916,11 @@
   scroller.addEventListener('scroll', updateProgress, { passive: true });
   let resizeFrame;
   new ResizeObserver(() => {
-    updateProgress();
     cancelAnimationFrame(resizeFrame);
-    // Resizing a graph changes article height. Do writes on the next frame
-    // instead of feeding layout changes back into the observer delivery.
+    // Progress text can resize the footer as well as diagrams resizing the article.
+    // Keep every layout write outside the observer delivery.
     resizeFrame = requestAnimationFrame(() => {
+      updateProgress();
       ReaderDiagrams.resize(article);
       reading.resize();
       sync.resize();
@@ -842,6 +952,17 @@
       bridge.documentLoaded.connect(receiveDocument);
       bridge.documentSaved.connect(receiveSaved);
       bridge.documentClosed.connect(removeDocument);
+      bridge.documentRenamed.connect((oldPath, path, name) => {
+        for (const doc of documents.values())
+          if (doc.path === oldPath) {
+            doc.path = path;
+            doc.name = name;
+          }
+        updateCaption();
+        files.render();
+        reading.refresh();
+        workspace.render();
+      });
       bridge.documentActivated.connect((id) => showDocument(id));
       bridge.previewReady.connect(receivePreview);
       bridge.previewFailed.connect((id, revision, message) => {
@@ -863,13 +984,24 @@
           settings = { ...defaults, ...JSON.parse(raw) };
           sidebar.restore(settings.sidebar);
           settings.sidebar = sidebar.snapshot();
-          sidebarWidth.restore(settings.sidebarWidth);
+          sidebarWidth.restore(settings.sidebarWidth, settings.sidebarCollapsed);
+          header.restore(settings.headerCollapsed);
           preferences(false);
         } catch {
           preferences(false);
         }
       });
-      bridge.libraryChanged.connect((raw) => reading.receive(raw));
+      bridge.systemThemeChanged.connect(theme.receiveSystem);
+      bridge.themePreferencesChanged.connect((raw) => {
+        const values = JSON.parse(raw);
+        if (settings.theme === values.theme && settings.palette === values.palette) return;
+        Object.assign(settings, values);
+        preferences(false);
+      });
+      bridge.libraryChanged.connect((raw) => {
+        reading.receive(raw);
+        files.render();
+      });
       bridge.pdfPageReady.connect((raw) => {
         const result = JSON.parse(raw);
         pdf.receive(result);

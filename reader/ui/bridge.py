@@ -8,8 +8,19 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
-from PySide6.QtCore import Property, QMimeData, QObject, QSettings, Qt, QTimer, QUrl, Signal, Slot
-from PySide6.QtGui import QCursor, QDesktopServices, QDrag
+from PySide6.QtCore import (
+    Property,
+    QFile,
+    QMimeData,
+    QObject,
+    QSettings,
+    Qt,
+    QTimer,
+    QUrl,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import QCursor, QDesktopServices, QDrag, QPalette
 from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
 from reader import APP_NAME, VERSION
@@ -20,6 +31,7 @@ from reader.documents import (
     IMAGE_EXTENSIONS,
     Document,
     file_filter,
+    format_for_path,
     load_document,
 )
 from reader.editing import EditSession, fingerprint
@@ -35,11 +47,14 @@ class Bridge(QObject):
     documentSaved = Signal(str)
     documentClosed = Signal(str)
     documentActivated = Signal(str)
+    documentRenamed = Signal(str, str, str)
     previewReady = Signal(str)
     previewFailed = Signal(str, int, str)
     errorOccurred = Signal(str)
     busyChanged = Signal(bool)
     settingsLoaded = Signal(str)
+    systemThemeChanged = Signal(str)
+    themePreferencesChanged = Signal(str)
     focusModeChanged = Signal(bool)
     libraryChanged = Signal(str)
     pdfPageReady = Signal(str)
@@ -78,6 +93,20 @@ class Bridge(QObject):
         self.initialized = False
         self.api_requests = ApiRequests(self)
         self.api_requests.finished.connect(self.apiResponse)
+        application = QApplication.instance()
+        if isinstance(application, QApplication):
+            application.styleHints().colorSchemeChanged.connect(self.publish_system_theme)
+            application.paletteChanged.connect(self.publish_system_theme)
+
+    def publish_system_theme(self, *_):
+        application = QApplication.instance()
+        if not isinstance(application, QApplication):
+            return
+        scheme = application.styleHints().colorScheme()
+        dark = scheme == Qt.ColorScheme.Dark
+        if scheme == Qt.ColorScheme.Unknown:
+            dark = application.palette().color(QPalette.ColorRole.Window).lightness() < 128
+        self.systemThemeChanged.emit("dark" if dark else "light")
 
     @Property(str, constant=True)
     def appVersion(self):
@@ -106,6 +135,7 @@ class Bridge(QObject):
             preferences = json.loads(str(self.settings.value("reading", "{}")))
         except ValueError:
             preferences = {}
+        self.publish_system_theme()
         self.settingsLoaded.emit(json.dumps(normalize_preferences(preferences)))
         self.focusModeChanged.emit(self.window.focus_mode)
         entries = self.publish_library()
@@ -147,7 +177,12 @@ class Bridge(QObject):
                 entry["missing"] = not Path(entry["path"]).is_file()
             self.libraryChanged.emit(
                 json.dumps(
-                    {"available": self.library is not None, "entries": entries}, ensure_ascii=False
+                    {
+                        "available": self.library is not None,
+                        "entries": entries,
+                        "categories": self.library.categories() if self.library else [],
+                    },
+                    ensure_ascii=False,
                 )
             )
             return entries
@@ -225,6 +260,138 @@ class Bridge(QObject):
     @Slot(str, bool)
     def starDocument(self, path, starred):
         self._library_change("set_starred", path, starred)
+
+    @Slot(str, str)
+    def openLibraryInLayout(self, path, layout):
+        if layout not in {"columns", "rows", "grid"} or not self._known_file(path):
+            return
+        owner = self.window.manager.path_owner(path) or self.window
+        owner.bridge.command.emit("layout-mode:" + layout)
+        owner.bridge.load_paths([Path(path)])
+        self.window.manager.reveal(owner)
+
+    @Slot(str, bool)
+    def pinDocument(self, path, pinned):
+        self._library_change("set_pinned", path, pinned)
+
+    @Slot(str, str, bool)
+    def moveDocument(self, path, neighbor, before):
+        self._library_change("move_relative", path, neighbor, before)
+
+    @staticmethod
+    def _paths(raw):
+        paths = json.loads(raw)
+        if not isinstance(paths, list) or any(not isinstance(p, str) or not p for p in paths):
+            raise ValueError("Choose saved files first.")
+        return list(dict.fromkeys(paths))
+
+    def _library_command(self, operation):
+        if not self.library:
+            return "The document library is unavailable."
+        try:
+            operation()
+            for window in self.window.manager.windows:
+                window.bridge.publish_library()
+            return ""
+        except (sqlite3.Error, OSError, ValueError) as error:
+            return str(error)
+
+    @Slot(str, str, result=str)
+    def createCategory(self, name, paths):
+        return self._library_command(lambda: self.library.create_category(name, self._paths(paths)))
+
+    @Slot(str, str, result=str)
+    def renameCategory(self, identifier, name):
+        return self._library_command(lambda: self.library.rename_category(identifier, name))
+
+    @Slot(str, result=str)
+    def deleteCategory(self, identifier):
+        return self._library_command(lambda: self.library.delete_category(identifier))
+
+    @Slot(str, str, bool, result=str)
+    def moveCategory(self, identifier, neighbor, before):
+        return self._library_command(
+            lambda: self.library.move_category(identifier, neighbor, before)
+        )
+
+    @Slot(str, str, bool, result=str)
+    def collapseCategory(self, identifier, scope, collapsed):
+        return self._library_command(
+            lambda: self.library.collapse_category(identifier, scope, collapsed)
+        )
+
+    @Slot(str, str, result=str)
+    def assignDocumentCategories(self, paths, identifier):
+        return self._library_command(
+            lambda: self.library.assign_category(self._paths(paths), identifier)
+        )
+
+    @Slot(str, str, bool, result=str)
+    def setDocumentFlags(self, paths, flag, value):
+        return self._library_command(
+            lambda: self.library.set_files_flag(self._paths(paths), flag, value)
+        )
+
+    @Slot(str, str, result=str)
+    def renameFile(self, path, name):
+        if not self.library:
+            return "The document library is unavailable."
+        old = self._known_file(path)
+        if not old or not old.is_file():
+            return "The file is no longer available."
+        name = name.strip()
+        if not name or name in {".", ".."} or any(c in name for c in "/\\\x00\n\r"):
+            return "Enter a file name without folder separators."
+        target = old.with_name(name)
+        if target == old:
+            return ""
+        if target.exists() or target.is_symlink():
+            return "A file with that name already exists."
+        try:
+            if format_for_path(target) != format_for_path(old):
+                return "Keep an extension for the same document format."
+        except ValueError as error:
+            return str(error)
+        manager = self.window.manager
+        if manager.path_owner(str(target)):
+            return "The destination is already open in another tab."
+        for window in manager.windows:
+            if (
+                path in window.bridge.jobs.loads
+                or (
+                    not window.bridge.initialized
+                    and old in [Path(p).expanduser().resolve() for p in window.bridge.initial_paths]
+                )
+                or any(
+                    s.document.path == path and manager.is_transferring(window, s.document.id)
+                    for s in window.bridge.sessions.values()
+                )
+            ):
+                return "Wait for this file to finish opening or moving."
+        renamed = False
+
+        def rename():
+            nonlocal renamed
+            file = QFile(str(old))
+            if not file.rename(str(target)):
+                raise OSError(file.errorString())
+            renamed = True
+
+        try:
+            self.library.rename_document(path, str(target), rename)
+        except (OSError, sqlite3.Error, ValueError) as error:
+            if renamed and not QFile.rename(str(target), str(old)):
+                return f"The file is now at {target}, but library update failed: {error}"
+            return str(error)
+        for window in manager.windows:
+            for session in window.bridge.sessions.values():
+                if session.document.path == path:
+                    session.document.path = str(target)
+                    session.document.name = target.name
+            window.bridge.documentRenamed.emit(path, str(target), target.name)
+            window.bridge.publish_library()
+        self.remember_workspace()
+        return ""
 
     @Slot(str)
     def forgetDocument(self, path):
@@ -515,6 +682,30 @@ class Bridge(QObject):
         self.release_session(document_id)
         self.remember_workspace()
 
+    @Slot(str, result=bool)
+    def closeFiles(self, raw):
+        try:
+            values = json.loads(raw)
+            if not isinstance(values, dict) or any(not isinstance(s, str) for s in values.values()):
+                return False
+            if any(
+                self.window.manager.is_transferring(self.window, identifier)
+                for identifier in values
+            ):
+                return False
+            sessions = [
+                self.sync_source(identifier, source) for identifier, source in values.items()
+            ]
+            if not all(self._confirm_changes(s) for s in sessions if s):
+                return False
+            for identifier in values:
+                if identifier in self.sessions:
+                    self.release_session(identifier)
+            self.remember_workspace()
+            return True
+        except ValueError:
+            return False
+
     def release_session(self, document_id):
         """Remove a closed or transferred buffer and stop its pending work."""
         self.sessions.pop(document_id, None)
@@ -561,10 +752,98 @@ class Bridge(QObject):
         except (ValueError, TypeError):
             return
         self.settings.setValue("reading", json.dumps(cleaned))
+        appearance = json.dumps({key: cleaned[key] for key in ("theme", "palette")})
+        for window in self.window.manager.windows:
+            if window is not self.window:
+                window.bridge.themePreferencesChanged.emit(appearance)
 
     @Slot(str)
     def copyText(self, text):
         QApplication.clipboard().setText(text)
+
+    def _known_file(self, path):
+        if not path:
+            return None
+        if any(s.document.path == path for s in self.sessions.values()):
+            return Path(path)
+        try:
+            if self.library and self.library.get(path):
+                return Path(path)
+        except (sqlite3.Error, ValueError) as error:
+            self.errorOccurred.emit(f"Could not read the document library: {error}")
+        return None
+
+    @Slot(str, bool, result=bool)
+    def copyFile(self, path, cut):
+        return self.copyFiles(json.dumps([path]), cut)
+
+    @Slot(str, bool, result=bool)
+    def copyFiles(self, raw, cut):
+        try:
+            paths = self._paths(raw)
+        except ValueError:
+            return False
+        files = [self._known_file(path) for path in paths]
+        if not files or any(not file or not file.is_file() for file in files):
+            self.errorOccurred.emit("The file is no longer available. Save it before copying.")
+            return False
+        urls = [QUrl.fromLocalFile(str(file)) for file in files]
+        mime = QMimeData()
+        mime.setUrls(urls)
+        # File managers consume these formats in addition to text/uri-list.
+        operation = "cut" if cut else "copy"
+        mime.setData(
+            "x-special/gnome-copied-files",
+            (
+                operation
+                + "\n"
+                + "\n".join(
+                    url.toString(QUrl.ComponentFormattingOption.FullyEncoded) for url in urls
+                )
+            ).encode(),
+        )
+        mime.setData("application/x-kde-cutselection", b"1" if cut else b"0")
+        mime.setData(
+            'application/x-qt-windows-mime;value="Preferred DropEffect"',
+            (2 if cut else 1).to_bytes(4, "little"),
+        )
+        QApplication.clipboard().setMimeData(mime)
+        return True
+
+    @Slot(str)
+    def openFileFolder(self, path):
+        file = self._known_file(path)
+        if not file or not file.parent.is_dir():
+            self.errorOccurred.emit("The containing folder is no longer available.")
+            return
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(file.parent))):
+            self.errorOccurred.emit("Could not open the containing folder.")
+
+    @Slot(str)
+    def openLibraryWindow(self, path):
+        file = self._known_file(path)
+        if not file:
+            return
+        manager = self.window.manager
+        owner = manager.path_owner(path)
+        if owner:
+            session = next(
+                (s for s in owner.bridge.sessions.values() if s.document.path == path), None
+            )
+            if session:
+                # Ask the owning UI for its current buffer, including unsaved edits.
+                owner.bridge.command.emit("detach-request:" + session.document.id)
+            else:
+                self.errorOccurred.emit("This file is still opening. Try again in a moment.")
+            return
+        if not file.is_file():
+            self.errorOccurred.emit("The file is no longer available.")
+            return
+        window = manager.window_factory(
+            [file], manager.settings_path, manager=manager, restore_session=False
+        )
+        window.show()
+        manager.reveal(window)
 
     @Slot(result=str)
     def chooseImage(self):

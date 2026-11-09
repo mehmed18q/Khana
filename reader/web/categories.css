@@ -1,0 +1,131 @@
+.category-section-heading {
+  display: flex;
+  align-items: center;
+}
+.category-section-heading .sidebar-toggle {
+  flex: 1;
+  min-width: 0;
+}
+.new-category-button {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  color: var(--muted);
+}
+.new-category-button svg {
+  width: 14px;
+  height: 14px;
+}
+.file-category {
+  margin: 3px 0 8px;
+  min-width: 0;
+  border-radius: 6px;
+}
+.category-heading {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.category-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 3px;
+  text-align: start;
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--text);
+}
+.category-toggle svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+}
+.category-toggle svg:first-child {
+  width: 10px;
+  transform: rotate(90deg);
+}
+.category-toggle[aria-expanded='false'] svg:first-child {
+  transform: none;
+}
+.category-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.category-count {
+  margin-inline-start: auto;
+  font-size: 9px;
+  color: var(--muted);
+}
+.category-options {
+  flex: none;
+  font-size: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  color: var(--muted);
+}
+.category-files {
+  border-inline-start: 1px solid var(--line);
+  margin-inline-start: 10px;
+  padding-inline-start: 3px;
+}
+.category-empty {
+  padding: 8px 4px;
+  font-size: 9px;
+  color: var(--muted);
+}
+.category-drop-target {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-soft);
+}
+.file-item.selected,
+.library-item.selected {
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-soft);
+}
+.file-select,
+.library-open {
+  user-select: none;
+  touch-action: none;
+}
+.file-drag-label {
+  position: fixed;
+  z-index: 1500;
+  pointer-events: none;
+  max-width: 220px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 12px;
+  box-shadow: var(--shadow);
+}
+.dragging-files,
+.dragging-files * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+.category-dialog select {
+  display: block;
+  width: 100%;
+  padding: 9px;
+  margin: 8px 0 12px;
+  background: var(--paper);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+}
+.category-dialog select option {
+  background: var(--paper);
+  color: var(--text);
+}

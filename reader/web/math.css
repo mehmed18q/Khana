@@ -1,0 +1,41 @@
+.document .math-expression {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+  text-align: left;
+  text-indent: 0;
+  overflow-wrap: normal;
+}
+.document .math-render {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  vertical-align: middle;
+  padding: 0.12em 0;
+}
+.document .math-display {
+  display: block;
+  margin: 1em 0;
+}
+.document .math-display > .math-render {
+  display: block;
+  padding: 0.3em 0;
+  text-align: center;
+}
+.document .math-display .katex-display {
+  margin: 0;
+}
+.document .math-expression .katex {
+  direction: ltr;
+  unicode-bidi: isolate;
+  line-height: 1.2;
+}
+.document .math-error {
+  font-family: monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}

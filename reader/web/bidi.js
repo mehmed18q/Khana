@@ -33,7 +33,7 @@
       node;
     while ((node = walker.nextNode())) {
       const parent = node.parentElement;
-      if (parent.closest('code,pre,button,svg')) continue;
+      if (parent.closest('code,pre,button,svg,.math-expression')) continue;
       if (parent.closest(BLOCKS) !== element) continue;
       text += node.textContent;
     }
@@ -46,7 +46,7 @@
     let node;
     while ((node = walker.nextNode())) {
       if (
-        !node.parentElement.closest('pre,code,bdi,button,svg') &&
+        !node.parentElement.closest('pre,code,bdi,button,svg,.math-expression') &&
         /[A-Za-z0-9]/.test(node.textContent)
       )
         nodes.push(node);
@@ -94,6 +94,7 @@
     // Keep an English phrase together even across **bold**, links, or inline
     // code; independent isolates alone would reverse those pieces in RTL prose.
     root.querySelectorAll(`${BLOCKS},strong,em,s`).forEach((element) => {
+      if (element.closest('.math-expression')) return;
       let group = [],
         meaningful = 0;
       const flush = () => {
@@ -115,6 +116,7 @@
         const inline = node.nodeType === 1 && /^(BDI|STRONG|EM|S|A|CODE|SPAN)$/.test(node.tagName);
         const ltr =
           inline &&
+          !node.classList.contains('math-expression') &&
           (node.dir === 'ltr' ||
             (![...node.textContent].some(isRtl) && /[A-Za-z0-9]/.test(node.textContent)));
         if (ltr) {

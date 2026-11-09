@@ -210,13 +210,28 @@ def main():
             print("PASS: dark format menu has matching colors and remains functional", flush=True)
             saved = json.loads(evaluate("JSON.stringify(readerApp.settings.sidebar)"))
             saved_width = evaluate("readerApp.settings.sidebarWidth")
+            click("sidebar-collapse")
+            assert evaluate(width_script) == 52
+            assert evaluate("readerApp.settings.sidebarCollapsed")
+            assert evaluate("document.getElementById('sidebar-width-resizer').hidden")
+            assert evaluate(
+                "document.getElementById('sidebar-collapse').getAttribute('aria-expanded')==='false'"
+            )
+            assert evaluate("document.documentElement.scrollWidth<=innerWidth")
+            click("sidebar-collapse")
+            assert evaluate(width_script) == saved_width
+            assert json.loads(evaluate("JSON.stringify(readerApp.settings.sidebar)")) == saved
+            click("sidebar-collapse")
             QTest.qWait(100)
             window.bridge.settings.sync()
             assert json.loads(window.bridge.settings.value("reading"))["sidebar"] == saved
             close()
             launch()
             assert json.loads(evaluate("JSON.stringify(readerApp.settings.sidebar)")) == saved
+            assert evaluate(width_script) == 52
+            click("sidebar-collapse")
             assert evaluate(width_script) == saved_width
+            print("PASS: minimized sidebar survives restart and restores its width", flush=True)
             assert evaluate(
                 "document.getElementById('library-content').hidden && document.body.dataset.theme==='dark'"
             )

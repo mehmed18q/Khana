@@ -8,6 +8,45 @@ from reader.documents import MAX_FILE_BYTES, load_document, render_html, render_
 
 
 class DocumentTests(unittest.TestCase):
+    def test_persian_math_sample_keeps_all_tex_sources_separate_from_markdown(self):
+        source = (
+            Path(__file__).resolve().parent.parent / "examples/math-and-persian.md"
+        ).read_text()
+        html, _ = render_markdown(source)
+        soup = BeautifulSoup(html, "html.parser")
+        formulas = soup.select(".math-expression")
+        self.assertEqual(len(formulas), 15)
+        self.assertEqual(len(soup.select("div.math-display")), 6)
+        self.assertTrue(all(node["dir"] == "ltr" for node in formulas))
+        self.assertEqual(formulas[1].get_text(), r"-\pi<x<\pi")
+        self.assertIn(r"\sum_{n=1}^{\infty}", formulas[11].get_text())
+        self.assertEqual(formulas[-1].get_text(), r"\boxed{\pi^2-x^2=\frac{2\pi^2}{3}+4S(x)}.")
+        for node in soup.select("div.math-display"):
+            self.assertIn("data-source-line", node.attrs)
+            self.assertIn("data-source-end", node.attrs)
+        self.assertEqual(len(soup.select("ol > li")), 4)
+
+    def test_math_preserves_underscores_multiline_blocks_and_escapes_html(self):
+        source = "متن $a_b+a_c$\n\n$$\n\\begin{aligned}\na&=1\\\\\nb&=2\n\\end{aligned}\n$$\n\n$<img src=x onerror=evil()>$"
+        html, _ = render_markdown(source)
+        soup = BeautifulSoup(html, "html.parser")
+        self.assertEqual(soup.select_one(".math-expression").get_text(), "a_b+a_c")
+        block = soup.select_one(".math-display")
+        self.assertIn("a&=1\\\\\nb&=2", block.get_text())
+        self.assertEqual((block["data-source-line"], block["data-source-end"]), ("2", "8"))
+        self.assertNotIn("<img", html)
+        self.assertFalse(soup.select("em"))
+
+    def test_code_currency_and_escaped_dollars_are_not_math(self):
+        html, _ = render_markdown(
+            "`$x$`\n\n```latex\n$$x^2$$\n```\n\nCost: $5 and $10.\n\n"
+            + r"Escaped: \$x\$. Unclosed: $x."
+        )
+        soup = BeautifulSoup(html, "html.parser")
+        self.assertFalse(soup.select(".math-expression"))
+        self.assertIn("$x$", soup.get_text())
+        self.assertIn("$$x^2$$", soup.get_text())
+
     def test_mermaid_source_survives_both_renderers_without_active_html(self):
         source = 'flowchart RL\n  A["سلام & English"] --> B["<script>literal</script>"]\n'
         from html import escape

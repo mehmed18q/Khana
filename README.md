@@ -2,7 +2,7 @@
 
 A local desktop reader and editor for mixed Persian and English documents. Open Markdown, HTML, Word, PDF, JSON, YAML, logs, configuration files, and XML. Edit supported content with a synchronized preview. Each prose paragraph is displayed in its own direction. The application interface is English; document content keeps its original language.
 
-Current version: **0.8.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Current version: **0.9.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 ## Installation
 
@@ -21,12 +21,12 @@ The verified environment is Ubuntu 26.04 x86_64 with Python 3.14. Windows source
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.8.0 these are `khana_0.8.0-1_amd64.deb` and `khana_0.8.0-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.9.0 these are `khana_0.9.0-1_amd64.deb` and `khana_0.9.0-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.8.0-1_amd64.deb.sha256
-sudo apt install ./khana_0.8.0-1_amd64.deb
+sha256sum -c khana_0.9.0-1_amd64.deb.sha256
+sudo apt install ./khana_0.9.0-1_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -98,6 +98,12 @@ Drag the filename, empty space in the top bar, or the Khana logo to move the win
 
 Click **Open file** to read an existing document or **New document** to start writing. Use **Edit & Preview** for editing and live preview; **Save** and **Save As…** write your changes to disk.
 
+Format-specific icons distinguish Markdown, plain text, HTML, JSON, YAML, logs, configuration, XML, Word and PDF files in **OPEN FILES**, **LIBRARY** and reading-pane headers. Their shapes and colors remain distinct in light and dark themes.
+
+Open **Theme and colors** using the small arrow beside the sun/moon button in the top bar. Choose **Light**, **Dark**, or **Automatic**; Automatic reads the operating system's appearance and follows changes while the app is open. Pick **Forest**, **Ocean**, **Violet**, **Rose**, **Amber**, or **Slate** for the color palette. Theme and palette selections are remembered and shared across open windows. The sun/moon button still switches directly between light and dark.
+
+Click the upward arrow in the top bar to **Collapse header**. The title and reading controls fold into a compact strip showing the filename and unsaved-change indicator; **Show header** expands them again. This preserves the current window size, sidebar, editing buffer and split layout. The collapsed state is remembered across restarts.
+
 Opening another file from the file manager or command line sends it to the running Khana application. An already open file activates its existing tab and window; otherwise it opens in the most recently used window. Launching Khana without a filename brings its window forward. When no window is open, Khana starts normally.
 
 Drag a tab from **OPEN FILES** outside its window and release to move it to a new, independent window, or drop it onto another Khana window. **Escape** cancels the drag. The **↗** button beside each tab also moves it to a new window. Unsaved text, cursor/scroll position and completed Swagger responses move with the tab. Pending requests and previews finish before the transfer completes; they are never replayed. Moving the last tab closes its empty original window.
@@ -107,6 +113,18 @@ In reading mode, use **Layout → Split vertically**, **Split horizontally**, or
 Click the **OPEN FILES**, **LIBRARY**, or **ON THIS PAGE** heading to collapse or expand that sidebar section. Drag the handle between open sections to adjust their heights, or double-click it to give the two sections equal space. A focused handle also accepts **↑ / ↓** (hold **Shift** for larger steps), **Home**, and **End**; **Escape** cancels a drag. Section proportions and collapsed states are remembered across restarts and adapt to the window height.
 
 Drag the sidebar's right edge to change its width. The width is remembered across restarts and adjusts to smaller windows. Double-click the edge to reset it; a focused edge supports **← / →**, **Shift** for larger steps, **Home**, **End**, and **Escape** to cancel a drag.
+
+Use the arrow at the top of the sidebar to minimize it to a narrow strip. Click it again to restore the sidebar with its previous width and section sizes. The minimized state is remembered across restarts.
+
+Right-click a file in **OPEN FILES** or **LIBRARY** (or focus it and press **Shift+F10**) to open its actions: open, open in a new window, copy/cut the saved file, copy its path or name, open its containing folder, save/save as, and close. Copy and cut put a file on the system clipboard for pasting into a file manager; cut moves the file only when pasted. Opening an existing tab in a new window moves its unsaved changes with it. Actions requiring a saved file are disabled for new drafts.
+
+Choose **Rename file…** in either list to change the file's name in its current folder. Open edits, annotations, category, star and pin stay with it. Existing files are never overwritten, and the new extension must keep the same document format. The same menu offers **Split vertically**, **Split horizontally**, **Four panes** and **Single page**, matching the header's **Layout** control.
+
+Click **+** beside **OPEN FILES** or **LIBRARY** to create a named category. Categories collect saved files from different folders without moving them on disk, and are shared by both lists and all windows. Drag files onto a category, including a collapsed category, or choose **Move to category…** from the file menu and select a destination. That dialog can also create a new category for the selection. Files without a category appear under **Uncategorized**.
+
+Use a category's **⋯** menu or right-click its heading to rename it, move it higher/lower, or delete it. Deleting a category returns its files to **Uncategorized** and preserves the files and notes. Category names, order, membership and collapsed states are remembered across restarts. File-menu **Pin to top**, **Move higher** and **Move lower** organize files within their category; pinned files come first.
+
+Hold **Ctrl** (or **Command**) while clicking files to select several in one list; **Ctrl+A** selects all files in the focused list. Right-click a selected file for bulk copy/cut, path copying, category moves, star/pin and closing open files, or drag the selection to a category. A plain click selects one file again. Renaming applies to one file at a time. Split actions can display selected files together when they are already open in the current window.
 
 Choose **Reading fullscreen** in the top bar or press **Ctrl+Shift+F** to fill the screen with your current reading or editing workspace. The sidebar, header, toolbars and status bars are hidden. Press **Escape**, **F11**, or **Ctrl+Shift+F** to restore the previous window state, or move the pointer to the top center to reveal **Exit fullscreen**.
 
@@ -134,10 +152,10 @@ Build on **Ubuntu 26.04 x86_64**. First follow the [Ubuntu source setup](#ubuntu
 sudo apt install curl dpkg desktop-file-utils
 .venv/bin/python -m pip install -r requirements-build.txt
 .venv/bin/python scripts/build_deb.py
-sudo apt install ./dist/khana_0.8.0-1_amd64.deb
+sudo apt install ./dist/khana_0.9.0-1_amd64.deb
 ```
 
-The build produces `dist/khana_0.8.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.9.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -177,18 +195,18 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.8.0-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.8.0-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.9.0-1_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.9.0-1_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 
-These names describe version 0.8.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+These names describe version 0.9.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
 
 ### Versioning
 
 `reader/__init__.py` defines the application version. The native app, sidebar, CLI and build scripts all read it; package checks verify that the executable, visible version and installer metadata agree. Debian packaging rejects an unpacked build whose version differs from the source, including with `--skip-build`.
 
-During the `0.x` series, new features advance the minor version (`0.8.0`); fixes to that release advance the patch version (`0.8.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
+During the `0.x` series, new features advance the minor version (`0.9.0`); fixes to that release advance the patch version (`0.9.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
 
 ## Reading
 
@@ -199,13 +217,14 @@ During the `0.x` series, new features advance the minor version (`0.8.0`); fixes
 - **RTL** and **LTR** override the document direction. Hover beside a paragraph or heading to cycle that individual block through RTL, LTR, and automatic direction. These overrides last while the file remains open and reset when it is reloaded.
 - **Find** (Ctrl+F) searches the displayed document in reading mode and the latest source text in editing mode. Reading search spans inline formatting and follows displayed HTML whitespace. The **Aa** (Match case) and **ab** (Whole word) icon buttons sit inside the search field; whole words recognize Persian letters, combining marks and half-spaces. **Find All** opens a dialog with clickable results, source line/column numbers in editing mode and **Show more** for long lists. Selecting a result closes the dialog and focuses its location in the document or editor. Counts and navigation include every match.
 - Use **Find**, **Enter / Shift+Enter** in the search field, or **F3 / Shift+F3** to move forward/backward with wraparound. **Escape** closes search and returns focus to the document or editor.
-- Adjust font size, line spacing, page width, light/dark theme, or focus mode. Preferences stay on your device: installed/portable builds use `~/.config/Khana/Khana/settings.ini`, while source runs use `.local/settings.ini` in the project.
+- Adjust font size, line spacing, page width, light/dark/automatic theme, color palette, or focus mode. Preferences stay on your device: installed/portable builds use `~/.config/Khana/Khana/settings.ini`, while source runs use `.local/settings.ini` in the project.
 - **Reload** reads a file again after changes in another editor. If you have local edits, choose Save, Discard, or Cancel before reloading.
 
 ## Library, reading marks, and notes
 
 - Opened files stay in **LIBRARY** after closing their tabs or restarting Khana. The last open saved documents reopen at startup. Missing files stay listed as **File not found** so their annotations are retained.
 - Use **Star document**, or the star beside a library entry, to keep favorites in the **Starred** filter. Click an entry to reopen it. Close its tab first to remove it from the library; removal also clears its stars, marks, and notes, but keeps the source file.
+- The right-click menu also offers **Star / Unstar**, **Pin to top / Unpin**, and **Move higher / Move lower**. Pinned files stay above unpinned files; move actions change the order within that group against the next visible file. Both lists share the saved order across windows and restarts. Opening or saving a file preserves its position.
 - Each document supports multiple named marks and notes. Hover beside a paragraph and choose **Add a mark here** or **Add a note here**. You can also select text in the reading view and click **Add mark** (Ctrl+M) or **Add note** (Ctrl+Shift+M). Without a selection, these toolbar actions use the top visible reading block.
 - **Marks & Notes** lists each saved location and note. Click its name to jump there; use **Edit** to rename a mark or update a note, and **Delete** to remove either. Inline badges identify annotated blocks in the document.
 - **Resume** returns to the most recently added or visited mark/note, also used when reopening the file. Marks match text and neighboring blocks, so inserting content above an unchanged paragraph keeps its location. If the original text has changed or disappeared, navigation uses an approximate location and shows a warning.
@@ -292,6 +311,8 @@ HTML is displayed in a consistent reading layout: headings, paragraphs, lists, l
 Reading and editing need no server or internet connection after installation. Documents are not uploaded. The optional Swagger **Execute** action sends the selected HTTP request, including its parameters, body and applicable authorization, to the selected API server. Images can use relative paths, absolute system paths, or local `file:///…` URLs; embedded Word images are supported too. Remote images are replaced by placeholders. External links open in your default browser only when clicked. Relative supported-document links inside the document's folder open in Khana.
 
 Text files must use UTF-8 (with or without BOM) or UTF-16 with BOM. The current file-size limit is 5 MB, including Word and PDF files. Raw HTML embedded inside Markdown is shown as text. Smart direction is a heuristic; use the manual direction controls for ambiguous sentences.
+
+Markdown supports inline LaTeX in `$...$` and display equations in `$$...$$`, including multiline equations. KaTeX and its fonts are bundled for offline rendering. Formulas stay left-to-right inside Persian paragraphs, including when the document direction changes. Code blocks and escaped dollars remain literal; incomplete formulas show their source until corrected. See `examples/math-and-persian.md` for a Persian Fourier-series example.
 
 ## Word, PDF, and structured text
 

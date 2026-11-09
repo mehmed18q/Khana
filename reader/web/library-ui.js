@@ -7,7 +7,17 @@
     if (text !== undefined) node.textContent = text;
     return node;
   };
-  function create({ article, scroller, current, documents, sourceOf, native, toast }) {
+  function create({
+    article,
+    scroller,
+    current,
+    documents,
+    sourceOf,
+    native,
+    toast,
+    bindFileMenu,
+    categories,
+  }) {
     let entries = new Map(),
       available = false,
       starredOnly = false,
@@ -19,16 +29,74 @@
     const persistent = () => available && current()?.path && !current()?.sample;
     const canAdd = () =>
       persistent() && !current().dirty && !current().previewPending && blocks.length;
+    const visibleEntries = () =>
+      [...entries.values()].filter((entry) => !starredOnly || entry.starred);
+    function orderedDocuments() {
+      const rank = new Map([...entries.keys()].map((path, index) => [path, index]));
+      return [...documents.values()].sort(
+        (a, b) => (rank.get(a.path) ?? Infinity) - (rank.get(b.path) ?? Infinity)
+      );
+    }
 
     function libraryList() {
       const container = $('library-list');
-      container.replaceChildren();
       $('library-all').classList.toggle('active', !starredOnly);
       $('library-all').setAttribute('aria-pressed', String(!starredOnly));
       $('library-starred').classList.toggle('active', starredOnly);
       $('library-starred').setAttribute('aria-pressed', String(starredOnly));
-      const records = [...entries.values()].filter((entry) => !starredOnly || entry.starred);
-      if (!records.length)
+      const records = visibleEntries();
+      const open = new Set([...documents.values()].map((doc) => doc.path));
+      categories.render(
+        container,
+        records,
+        (entry) => entry.categoryId,
+        (entry) => {
+          const row = element(
+            'div',
+            `library-item${current()?.path === entry.path ? ' active' : ''}`
+          );
+          row.dataset.path = entry.path;
+          const star = element('button', 'library-star', entry.starred ? '★' : '☆');
+          star.type = 'button';
+          star.title = entry.starred ? 'Unstar document' : 'Star document';
+          star.setAttribute('aria-label', `${star.title}: ${entry.name}`);
+          star.setAttribute('aria-pressed', String(entry.starred));
+          star.onclick = () => native()?.starDocument(entry.path, !entry.starred);
+          const select = element('button', 'library-open');
+          select.type = 'button';
+          select.title = entry.path;
+          select.innerHTML = ReaderFileIcons.markup(entry);
+          const text = element('span', 'library-text');
+          const name = element('span', 'library-name', entry.name);
+          name.dir = 'auto';
+          const count = entry.annotations.length;
+          text.append(
+            name,
+            element(
+              'span',
+              'library-info',
+              entry.missing
+                ? 'File not found'
+                : `${entry.pinned ? 'Pinned · ' : ''}${entry.format}${count ? ` · ${count} mark${count === 1 ? '' : 's'} / note${count === 1 ? '' : 's'}` : ''}`
+            )
+          );
+          select.append(text);
+          select.onclick = () => native()?.openLibrary(entry.path);
+          const forget = element('button', 'library-forget', '×');
+          forget.type = 'button';
+          forget.disabled = open.has(entry.path);
+          forget.title = forget.disabled
+            ? 'Close the document before removing it from the library'
+            : 'Remove from library (keeps the source file)';
+          forget.setAttribute('aria-label', `Remove ${entry.name} from library`);
+          forget.onclick = () => native()?.forgetDocument(entry.path);
+          row.append(star, select, forget);
+          bindFileMenu(row, { path: entry.path }, select);
+          return row;
+        },
+        'library'
+      );
+      if (!container.children.length)
         container.append(
           element(
             'div',
@@ -40,47 +108,6 @@
                 : 'Opened files stay here after you close the app.'
           )
         );
-      const open = new Set([...documents.values()].map((doc) => doc.path));
-      for (const entry of records) {
-        const row = element(
-          'div',
-          `library-item${current()?.path === entry.path ? ' active' : ''}`
-        );
-        row.dataset.path = entry.path;
-        const star = element('button', 'library-star', entry.starred ? '★' : '☆');
-        star.type = 'button';
-        star.title = entry.starred ? 'Unstar document' : 'Star document';
-        star.setAttribute('aria-label', `${star.title}: ${entry.name}`);
-        star.setAttribute('aria-pressed', String(entry.starred));
-        star.onclick = () => native()?.starDocument(entry.path, !entry.starred);
-        const select = element('button', 'library-open');
-        select.type = 'button';
-        select.title = entry.path;
-        const name = element('span', 'library-name', entry.name);
-        name.dir = 'auto';
-        const count = entry.annotations.length;
-        select.append(
-          name,
-          element(
-            'span',
-            'library-info',
-            entry.missing
-              ? 'File not found'
-              : `${entry.format}${count ? ` · ${count} mark${count === 1 ? '' : 's'} / note${count === 1 ? '' : 's'}` : ''}`
-          )
-        );
-        select.onclick = () => native()?.openLibrary(entry.path);
-        const forget = element('button', 'library-forget', '×');
-        forget.type = 'button';
-        forget.disabled = open.has(entry.path);
-        forget.title = forget.disabled
-          ? 'Close the document before removing it from the library'
-          : 'Remove from library (keeps the source file)';
-        forget.setAttribute('aria-label', `Remove ${entry.name} from library`);
-        forget.onclick = () => native()?.forgetDocument(entry.path);
-        row.append(star, select, forget);
-        container.append(row);
-      }
     }
 
     function annotationList() {
@@ -357,6 +384,9 @@
         { passive: true }
       );
     return {
+      entry: (path) => entries.get(path),
+      visibleEntries,
+      orderedDocuments,
       refresh,
       resume,
       add: openDialog,
@@ -369,6 +399,7 @@
       receive(raw) {
         const value = JSON.parse(raw);
         available = value.available;
+        categories.receive(value.categories, available);
         entries = new Map(value.entries.map((entry) => [entry.path, entry]));
         refresh();
       },

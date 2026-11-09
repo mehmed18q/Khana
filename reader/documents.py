@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlparse
 import nh3
 from bs4 import BeautifulSoup
 from markdown_it import MarkdownIt
+from mdit_py_plugins.dollarmath import dollarmath_plugin
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
@@ -108,6 +109,27 @@ def render_markdown(source: str, base_directory: Path | None = None) -> tuple[st
         else validate_link(url)
     )
     parser.enable(["table", "strikethrough"])
+    parser.use(
+        dollarmath_plugin,
+        allow_labels=False,
+        allow_space=False,
+        allow_digits=False,
+        allow_blank_lines=False,
+        double_inline=True,
+    )
+
+    def math_rule(tokens, index, options, env):
+        token = tokens[index]
+        display = token.type != "math_inline"
+        tag = "div" if token.block else "span"
+        token.attrSet("class", "math-expression math-display" if display else "math-expression")
+        token.attrSet("dir", "ltr")
+        return f"<{tag}{parser.renderer.renderAttrs(token)}>{escape(token.content)}</{tag}>" + (
+            "\n" if token.block else ""
+        )
+
+    for kind in ("math_inline", "math_inline_double", "math_block"):
+        parser.renderer.rules[kind] = math_rule
     original_image = parser.renderer.rules["image"]
 
     def image_rule(tokens, index, options, env):
@@ -145,7 +167,9 @@ def render_markdown(source: str, base_directory: Path | None = None) -> tuple[st
             continue
         inline = tokens[index + 1]
         title = "".join(
-            t.content for t in inline.children or [] if t.type in {"text", "code_inline"}
+            t.content
+            for t in inline.children or []
+            if t.type in {"text", "code_inline", "math_inline", "math_inline_double"}
         )
         slug = re.sub(r"[^\w\-\s\u200c]", "", title.lower(), flags=re.UNICODE)
         slug = re.sub(r"\s+", "-", slug.strip()) or "section"

@@ -15,9 +15,17 @@
     <link rel="stylesheet" href="formats.css" />
     <link rel="stylesheet" href="workspace.css" />
     <link rel="stylesheet" href="sidebar.css" />
+    <link rel="stylesheet" href="categories.css" />
     <link rel="stylesheet" href="line-numbers.css" />
+    <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+    <link rel="stylesheet" href="math.css" />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="file-icons.css" />
+    <link rel="stylesheet" href="header.css" />
     <script src="qrc:///qtwebchannel/qwebchannel.js" defer></script>
     <script src="bidi.js" defer></script>
+    <script src="vendor/katex/katex.min.js" defer></script>
+    <script src="math.js" defer></script>
     <script src="api-requests.js" defer></script>
     <script src="openapi-ui.js" defer></script>
     <script src="formatting.js" defer></script>
@@ -37,8 +45,15 @@
     <script src="search.js" defer></script>
     <script src="outline.js" defer></script>
     <script src="file-list.js" defer></script>
+    <script src="file-menu.js" defer></script>
+    <script src="context-menu.js" defer></script>
+    <script src="categories.js" defer></script>
+    <script src="file-selection.js" defer></script>
     <script src="source-editor.js" defer></script>
     <script src="window-controls.js" defer></script>
+    <script src="file-icons.js" defer></script>
+    <script src="theme.js" defer></script>
+    <script src="header.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -98,6 +113,12 @@
         <symbol id="i-star" viewBox="0 0 24 24">
           <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
         </symbol>
+        <symbol id="i-pin" viewBox="0 0 24 24">
+          <path d="M8 3h8l-1 7 4 4H5l4-4ZM12 14v7" />
+        </symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24">
+          <path d="M3 6h7l2 3h9v11H3ZM3 6V4h7l2 2h9v3" />
+        </symbol>
         <symbol id="i-mark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4Z" /></symbol>
         <symbol id="i-note" viewBox="0 0 24 24">
           <path d="M4 3h16v13l-5 5H4Zm11 18v-5h5M8 8h8M8 12h6" />
@@ -107,6 +128,16 @@
 
     <div class="app-shell">
       <aside id="sidebar-panel" class="sidebar" aria-label="Files and document outline">
+        <button
+          id="sidebar-collapse"
+          class="sidebar-collapse"
+          aria-label="Minimize sidebar"
+          title="Minimize sidebar"
+          aria-expanded="true"
+          aria-controls="sidebar-sections"
+        >
+          <svg><use href="#i-chevron" /></svg>
+        </button>
         <div
           id="sidebar-width-resizer"
           class="sidebar-width-resizer"
@@ -151,7 +182,7 @@
 
         <div id="sidebar-sections" class="sidebar-sections">
           <section class="sidebar-section files-section" data-sidebar-section="files">
-            <h2 class="sidebar-heading">
+            <h2 class="sidebar-heading category-section-heading">
               <button
                 id="files-toggle"
                 class="sidebar-toggle"
@@ -160,6 +191,14 @@
               >
                 <svg class="sidebar-chevron"><use href="#i-chevron" /></svg><span>OPEN FILES</span
                 ><span id="file-count" class="count-badge">0</span>
+              </button>
+              <button
+                id="files-new-category"
+                class="new-category-button"
+                title="New category"
+                aria-label="Create a category in Open Files"
+              >
+                <svg><use href="#i-plus" /></svg>
               </button>
             </h2>
             <div id="files-content" class="sidebar-section-content">
@@ -179,7 +218,7 @@
             data-sidebar-section="library"
             aria-label="Saved document library"
           >
-            <h2 class="sidebar-heading">
+            <h2 class="sidebar-heading category-section-heading">
               <button
                 id="library-toggle"
                 class="sidebar-toggle"
@@ -187,6 +226,14 @@
                 aria-controls="library-content"
               >
                 <svg class="sidebar-chevron"><use href="#i-chevron" /></svg><span>LIBRARY</span>
+              </button>
+              <button
+                id="library-new-category"
+                class="new-category-button"
+                title="New category"
+                aria-label="Create a category in Library"
+              >
+                <svg><use href="#i-plus" /></svg>
               </button>
             </h2>
             <div id="library-content" class="sidebar-section-content">
@@ -245,13 +292,19 @@
       </aside>
 
       <main class="main-panel">
+        <div class="compact-header" data-window-drag>
+          <span id="compact-file-icon"></span><span id="compact-filename" dir="auto">Khana</span>
+          <button id="header-expand" aria-expanded="false" title="Expand header">
+            <svg aria-hidden="true"><use href="#i-chevron" /></svg>Show header
+          </button>
+        </div>
         <header
           class="topbar"
           data-window-drag
           title="Drag to move window. Double-click to toggle fullscreen."
         >
           <div class="breadcrumb">
-            <svg><use href="#i-file" /></svg><span id="current-filename" dir="auto">Khana</span
+            <span id="current-file-icon"></span><span id="current-filename" dir="auto">Khana</span
             ><span id="sample-badge" class="sample-badge" hidden>Sample</span>
           </div>
           <div class="top-actions">
@@ -282,13 +335,87 @@
                 <path d="M11 6h10M11 12h10M11 18h10M3 9l3 3-3 3M2 12h5" />
               </svg>
             </button>
+            <div class="theme-anchor">
+              <button
+                id="theme-button"
+                class="icon-button"
+                title="Toggle theme"
+                aria-label="Dark theme"
+              >
+                <svg><use href="#i-moon" /></svg>
+              </button>
+              <button
+                id="theme-settings-button"
+                class="icon-button"
+                title="Theme and colors"
+                aria-label="Theme and colors"
+                aria-expanded="false"
+                aria-controls="theme-panel"
+              >
+                <svg aria-hidden="true"><use href="#i-chevron" /></svg>
+              </button>
+              <section id="theme-panel" class="theme-panel" aria-label="Theme and colors" hidden>
+                <div class="theme-panel-heading">
+                  <h2>Theme &amp; colors</h2>
+                  <button id="theme-close" class="icon-button" aria-label="Close theme settings">
+                    <svg aria-hidden="true"><use href="#i-close" /></svg>
+                  </button>
+                </div>
+                <fieldset>
+                  <legend>Appearance</legend>
+                  <div class="theme-modes">
+                    <button data-theme-choice="light" aria-pressed="true">
+                      <svg aria-hidden="true"><use href="#i-sun" /></svg>Light
+                    </button>
+                    <button data-theme-choice="dark" aria-pressed="false">
+                      <svg aria-hidden="true"><use href="#i-moon" /></svg>Dark
+                    </button>
+                    <button data-theme-choice="auto" aria-pressed="false">
+                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="13" rx="2" />
+                        <path d="M12 16v5m-5 0h10" /></svg
+                      >Automatic
+                    </button>
+                  </div>
+                  <p id="theme-system-status"></p>
+                </fieldset>
+                <fieldset>
+                  <legend>Color palette</legend>
+                  <div class="theme-palette-grid">
+                    <button class="palette-choice" data-palette-choice="forest" aria-pressed="true">
+                      <span class="palette-swatch" aria-hidden="true"></span>Forest
+                    </button>
+                    <button class="palette-choice" data-palette-choice="ocean" aria-pressed="false">
+                      <span class="palette-swatch" aria-hidden="true"></span>Ocean
+                    </button>
+                    <button
+                      class="palette-choice"
+                      data-palette-choice="violet"
+                      aria-pressed="false"
+                    >
+                      <span class="palette-swatch" aria-hidden="true"></span>Violet
+                    </button>
+                    <button class="palette-choice" data-palette-choice="rose" aria-pressed="false">
+                      <span class="palette-swatch" aria-hidden="true"></span>Rose
+                    </button>
+                    <button class="palette-choice" data-palette-choice="amber" aria-pressed="false">
+                      <span class="palette-swatch" aria-hidden="true"></span>Amber
+                    </button>
+                    <button class="palette-choice" data-palette-choice="slate" aria-pressed="false">
+                      <span class="palette-swatch" aria-hidden="true"></span>Slate
+                    </button>
+                  </div>
+                </fieldset>
+              </section>
+            </div>
             <button
-              id="theme-button"
+              id="header-collapse"
               class="icon-button"
-              title="Toggle theme"
-              aria-label="Dark theme"
+              aria-label="Collapse header"
+              aria-expanded="true"
+              title="Collapse header"
             >
-              <svg><use href="#i-moon" /></svg>
+              <svg aria-hidden="true"><use href="#i-chevron" /></svg>
             </button>
             <button
               id="focus-button"
@@ -692,6 +819,32 @@
         <svg aria-hidden="true"><use href="#i-focus" /></svg>Exit fullscreen <kbd>Esc</kbd>
       </button>
     </div>
+    <dialog
+      id="category-dialog"
+      class="link-dialog category-dialog"
+      aria-labelledby="category-dialog-title"
+    >
+      <form id="category-form" method="dialog">
+        <h2 id="category-dialog-title">New category</h2>
+        <p id="category-dialog-help"></p>
+        <div id="category-name-fields">
+          <label id="category-name-label" for="category-name">Category name</label>
+          <input id="category-name" dir="auto" autocomplete="off" maxlength="80" required />
+        </div>
+        <div id="category-destination-fields" hidden>
+          <label for="category-destination">Destination category</label>
+          <select id="category-destination" dir="auto"></select>
+          <button id="category-new-destination" type="button" class="secondary-button">
+            New category…
+          </button>
+        </div>
+        <p id="category-error" class="link-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="category-cancel" class="secondary-button" type="button">Cancel</button>
+          <button id="category-submit" class="save-button" type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="go-to-line-dialog" class="link-dialog" aria-labelledby="go-to-line-title">
       <form id="go-to-line-form" method="dialog" novalidate>
         <h2 id="go-to-line-title">Go to line</h2>

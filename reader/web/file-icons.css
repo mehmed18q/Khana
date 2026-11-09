@@ -1,0 +1,62 @@
+.file-type-icon {
+  --file-hue: 210;
+  color: hsl(var(--file-hue) 66% 37%);
+  flex: none;
+  width: 23px;
+  height: 23px;
+  stroke-width: 1.6;
+}
+body[data-theme='dark'] .file-type-icon {
+  color: hsl(var(--file-hue) 75% 73%);
+}
+.file-type-icon[data-file-type='markdown'] {
+  --file-hue: 218;
+}
+.file-type-icon[data-file-type='text'] {
+  --file-hue: 205;
+}
+.file-type-icon[data-file-type='html'] {
+  --file-hue: 18;
+}
+.file-type-icon[data-file-type='json'] {
+  --file-hue: 37;
+}
+.file-type-icon[data-file-type='yaml'] {
+  --file-hue: 279;
+}
+.file-type-icon[data-file-type='log'] {
+  --file-hue: 158;
+}
+.file-type-icon[data-file-type='conf'] {
+  --file-hue: 195;
+}
+.file-type-icon[data-file-type='xml'] {
+  --file-hue: 322;
+}
+.file-type-icon[data-file-type='word'] {
+  --file-hue: 221;
+}
+.file-type-icon[data-file-type='pdf'] {
+  --file-hue: 2;
+}
+.file-select .file-type-icon {
+  width: 22px;
+  height: 22px;
+}
+.library-open {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.library-text {
+  min-width: 0;
+  flex: 1;
+}
+#current-file-icon,
+#compact-file-icon {
+  display: flex;
+}
+.pane-heading .file-type-icon {
+  width: 20px;
+  height: 20px;
+}

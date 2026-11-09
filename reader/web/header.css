@@ -1,0 +1,50 @@
+.compact-header {
+  display: none;
+  min-height: 32px;
+  flex: none;
+  align-items: center;
+  gap: 9px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  font-size: 11px;
+}
+.compact-header .file-type-icon {
+  width: 18px;
+  height: 18px;
+}
+#compact-filename {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#header-expand {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  color: var(--accent);
+  border-radius: 5px;
+  padding: 3px 8px;
+}
+#header-expand svg {
+  width: 14px;
+  height: 14px;
+  transform: rotate(90deg);
+}
+#header-collapse svg {
+  transform: rotate(-90deg);
+}
+.header-collapsed .topbar,
+.header-collapsed .document-toolbar,
+.header-collapsed .reading-toolbar,
+.header-collapsed .memory-toolbar {
+  display: none;
+}
+.header-collapsed .compact-header {
+  display: flex;
+}
+.focus-mode .compact-header {
+  display: none;
+}

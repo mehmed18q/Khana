@@ -9,6 +9,17 @@
 
 The bundle is checked into the application folder for offline use. It requires no npm install or network connection at runtime. Its upstream version is pinned; upgrades must be verified with `tests/builders_smoke.py`, especially SVG sanitization, configuration directives, mixed Persian/English text, and WebEngine compatibility.
 
+# KaTeX browser bundle
+
+- Package: `katex` **0.19.1**.
+- Upstream: https://github.com/KaTeX/KaTeX
+- Distribution: https://registry.npmjs.org/katex/-/katex-0.19.1.tgz
+- Files: unmodified `dist/katex.min.js`, `dist/katex.min.css`, and `dist/fonts/` under `katex/`.
+- License: MIT, included as `katex/LICENSE`.
+- Configuration reference: https://katex.org/docs/options.html
+
+Markdown math tokens are parsed before other inline formatting, then rendered locally with `trust: false`, bounded macro expansion and dimensions, and HTML plus accessible MathML. No CDN or runtime network access is used. Check upgrades with `tests/math_smoke.py`, including Persian prose, RTL/LTR controls, fractions, display equations, live previews and split panes.
+
 # Swagger UI browser bundle
 
 - Package: `swagger-ui-dist` **5.34.0**, loaded locally on the first API preview.

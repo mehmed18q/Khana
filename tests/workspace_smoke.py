@@ -279,6 +279,19 @@ def main():
                 )
             )
             start = draft_window.view.mapTo(draft_window, QPoint(round(point[0]), round(point[1])))
+            outside_sidebar = draft_window.view.mapTo(
+                draft_window,
+                QPoint(
+                    round(
+                        evaluate(
+                            "document.getElementById('sidebar-panel').getBoundingClientRect().right",
+                            draft_window,
+                        )
+                    )
+                    + 30,
+                    round(point[1]),
+                ),
+            )
             with (
                 patch(
                     "reader.ui.bridge.QDrag.exec", return_value=Qt.DropAction.IgnoreAction
@@ -289,12 +302,16 @@ def main():
                 ),
             ):
                 QTest.mousePress(draft_window.windowHandle(), Qt.MouseButton.LeftButton, pos=start)
+                QTest.qWait(60)
                 QTest.mouseMove(draft_window.windowHandle(), start + QPoint(35, 12))
+                QTest.qWait(100)
+                assert not native_drag.called, "A sidebar drag must remain available for categories"
+                QTest.mouseMove(draft_window.windowHandle(), outside_sidebar)
                 native_wait(lambda: native_drag.called)
                 QTest.mouseRelease(
                     draft_window.windowHandle(),
                     Qt.MouseButton.LeftButton,
-                    pos=start + QPoint(35, 12),
+                    pos=outside_sidebar,
                 )
             print("PASS: dragging a tab invokes the native desktop drag", flush=True)
 

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.9.0 — 2026-11-09
+
+### Added
+
+- Distinct format icons in Open Files, Library and reading headers, including
+  separate plain-text and Markdown marks.
+- Light, dark and automatic system appearance, with six color palettes and
+  live theme updates shared across open windows.
+- A persistent compact header that folds the top reading controls into a small
+  filename strip while preserving the sidebar, window state and editor.
+- Offline LaTeX math rendering for inline and display Markdown equations, with
+  isolated left-to-right formulas inside Persian prose, live previews and split panes.
+- File context menus in Open Files and Library, with native file copy/cut, path
+  and name copying, containing folders, new windows, saving and closing.
+- Star, pin and manual ordering actions shared across lists and windows, with
+  persistent ordering and migration of existing reading libraries.
+- A sidebar minimize/expand button that remembers its state and restores the
+  previous sidebar width and section sizes.
+- Named, ordered document categories shared by Open Files and Library, with
+  persistent membership, collapsible groups and drag-and-drop category moves.
+- Ctrl/Command multi-selection with bulk copy/cut, category destination selection,
+  star/pin actions and closing that respects unsaved-change cancellation.
+- File renaming from both context menus, preserving edits, annotations and
+  organization while protecting existing files from replacement.
+- Context-menu split layouts matching the header, including splitting selected
+  open documents into two or four reading panes.
+
 ## 0.8.0 — 2026-11-07
 
 ### Added

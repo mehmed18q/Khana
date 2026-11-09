@@ -6,6 +6,7 @@ import math
 
 DEFAULTS = {
     "theme": "light",
+    "palette": "forest",
     "direction": "smart",
     "fontSize": 17,
     "lineHeight": 2,
@@ -13,6 +14,8 @@ DEFAULTS = {
     "syncScroll": True,
     "previewZoom": 100,
     "sidebarWidth": 264,
+    "sidebarCollapsed": False,
+    "headerCollapsed": False,
 }
 SIDEBAR_SECTIONS = ("files", "library", "outline")
 
@@ -33,10 +36,14 @@ def normalize_preferences(values: object) -> dict:
     """Return a fresh, complete settings object containing only supported fields."""
     values = values if isinstance(values, dict) else {}
     result = dict(DEFAULTS)
-    for key, options in (("theme", ("light", "dark")), ("direction", ("smart", "rtl", "ltr"))):
+    for key, options in (
+        ("theme", ("light", "dark", "auto")),
+        ("palette", ("forest", "ocean", "violet", "rose", "amber", "slate")),
+        ("direction", ("smart", "rtl", "ltr")),
+    ):
         if values.get(key) in options:
             result[key] = values[key]
-    for key in ("wide", "syncScroll"):
+    for key in ("wide", "syncScroll", "sidebarCollapsed", "headerCollapsed"):
         if isinstance(values.get(key), bool):
             result[key] = values[key]
     for key, minimum, maximum, integer in (

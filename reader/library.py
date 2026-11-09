@@ -62,7 +62,35 @@ class ReadingLibrary:
                 );
                 CREATE INDEX IF NOT EXISTS annotation_paths ON annotations(path);
                 CREATE TABLE IF NOT EXISTS workspace (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS categories (
+                    id TEXT PRIMARY KEY, name TEXT NOT NULL, sort_order INTEGER NOT NULL,
+                    files_collapsed INTEGER NOT NULL DEFAULT 0,
+                    library_collapsed INTEGER NOT NULL DEFAULT 0
+                );
             """)
+            columns = {
+                row["name"] for row in self.connection.execute("PRAGMA table_info(documents)")
+            }
+            if "pinned" not in columns:
+                self.connection.execute(
+                    "ALTER TABLE documents ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0"
+                )
+            if "category_id" not in columns:
+                self.connection.execute(
+                    "ALTER TABLE documents ADD COLUMN category_id TEXT "
+                    "REFERENCES categories(id) ON DELETE SET NULL"
+                )
+            if "sort_order" not in columns:
+                self.connection.execute(
+                    "ALTER TABLE documents ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0"
+                )
+                paths = self.connection.execute(
+                    "SELECT path FROM documents ORDER BY opened_at DESC,path"
+                ).fetchall()
+                self.connection.executemany(
+                    "UPDATE documents SET sort_order=? WHERE path=?",
+                    [(index, row["path"]) for index, row in enumerate(paths)],
+                )
 
     def remember(self, path, document_format, inherit_from=None):
         path = str(Path(path).resolve())
@@ -75,6 +103,12 @@ class ReadingLibrary:
                 ON CONFLICT(path) DO UPDATE SET name=excluded.name,format=excluded.format,opened_at=excluded.opened_at""",
                 (path, Path(path).name, document_format, time.time_ns()),
             )
+            if not existing:
+                self.connection.execute(
+                    "UPDATE documents SET sort_order=(SELECT MAX(sort_order)+1 FROM documents) "
+                    "WHERE path=?",
+                    (path,),
+                )
             if not existing and inherit_from and inherit_from != path:
                 previous = self.get(inherit_from)
                 if previous:
@@ -96,21 +130,22 @@ class ReadingLibrary:
                         if annotation["id"] == previous["resumeId"]:
                             resume_id = new_id
                     self.connection.execute(
-                        "UPDATE documents SET starred=?,resume_id=? WHERE path=?",
-                        (previous["starred"], resume_id, path),
+                        "UPDATE documents SET starred=?,resume_id=?,category_id=? WHERE path=?",
+                        (previous["starred"], resume_id, previous["categoryId"] or None, path),
                     )
 
     def entries(self):
-        documents = [
-            self._document_record(row)
-            for row in self.connection.execute(
-                "SELECT * FROM documents ORDER BY opened_at DESC,path"
-            )
-        ]
+        documents = [self._document_record(row) for row in self._ordered_documents()]
         by_path = {record["path"]: record for record in documents}
         for row in self.connection.execute("SELECT * FROM annotations ORDER BY created_at,id"):
             by_path[row["path"]]["annotations"].append(self._annotation_record(row))
         return documents
+
+    def _ordered_documents(self):
+        return self.connection.execute(
+            "SELECT d.* FROM documents d LEFT JOIN categories c ON c.id=d.category_id "
+            "ORDER BY c.id IS NULL,c.sort_order,c.id,d.pinned DESC,d.sort_order,d.path"
+        )
 
     def get(self, path):
         """Look up one document without loading the rest of the reading library."""
@@ -130,6 +165,9 @@ class ReadingLibrary:
     def _document_record(row):
         record = dict(row)
         record["starred"] = bool(record["starred"])
+        record["pinned"] = bool(record["pinned"])
+        record["order"] = record.pop("sort_order")
+        record["categoryId"] = record.pop("category_id") or ""
         record["resumeId"] = record.pop("resume_id")
         record.pop("opened_at")
         record["annotations"] = []
@@ -148,6 +186,171 @@ class ReadingLibrary:
             self.connection.execute(
                 "UPDATE documents SET starred=? WHERE path=?", (bool(starred), path)
             )
+
+    def set_pinned(self, path, pinned):
+        with self.connection:
+            self.connection.execute(
+                "UPDATE documents SET pinned=? WHERE path=?", (bool(pinned), path)
+            )
+
+    def move_relative(self, path, neighbor, before):
+        """Reorder within a pin group, retaining items hidden by the current UI filter."""
+        with self.connection:
+            rows = self._ordered_documents().fetchall()
+            pins = {row["path"]: row["pinned"] for row in rows}
+            categories = {row["path"]: row["category_id"] for row in rows}
+            if path == neighbor or path not in pins or neighbor not in pins:
+                return
+            if pins[path] != pins[neighbor]:
+                raise ValueError("Pinned files stay above unpinned files.")
+            if categories[path] != categories[neighbor]:
+                raise ValueError("Move the file to that category first.")
+            paths = [row["path"] for row in rows if row["path"] != path]
+            paths.insert(paths.index(neighbor) + (0 if before else 1), path)
+            self.connection.executemany(
+                "UPDATE documents SET sort_order=? WHERE path=?", enumerate(paths)
+            )
+
+    def categories(self):
+        return [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "order": row["sort_order"],
+                "filesCollapsed": bool(row["files_collapsed"]),
+                "libraryCollapsed": bool(row["library_collapsed"]),
+            }
+            for row in self.connection.execute("SELECT * FROM categories ORDER BY sort_order,id")
+        ]
+
+    def _category_name(self, name, identifier=None):
+        if (
+            not isinstance(name, str)
+            or not 1 <= len(name.strip()) <= 80
+            or any(ord(c) < 32 for c in name)
+        ):
+            raise ValueError("Enter a category name of 1–80 characters.")
+        name = name.strip()
+        if any(
+            c["id"] != identifier and c["name"].casefold() == name.casefold()
+            for c in self.categories()
+        ):
+            raise ValueError("A category with that name already exists.")
+        return name
+
+    def _require_category(self, identifier):
+        if (
+            identifier
+            and not self.connection.execute(
+                "SELECT 1 FROM categories WHERE id=?", (identifier,)
+            ).fetchone()
+        ):
+            raise ValueError("This category no longer exists.")
+
+    def _require_paths(self, paths):
+        if any(
+            not self.connection.execute("SELECT 1 FROM documents WHERE path=?", (path,)).fetchone()
+            for path in paths
+        ):
+            raise ValueError("Save all selected documents before organizing them.")
+
+    def create_category(self, name, paths=()):
+        with self.connection:
+            name = self._category_name(name)
+            self._require_paths(paths)
+            identifier = str(uuid4())
+            self.connection.execute(
+                "INSERT INTO categories(id,name,sort_order) VALUES(?,?,(SELECT COALESCE(MAX(sort_order),-1)+1 FROM categories))",
+                (identifier, name),
+            )
+            self._assign_category(paths, identifier)
+        return identifier
+
+    def rename_category(self, identifier, name):
+        with self.connection:
+            self._require_category(identifier)
+            name = self._category_name(name, identifier)
+            self.connection.execute("UPDATE categories SET name=? WHERE id=?", (name, identifier))
+
+    def delete_category(self, identifier):
+        with self.connection:
+            self.connection.execute("DELETE FROM categories WHERE id=?", (identifier,))
+
+    def move_category(self, identifier, neighbor, before):
+        with self.connection:
+            self._require_category(identifier)
+            self._require_category(neighbor)
+            if identifier == neighbor:
+                return
+            ids = [c["id"] for c in self.categories() if c["id"] != identifier]
+            if neighbor not in ids:
+                raise ValueError("Choose a category to reorder.")
+            ids.insert(ids.index(neighbor) + (0 if before else 1), identifier)
+            self.connection.executemany(
+                "UPDATE categories SET sort_order=? WHERE id=?", enumerate(ids)
+            )
+
+    def collapse_category(self, identifier, scope, collapsed):
+        if scope not in {"files", "library"}:
+            raise ValueError("Unknown category list.")
+        with self.connection:
+            self.connection.execute(
+                f"UPDATE categories SET {scope}_collapsed=? WHERE id=?",
+                (bool(collapsed), identifier),
+            )
+
+    def _assign_category(self, paths, identifier):
+        position = self.connection.execute(
+            "SELECT COALESCE(MAX(sort_order),-1)+1 FROM documents"
+        ).fetchone()[0]
+        for path in dict.fromkeys(paths):
+            self.connection.execute(
+                "UPDATE documents SET category_id=?,sort_order=? WHERE path=? AND category_id IS NOT ?",
+                (identifier or None, position, path, identifier or None),
+            )
+            position += 1
+
+    def assign_category(self, paths, identifier):
+        with self.connection:
+            self._require_category(identifier)
+            self._require_paths(paths)
+            self._assign_category(paths, identifier)
+
+    def set_files_flag(self, paths, flag, value):
+        if flag not in {"starred", "pinned"}:
+            raise ValueError("Unknown file action.")
+        with self.connection:
+            self._require_paths(paths)
+            self.connection.executemany(
+                f"UPDATE documents SET {flag}=? WHERE path=?",
+                [(bool(value), path) for path in paths],
+            )
+
+    def rename_document(self, old_path, new_path, rename_file):
+        """Move metadata and the source together; preserve annotation IDs and category."""
+        with self.connection:
+            self._require_paths([old_path])
+            if self.connection.execute(
+                "SELECT 1 FROM documents WHERE path=?", (new_path,)
+            ).fetchone():
+                raise ValueError("That name already belongs to a document in the library.")
+            self.connection.execute(
+                "INSERT INTO documents(path,name,format,starred,opened_at,resume_id,pinned,sort_order,category_id) "
+                "SELECT ?,?,format,starred,opened_at,resume_id,pinned,sort_order,category_id FROM documents WHERE path=?",
+                (new_path, Path(new_path).name, old_path),
+            )
+            self.connection.execute(
+                "UPDATE annotations SET path=? WHERE path=?", (new_path, old_path)
+            )
+            self.connection.execute("DELETE FROM documents WHERE path=?", (old_path,))
+            workspace = self.workspace()
+            workspace["paths"] = [new_path if p == old_path else p for p in workspace["paths"]]
+            if workspace["active"] == old_path:
+                workspace["active"] = new_path
+            self.connection.execute(
+                "INSERT OR REPLACE INTO workspace VALUES('session',?)", (json.dumps(workspace),)
+            )
+            rename_file()
 
     def save_annotation(self, path, identifier, kind, label, body, anchor):
         if (

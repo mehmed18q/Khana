@@ -18,6 +18,10 @@ DESKTOP_CHECKS = (
     "workspace",
     "tab_drag",
     "sidebar",
+    "file_menu",
+    "math",
+    "categories",
+    "theme",
     "navigation",
     "search",
     "api_requests",
@@ -63,6 +67,12 @@ def main() -> int:
     output = (args.output or ROOT / "artifacts" / "checks" / stamp).resolve()
     output.mkdir(parents=True, exist_ok=True)
     results = []
+    environment = os.environ.copy()
+    if environment.get("QT_QPA_PLATFORM") == "offscreen":
+        environment.setdefault("QT_QUICK_BACKEND", "software")
+        environment["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+            environment.get("QTWEBENGINE_CHROMIUM_FLAGS", "") + " --disable-gpu"
+        ).strip()
     print(f"Logs: {output}", flush=True)
     for name in checks:
         started = time.monotonic()
@@ -71,6 +81,7 @@ def main() -> int:
             process = subprocess.Popen(
                 [sys.executable, str(ROOT / "tests" / f"{name}_smoke.py")],
                 cwd=ROOT,
+                env=environment,
                 stdout=stream,
                 stderr=subprocess.STDOUT,
                 start_new_session=os.name == "posix",

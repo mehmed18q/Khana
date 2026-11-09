@@ -125,8 +125,9 @@
             if (node.nodeType === Node.ELEMENT_NODE) {
               if (
                 node.matches(
-                  'input,textarea,select,style,script,[hidden],[aria-hidden="true"],.code-toolbar,.annotation-tools,.annotation-badges,.empty-document'
+                  'input,textarea,select,style,script,[hidden],.katex-mathml,.code-toolbar,.annotation-tools,.annotation-badges,.empty-document'
                 ) ||
+                (node.getAttribute('aria-hidden') === 'true' && !node.matches('.katex-html')) ||
                 (node.matches('button') &&
                   !node.matches('.opblock-summary-control,.model-box-control'))
               )

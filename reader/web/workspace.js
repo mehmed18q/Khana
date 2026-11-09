@@ -15,6 +15,7 @@
       const header = document.createElement('div');
       header.className = 'pane-heading';
       const select = document.createElement('select');
+      const fileIcon = document.createElement('span');
       select.setAttribute('aria-label', 'Document in this pane');
       const focus = document.createElement('button');
       focus.textContent = 'Focus';
@@ -24,11 +25,11 @@
       const article = document.createElement('article');
       article.className = 'document';
       article.tabIndex = 0;
-      header.append(select, focus);
+      header.append(fileIcon, select, focus);
       scroll.append(article);
       section.append(header, scroll);
       workspace.append(section);
-      const pane = { section, select, focus, scroll, article, id: null, rendered: null };
+      const pane = { section, select, fileIcon, focus, scroll, article, id: null, rendered: null };
       pane.lineNumbers = ReaderLineNumbers.createReading({ article, scroller: scroll });
       pane.pdf = ReaderPDFPages.create({
         article,
@@ -99,6 +100,7 @@
         pane.select.value = pane.id || '';
         pane.focus.disabled = !pane.id;
         const doc = documents.get(pane.id);
+        pane.fileIcon.innerHTML = doc ? ReaderFileIcons.markup(doc) : '';
         if (
           pane.rendered !== doc ||
           pane.html !== doc?.html ||
@@ -117,6 +119,7 @@
           else {
             pane.article.innerHTML =
               doc?.html || '<p class="empty-document">Open another file to read it here.</p>';
+            ReaderMath.mount(pane.article);
             ReaderBidi.prepare(pane.article);
             ReaderDiagrams.mount(pane.article, {
               theme: settings().theme,
@@ -136,7 +139,7 @@
         ReaderDiagrams.refreshTheme(pane.article, settings().theme);
       }
     }
-    function setLayout(value) {
+    function setLayout(value, preferred = []) {
       if (!['single', 'columns', 'rows', 'grid'].includes(value)) return;
       mode = value;
       layout.value = value;
@@ -151,6 +154,16 @@
         pane.lineNumbers.dispose();
       }
       while (panes.length < count) panes.push(makePane());
+      const ids = [...new Set(preferred)].filter((id) => documents.has(id) && id !== current());
+      for (const pane of panes)
+        if (ids.includes(pane.id)) {
+          remember(pane);
+          pane.id = null;
+        }
+      ids.slice(0, panes.length).forEach((id, index) => {
+        remember(panes[index]);
+        panes[index].id = id;
+      });
       render();
     }
     return {

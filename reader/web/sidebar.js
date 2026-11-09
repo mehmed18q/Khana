@@ -190,18 +190,25 @@
     restore();
     return { restore, snapshot };
   }
-  function createWidth({ changed }) {
+  function createWidth({ changed, collapsedChanged }) {
     const shell = document.querySelector('.app-shell'),
       handle = document.getElementById('sidebar-width-resizer'),
+      toggle = document.getElementById('sidebar-collapse'),
       minimum = 220,
       defaultWidth = 264;
     let width = defaultWidth,
+      collapsed = false,
       drag = null;
     const maximum = () => Math.max(minimum, Math.min(560, shell.clientWidth - 620));
     const displayed = () => Math.min(width, maximum());
     function layout() {
       const value = displayed();
-      shell.style.setProperty('--sidebar-width', `${value}px`);
+      shell.style.setProperty('--sidebar-width', `${collapsed ? 52 : value}px`);
+      shell.classList.toggle('sidebar-collapsed', collapsed);
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Minimize sidebar');
+      toggle.title = collapsed ? 'Expand sidebar' : 'Minimize sidebar';
+      handle.hidden = collapsed;
       handle.setAttribute('aria-valuemin', minimum);
       handle.setAttribute('aria-valuemax', maximum());
       handle.setAttribute('aria-valuenow', value);
@@ -283,8 +290,15 @@
       finish(true);
       layout();
     });
-    function restore(value) {
+    toggle.onclick = () => {
       finish(true);
+      collapsed = !collapsed;
+      layout();
+      collapsedChanged(collapsed);
+    };
+    function restore(value, minimized = false) {
+      finish(true);
+      collapsed = minimized === true;
       width = Number.isFinite(value)
         ? Math.round(Math.max(minimum, Math.min(560, value)))
         : defaultWidth;

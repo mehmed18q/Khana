@@ -65,6 +65,7 @@ def collect_licenses():
         "PySide6_Essentials",
         "shiboken6",
         "markdown-it-py",
+        "mdit-py-plugins",
         "mdurl",
         "Pygments",
         "nh3",

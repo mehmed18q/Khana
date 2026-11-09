@@ -22,6 +22,17 @@ class PreferencesTests(unittest.TestCase):
         self.assertEqual(preferences["fontSize"], DEFAULTS["fontSize"])
         self.assertTrue(preferences["wide"])
 
+    def test_theme_choice_palette_and_compact_header_survive_normalization(self):
+        values = {"theme": "auto", "palette": "violet", "headerCollapsed": True}
+        preferences = normalize_preferences(json.loads(json.dumps(values)))
+        self.assertEqual({key: preferences[key] for key in values}, values)
+        repaired = normalize_preferences(
+            {"theme": "sepia", "palette": {}, "headerCollapsed": "yes"}
+        )
+        self.assertEqual(repaired["theme"], DEFAULTS["theme"])
+        self.assertEqual(repaired["palette"], DEFAULTS["palette"])
+        self.assertFalse(repaired["headerCollapsed"])
+
     def test_numeric_values_are_finite_and_bounded(self):
         for value in (float("nan"), float("inf"), -float("inf"), None, True, {}, []):
             with self.subTest(value=value):
