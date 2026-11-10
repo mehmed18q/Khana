@@ -35,8 +35,9 @@ docker run --rm --mount "type=bind,source=$PWD,target=/work,readonly" \
 
 The workflow `.github/workflows/apt-release.yml` is ready for this repository.
 Publishing requires a GitHub account with write access and repository settings
-access. The intended URL is `https://mehmed18q.github.io/Khana/`; it becomes an
-installation source only after a successful Pages deployment.
+access. The public repository is available at `https://mehmed18q.github.io/Khana/`.
+The first publication and installation from that public source were verified
+for package `0.10.0-2`. The steps below document setup for maintainers and forks.
 
 1. In the repository's **Settings → Pages**, select **GitHub Actions** as the source.
 2. Create a dedicated OpenPGP signing key and keep a secure backup. The signing

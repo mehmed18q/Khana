@@ -18,7 +18,7 @@ Linux releases are built on Ubuntu 24.04 amd64 with Python 3.12. Development and
 
 ## Install on Ubuntu
 
-A signed APT publishing workflow is prepared for GitHub Pages. See [APT setup and release instructions](packaging/APT.md). Repository installation is available after the first successful Pages deployment.
+The [signed APT repository and installation guide](https://mehmed18q.github.io/Khana/) is available for Ubuntu 24.04+ amd64. Add the repository once using that guide, then install with `sudo apt install khana` and receive updates through APT. Maintainers can find signing and publication details in [APT setup and release instructions](packaging/APT.md).
 
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
