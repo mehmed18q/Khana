@@ -6,6 +6,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -45,6 +46,8 @@ def main():
         second = base / "second.md"
         second.write_text("hello helllo سلام سللام")
         window = ReaderWindow([path], settings_path=base / "settings.ini")
+        spelling_results = []
+        window.bridge.spelling.ready.connect(lambda raw: spelling_results.append(json.loads(raw)))
         window.resize(1320, 900)
         window.show()
 
@@ -64,7 +67,10 @@ def main():
                     print("PASS:", label, flush=True)
                     return
                 QTest.qWait(50)
-            raise AssertionError(f"{label}: {errors}")
+            state = js(
+                "JSON.stringify({editing:document.body.classList.contains('editing'),highlights:CSS.highlights.get('reader-spelling')?.size,layerHidden:document.querySelector('.spelling-layer')?.hidden,toast:document.getElementById('toast').textContent})"
+            )
+            raise AssertionError(f"{label}: {errors}; {state}; spelling={spelling_results[-3:]}")
 
         def click(identifier):
             js(f"document.getElementById({json.dumps(identifier)}).click()")
@@ -91,13 +97,23 @@ def main():
         try:
             wait("!!window.readerApp?.activeId", "shell loaded")
             click("ui-language-button")
-            assert js("document.querySelectorAll('#ui-language-menu .language-flag').length===2")
+            assert js("document.querySelectorAll('#ui-language-menu .language-flag').length===3")
             js("document.querySelector('#ui-language-menu [data-value=fa]').click()")
             value("#ui-language", "fa", "change")
             wait(
                 "document.documentElement.dir==='rtl' && document.getElementById('save-button').textContent.includes('ذخیره')",
                 "Persian labels and RTL",
             )
+            assert js(
+                "document.querySelector('.sidebar').getBoundingClientRect().left>innerWidth/2"
+            )
+            assert js("document.getElementById('current-filename').textContent==='first.md'")
+            value("#ui-language", "ar", "change")
+            wait(
+                "document.documentElement.lang==='ar' && document.documentElement.dir==='rtl' && document.getElementById('save-button').textContent.includes('حفظ')",
+                "Arabic labels and RTL after Persian",
+            )
+            assert window.layoutDirection() == Qt.LayoutDirection.RightToLeft
             assert js(
                 "document.querySelector('.sidebar').getBoundingClientRect().left>innerWidth/2"
             )
@@ -159,7 +175,7 @@ def main():
                 'document.querySelector(\'#table-grid input[data-row="1"][data-col="0"]\').focus();document.querySelector(\'#table-grid input[data-row="1"][data-col="0"]\').select()'
             )
             QTest.keyClick(window.view.focusProxy(), Qt.Key.Key_Down)
-            assert js("document.activeElement.dataset.row==='2'")
+            wait("document.activeElement.dataset.row==='2'", "table arrow moves to next row")
             js(
                 'document.querySelector(\'#table-grid input[data-row="2"][data-col="0"]\').focus();document.activeElement.select()'
             )
@@ -257,6 +273,82 @@ def main():
             assert 'class="keep"' in js(source + ".value")
             assert 'class="row"' in js(source + ".value")
             print("PASS: HTML cell edits preserve existing markup and attributes", flush=True)
+            assert js("document.getElementById('document-path').hidden")
+            arabic_folder = base / "مجلد & # ١"
+            arabic_folder.mkdir()
+            arabic_path = arabic_folder / "ملف ١.md"
+            arabic_source = "الْعَرَبِيَّة كِتَاب المدرسة المدررسة سلام کتاب‌ها hello helllo"
+            arabic_path.write_text(arabic_source, encoding="utf-8")
+            window.bridge.load_paths([arabic_path])
+            wait(
+                "document.getElementById('current-filename').textContent==='ملف ١.md'",
+                "Arabic document",
+            )
+            value("#ui-language", "ar", "change")
+            click("edit-mode")
+            # The English misspelling is already ignored globally in this session.
+            wait(f"{count}===1", "mixed Arabic, Persian and English spelling with vocalization")
+            assert js("[...CSS.highlights.get('reader-spelling')][0].toString()==='المدررسة'")
+            assert js(source + ".value") == arabic_source
+            spelling_menu("المدررسة")
+            wait(
+                "[...document.querySelectorAll('[data-action=spelling-suggestion]')].some(n=>n.textContent==='المدرسة')",
+                "Arabic correction suggestions",
+            )
+            assert js(
+                "document.querySelector('[data-action=ignore-document]').textContent.includes('تجاهل')"
+            )
+            js("document.querySelector('[data-action=ignore-document]').click()")
+            wait(f"{count}===0", "Arabic ignore in document")
+            path_buttons = json.loads(
+                js(
+                    "JSON.stringify([...document.querySelectorAll('#document-folders button')].map(n=>({name:n.textContent,path:n.title})))"
+                )
+            )
+            assert [p["path"] for p in path_buttons] == [
+                str(p) for p in reversed(arabic_path.parents)
+            ], path_buttons
+            assert path_buttons[-1]["name"] == arabic_folder.name
+            assert js(
+                "document.getElementById('document-path').getBoundingClientRect().top >= document.getElementById('current-filename').getBoundingClientRect().bottom"
+            )
+            with patch("reader.ui.web.QDesktopServices.openUrl", return_value=True) as opened:
+                js("document.querySelector('#document-folders button:last-child').click()")
+                QTest.qWait(100)
+                assert opened.call_args.args[0].toLocalFile() == str(arabic_folder)
+                js("document.querySelector('#document-folders button').click()")
+                QTest.qWait(100)
+                assert opened.call_args.args[0].toLocalFile() == arabic_path.anchor
+                opened.reset_mock()
+                window.bridge.openDocumentFolder(js("readerApp.activeId"), str(base / "unrelated"))
+                assert not opened.called
+                click("repository-link")
+                assert opened.call_args.args[0].toString() == "https://github.com/mehmed18q/Khana"
+                click("developer-link")
+                assert opened.call_args.args[0].toString() == "https://github.com/mehmed18q"
+            print("PASS: breadcrumb folders and GitHub links open through the desktop", flush=True)
+            window.grab().save(str(ROOT / "artifacts/features-ar.png"))
+            saved_path = base / "نسخه.md"
+            with patch(
+                "reader.ui.bridge.QFileDialog.getSaveFileName", return_value=(str(saved_path), "")
+            ):
+                click("save-as-button")
+                wait(
+                    "document.getElementById('current-filename').textContent==='نسخه.md'",
+                    "Save As caption",
+                )
+            assert js("document.querySelector('#document-folders button:last-child').title") == str(
+                base
+            )
+            assert saved_path.read_text() == arabic_source
+            window.bridge.settings.sync()
+            assert json.loads(str(window.bridge.settings.value("reading")))["language"] == "ar"
+            window.resize(950, 700)
+            QTest.qWait(100)
+            assert js(
+                "document.querySelector('.top-actions').getBoundingClientRect().right <= innerWidth"
+            )
+            window.grab().save(str(ROOT / "artifacts/features-ar-compact.png"))
             assert not errors, errors
         finally:
             window.allow_close = True

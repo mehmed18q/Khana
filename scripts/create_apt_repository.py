@@ -139,7 +139,7 @@ sudo apt install khana
     (output / "index.html").write_text(
         '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">'
         "<title>Khana APT repository</title><style>body{font:18px/1.6 system-ui;max-width:900px;margin:3rem auto;padding:1rem}pre{overflow:auto;background:#f1f4f2;padding:1rem}code{font-size:14px}</style>"
-        "<h1>Khana</h1><p>A local reader and editor for Persian and English documents.</p>"
+        "<h1>Khana</h1><p>A local reader and editor for Persian, Arabic and English documents.</p>"
         "<p>Ubuntu 24.04 and newer, amd64. Add the repository once:</p><pre><code>"
         + html.escape(commands)
         + "</code></pre><p>Update after a new release:</p><pre>sudo apt update\nsudo apt install --only-upgrade khana</pre></html>"

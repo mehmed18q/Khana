@@ -20,7 +20,7 @@ def main():
         folder = Path(folder)
         source = folder / "reading.md"
         source.write_text(
-            "# Compatibility\n\nhello helllo سلام سللام\n\n123 / ۱۲۳ / ١٢٣\n\n"
+            "# Compatibility\n\nhello helllo سلام سللام الْعَرَبِيَّة المدرسة المدررسة\n\n123 / ۱۲۳ / ١٢٣\n\n"
             "| Title | Value |\n| --- | --- |\n| first | second |\n",
             encoding="utf-8",
         )
@@ -48,6 +48,24 @@ def main():
             running.wait(
                 "document.documentElement.dir==='rtl'&&document.getElementById('save-button').textContent.includes('ذخیره')",
                 "packaged Persian interface",
+            )
+            running.evaluate(
+                "document.getElementById('ui-language-button').click();document.querySelector('#ui-language-menu [data-value=ar]').click()"
+            )
+            running.wait(
+                "document.documentElement.lang==='ar'&&document.documentElement.dir==='rtl'&&document.getElementById('save-button').textContent.includes('حفظ')",
+                "packaged Arabic interface",
+            )
+            running.wait(
+                "(()=>{const words=[...(CSS.highlights.get('reader-spelling')||[])].map(range=>range.toString());return words.includes('المدررسة')&&!words.includes('الْعَرَبِيَّة')&&!words.includes('المدرسة')})()",
+                "packaged Arabic dictionary and vocalization",
+            )
+            assert running.evaluate(
+                "document.querySelector('#document-folders button:last-child').title"
+            ) == str(folder)
+            assert (
+                running.evaluate("document.getElementById('repository-link').href")
+                == "https://github.com/mehmed18q/Khana"
             )
             running.evaluate("document.querySelector('.structure-edit').click()")
             running.wait("document.getElementById('table-dialog').open", "existing table opens")

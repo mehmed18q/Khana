@@ -83,7 +83,7 @@
       snapshot = { source: field.value, field, id: doc.id, token: ++token };
       words = [
         ...field.value.matchAll(
-          /[A-Za-z]+(?:['’][A-Za-z]+)?|[\u0621-\u063a\u0641-\u064a\u066e-\u06d3\u200c]+/gu
+          /[A-Za-z]+(?:['’][A-Za-z]+)?|[\u0621-\u063a\u0641-\u064a\u066e-\u06d3][\u0621-\u063a\u0640-\u065f\u066e-\u06d3\u200c]*/gu
         ),
       ]
         .filter((match) => match[0].length > 1)

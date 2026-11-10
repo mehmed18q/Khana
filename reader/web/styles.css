@@ -1388,10 +1388,10 @@ body {
   cursor: grabbing;
 }
 
-html[lang='fa'] body {
+html[dir='rtl'] body {
   font-family: Reader, 'DejaVu Sans', sans-serif;
 }
-html[lang='fa'] .file-context-menu {
+html[dir='rtl'] .file-context-menu {
   font-family: Reader, sans-serif;
 }
 html[dir='rtl'] .sidebar-collapse {
@@ -1421,7 +1421,7 @@ html[dir='rtl'] .has-line-numbers > .reading-scroll {
   padding-left: 24px;
   padding-right: 62px;
 }
-html[lang='fa'] .section-label,
-html[lang='fa'] .sidebar-toggle {
+html[dir='rtl'] .section-label,
+html[dir='rtl'] .sidebar-toggle {
   letter-spacing: 0;
 }

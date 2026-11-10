@@ -2,6 +2,13 @@
 window.ReaderPersian = Object.fromEntries(
   `
 LIVE PREVIEW|پیش‌نمایش زنده
+File location|مسیر فایل
+Khana on GitHub|خوانا در گیت‌هاب
+Development by|توسعه توسط
+The folder is no longer available.|پوشه دیگر در دسترس نیست.
+Could not open the folder.|باز کردن پوشه ممکن نشد.
+The containing folder is no longer available.|پوشهٔ فایل دیگر در دسترس نیست.
+Could not open the containing folder.|باز کردن پوشهٔ فایل ممکن نشد.
 • List|• فهرست
 1. List|۱. فهرست
 Open|باز کردن

@@ -59,7 +59,20 @@ class EditSession:
         return self.document.source != self.saved_source
 
     def payload(self) -> dict:
-        return {**self.document.to_dict(), "savedSource": self.saved_source, "dirty": self.dirty}
+        folders = (
+            [
+                {"name": folder.name or folder.anchor, "path": str(folder)}
+                for folder in reversed(Path(self.document.path).parents)
+            ]
+            if self.document.path
+            else []
+        )
+        return {
+            **self.document.to_dict(),
+            "savedSource": self.saved_source,
+            "dirty": self.dirty,
+            "folders": folders,
+        }
 
     def save(self, path: Path, expected: str | None) -> None:
         doc = self.document

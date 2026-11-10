@@ -17,7 +17,7 @@ from reader.ui.workspace import WindowManager
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Khana — Local Markdown and HTML reader for Persian and English"
+        description="Khana — Local Markdown and HTML reader for Persian, Arabic and English"
     )
     parser.add_argument("--version", action="version", version=f"{APP_NAME} {VERSION}")
     parser.add_argument("files", nargs="*", type=Path, help="Markdown or HTML files to open")

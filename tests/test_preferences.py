@@ -7,6 +7,9 @@ from reader.preferences import DEFAULTS, normalize_preferences
 
 
 class PreferencesTests(unittest.TestCase):
+    def test_arabic_language_survives_serialization(self):
+        self.assertEqual(normalize_preferences(json.loads('{"language":"ar"}'))["language"], "ar")
+
     def test_invalid_root_uses_independent_defaults(self):
         for value in (None, [], "invalid", 17):
             with self.subTest(value=value):

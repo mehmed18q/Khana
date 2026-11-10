@@ -24,6 +24,13 @@ class SpellingTests(unittest.TestCase):
         self.assertIn("hello", self.engine.suggestions("helllo"))
         self.assertIn("سلام", self.engine.suggestions("سللام"))
 
+    def test_arabic_words_vocalization_and_suggestions(self):
+        for word in ("العربية", "المدرسة", "الْعَرَبِيَّة", "كِتَاب", "الكتاب", "مكتبة", "كـتاب"):
+            self.assertTrue(self.engine.correct(word), word)
+        for word in ("المدررسة", "كتااب"):
+            self.assertFalse(self.engine.correct(word), word)
+        self.assertIn("المدرسة", self.engine.suggestions("المدررسة"))
+
     def test_saved_document_and_global_exceptions_survive_restart(self):
         class Harness:
             _spelling_key = Bridge._spelling_key

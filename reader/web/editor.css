@@ -423,6 +423,9 @@ body[data-theme='dark'] .save-button {
 html[lang='fa'] .editing .paper-topline > span:first-child::after {
   content: 'پیش‌نمایش زنده';
 }
+html[lang='ar'] .editing .paper-topline > span:first-child::after {
+  content: 'معاينة مباشرة';
+}
 .table-grid tr.selected-row {
   outline: 2px solid var(--accent);
   outline-offset: -2px;

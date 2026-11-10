@@ -2,7 +2,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const formatNumber = (number) =>
-    new Intl.NumberFormat(settings.language === 'fa' ? 'fa-IR' : 'en-US', {
+    new Intl.NumberFormat({ fa: 'fa-IR', ar: 'ar', en: 'en-US' }[settings.language], {
       maximumFractionDigits: 1,
     }).format(number);
   const icon = (name) => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
@@ -233,6 +233,7 @@
   });
   ReaderWindowControls.create({ native: () => bridge });
   const header = ReaderHeader.create({
+    native: () => bridge,
     changed: (collapsed) => {
       settings.headerCollapsed = collapsed;
       bridge?.saveSettings(JSON.stringify(settings));
@@ -591,6 +592,7 @@
     if (doc) doc.dirty = sourceOf(doc) !== doc.savedSource;
     $('current-filename').textContent = doc?.name || 'Khana';
     $('current-filename').title = doc?.path || 'Not saved to disk';
+    header.showPath(doc);
     $('current-file-icon').innerHTML = doc ? ReaderFileIcons.markup(doc) : icon('book');
     $('compact-file-icon').innerHTML = $('current-file-icon').innerHTML;
     $('compact-filename').textContent = (doc?.name || 'Khana') + (doc?.dirty ? ' •' : '');
@@ -665,6 +667,7 @@
     if (!doc) return;
     for (const key of [
       'path',
+      'folders',
       'name',
       'size',
       'fingerprint',

@@ -51,8 +51,9 @@ class ReaderView(QWebEngineView):
             return
         menu = QMenu(self)
         persian = self.window.property("language") == "fa"
+        arabic = self.window.property("language") == "ar"
         menu.setLayoutDirection(
-            Qt.LayoutDirection.RightToLeft if persian else Qt.LayoutDirection.LeftToRight
+            Qt.LayoutDirection.RightToLeft if persian or arabic else Qt.LayoutDirection.LeftToRight
         )
         if request.misspelledWord():
             suggestions = request.spellCheckerSuggestions()
@@ -63,19 +64,23 @@ class ReaderView(QWebEngineView):
                 )
             if not suggestions:
                 menu.addAction(
-                    "پیشنهادی پیدا نشد" if persian else "No spelling suggestions"
+                    "پیشنهادی پیدا نشد"
+                    if persian
+                    else "لا توجد اقتراحات إملائية"
+                    if arabic
+                    else "No spelling suggestions"
                 ).setEnabled(False)
             menu.addSeparator()
-        for name, english, farsi in (
-            ("Undo", "Undo", "واگرد"),
-            ("Redo", "Redo", "انجام دوباره"),
-            ("Cut", "Cut", "برش"),
-            ("Copy", "Copy", "کپی"),
-            ("Paste", "Paste", "چسباندن"),
-            ("SelectAll", "Select all", "انتخاب همه"),
+        for name, english, farsi, arabic_label in (
+            ("Undo", "Undo", "واگرد", "تراجع"),
+            ("Redo", "Redo", "انجام دوباره", "إعادة"),
+            ("Cut", "Cut", "برش", "قص"),
+            ("Copy", "Copy", "کپی", "نسخ"),
+            ("Paste", "Paste", "چسباندن", "لصق"),
+            ("SelectAll", "Select all", "انتخاب همه", "تحديد الكل"),
         ):
             native = self.page().action(getattr(QWebEnginePage.WebAction, name))
-            action = menu.addAction(farsi if persian else english)
+            action = menu.addAction(farsi if persian else arabic_label if arabic else english)
             action.setEnabled(native.isEnabled())
             action.triggered.connect(native.trigger)
         menu.exec(event.globalPos())

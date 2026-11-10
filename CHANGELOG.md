@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0 — 2026-11-10
+
+- Add an Arabic interface with right-to-left layout, translated menus and dialogs, and a flag in the language picker.
+- Add offline Arabic spelling alongside Persian and English, including vocalized words, correction suggestions, and document/global ignore options.
+- Show clickable folder breadcrumbs beneath the document name. Each segment opens its folder; the path follows tab changes, renames and Save As.
+- Add a GitHub repository icon and link the developer's name to their GitHub profile.
+- Publish the Ubuntu 24.04+ amd64 package as `0.11.0-1` through the existing signed APT repository.
+
 ## Packaging 0.10.0-2 — 2026-11-10
 
 - Rebuild on Ubuntu 24.04 amd64 for compatibility with Ubuntu 24.04 and newer; reject bundles requiring GLIBC newer than 2.39.

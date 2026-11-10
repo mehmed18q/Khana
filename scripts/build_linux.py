@@ -96,7 +96,7 @@ def collect_licenses():
         "Mermaid 11.12.2: reader/web/vendor/MERMAID-LICENSE.txt",
         "Swagger UI 5.34.0: reader/web/vendor/SWAGGER-UI-LICENSE.txt; swagger-ui-bundle.js.LICENSE.txt",
         "Noto Sans Arabic: reader/web/fonts/LICENSE.txt",
-        "Persian/English spelling dictionaries: reader/web/dictionaries/README.md and LICENSE-*.txt",
+        "Persian/Arabic/English spelling dictionaries: reader/web/dictionaries/README.md and LICENSE-*.txt",
     ]
     (output / "THIRD-PARTY.txt").write_text("\n".join(notices) + "\n", encoding="utf-8")
 
@@ -161,7 +161,7 @@ def main():
                     "Version=1.0",
                     "Name=Khana",
                     "GenericName=Document and Text Editor",
-                    "Comment=Read and write Persian and English documents",
+                    "Comment=Read and write Persian, Arabic and English documents",
                     f"Exec={desktop_quote(executable)} %F",
                     f"Icon={icon}",
                     "Terminal=false",

@@ -8,7 +8,9 @@
     const shapes =
       language === 'fa'
         ? '<path fill="#239f40" d="M0 0h30v6H0z"/><path fill="#fff" d="M0 6h30v6H0z"/><path fill="#da0000" d="M0 12h30v6H0z"/><text x="15" y="11.5" text-anchor="middle" fill="#da0000" font-size="8">☫</text>'
-        : '<path fill="#fff" d="M0 0h30v18H0z"/><path stroke="#b22234" stroke-width="1.4" d="M0 .7h30M0 3.5h30M0 6.3h30M0 9.1h30M0 11.9h30M0 14.7h30M0 17.5h30"/><path fill="#3c3b6e" d="M0 0h13v10H0z"/><path stroke="#fff" stroke-width="1" stroke-dasharray="1 2" d="M2 2h10M2 4h10M2 6h10M2 8h10"/>';
+        : language === 'ar'
+          ? '<path fill="#006c35" d="M0 0h30v18H0z"/><text x="15" y="8.5" text-anchor="middle" fill="#fff" font-size="3.4" font-family="Reader">لا إله إلا الله محمد رسول الله</text><path fill="none" stroke="#fff" stroke-width=".9" d="M7 12.5h16m-1.5 0v2H20"/>'
+          : '<path fill="#fff" d="M0 0h30v18H0z"/><path stroke="#b22234" stroke-width="1.4" d="M0 .7h30M0 3.5h30M0 6.3h30M0 9.1h30M0 11.9h30M0 14.7h30M0 17.5h30"/><path fill="#3c3b6e" d="M0 0h13v10H0z"/><path stroke="#fff" stroke-width="1" stroke-dasharray="1 2" d="M2 2h10M2 4h10M2 6h10M2 8h10"/>';
     return `<svg class="language-flag" viewBox="0 0 30 18" aria-hidden="true">${shapes}</svg>`;
   }
   function create() {

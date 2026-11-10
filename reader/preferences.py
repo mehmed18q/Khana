@@ -39,7 +39,7 @@ def normalize_preferences(values: object) -> dict:
     values = values if isinstance(values, dict) else {}
     result = dict(DEFAULTS)
     for key, options in (
-        ("language", ("en", "fa")),
+        ("language", ("en", "fa", "ar")),
         ("theme", ("light", "dark", "auto")),
         ("palette", ("forest", "ocean", "violet", "rose", "amber", "slate")),
         ("direction", ("smart", "rtl", "ltr")),

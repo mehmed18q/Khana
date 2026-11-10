@@ -106,3 +106,62 @@
 #spellcheck-button[aria-pressed='false'] {
   opacity: 0.55;
 }
+.document-caption {
+  min-width: 0;
+  flex: 1;
+}
+#document-path {
+  display: flex;
+  margin-top: 3px;
+  min-width: 0;
+}
+#document-folders {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: thin;
+  gap: 3px;
+  font:
+    10px/1.7 Reader,
+    sans-serif;
+  color: var(--muted);
+}
+#document-folders button {
+  flex-shrink: 0;
+  border-radius: 3px;
+  padding: 0 3px;
+  white-space: nowrap;
+}
+#document-folders button:hover,
+#document-folders button:focus-visible {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.path-separator {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.developer-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.developer-credit a {
+  color: inherit;
+  text-decoration: none;
+}
+.developer-credit a:hover,
+.developer-credit a:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+}
+#repository-link {
+  display: inline-flex;
+  padding: 3px;
+}
+#repository-link svg {
+  width: 14px;
+  height: 14px;
+}

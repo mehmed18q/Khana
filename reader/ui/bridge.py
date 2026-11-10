@@ -149,7 +149,7 @@ class Bridge(QObject):
         if isinstance(self.window, QWidget):
             self.window.setLayoutDirection(
                 Qt.LayoutDirection.RightToLeft
-                if preferences["language"] == "fa"
+                if preferences["language"] in {"fa", "ar"}
                 else Qt.LayoutDirection.LeftToRight
             )
         self.settingsLoaded.emit(json.dumps(preferences))
@@ -556,6 +556,7 @@ class Bridge(QObject):
     def _ask(self, title, text, buttons, default):
         box = QMessageBox(self.window)
         persian = self.window.property("language") == "fa"
+        arabic = self.window.property("language") == "ar"
         if persian:
             title = {"Unsaved changes": "تغییرات ذخیره‌نشده", "Replace file?": "جایگزینی فایل؟"}.get(
                 title, title
@@ -570,21 +571,38 @@ class Bridge(QObject):
                 if 'Replace "' in text:
                     prefix, name = text.split('Replace "', 1)
                     text = prefix + "فایل «" + name.split('"', 1)[0] + "» با متن فعلی جایگزین شود؟"
+        elif arabic:
+            title = {
+                "Unsaved changes": "تغييرات غير محفوظة",
+                "Replace file?": "استبدال الملف؟",
+            }.get(title, title)
+            if text.startswith('Save changes to "'):
+                text = "هل تريد حفظ التغييرات في «" + text[17:-2] + "»؟"
+            else:
+                text = text.replace(
+                    "The file has changed on disk since it was opened.",
+                    "تغيّر الملف على القرص منذ فتحه.",
+                ).replace(
+                    "A file already exists at this location.", "يوجد ملف في هذا الموقع بالفعل."
+                )
+                if 'Replace "' in text:
+                    prefix, name = text.split('Replace "', 1)
+                    text = prefix + "هل تريد استبدال «" + name.split('"', 1)[0] + "» بالنص الحالي؟"
         box.setWindowTitle(title)
         box.setTextFormat(Qt.TextFormat.PlainText)
         box.setText(text)
         box.setIcon(QMessageBox.Icon.Warning)
         box.setStandardButtons(buttons)
         box.setDefaultButton(default)
-        if persian:
-            for flag, label in (
-                (QMessageBox.StandardButton.Save, "ذخیره"),
-                (QMessageBox.StandardButton.Discard, "ذخیره نشود"),
-                (QMessageBox.StandardButton.Cancel, "انصراف"),
-                (QMessageBox.StandardButton.Yes, "بله"),
+        if persian or arabic:
+            for flag, farsi, arabic_label in (
+                (QMessageBox.StandardButton.Save, "ذخیره", "حفظ"),
+                (QMessageBox.StandardButton.Discard, "ذخیره نشود", "تجاهل"),
+                (QMessageBox.StandardButton.Cancel, "انصراف", "إلغاء"),
+                (QMessageBox.StandardButton.Yes, "بله", "نعم"),
             ):
                 if box.button(flag):
-                    box.button(flag).setText(label)
+                    box.button(flag).setText(farsi if persian else arabic_label)
         return box.exec()
 
     def _confirm_changes(self, session):
@@ -804,7 +822,7 @@ class Bridge(QObject):
         if isinstance(self.window, QWidget):
             self.window.setLayoutDirection(
                 Qt.LayoutDirection.RightToLeft
-                if cleaned["language"] == "fa"
+                if cleaned["language"] in {"fa", "ar"}
                 else Qt.LayoutDirection.LeftToRight
             )
         appearance = json.dumps({key: cleaned[key] for key in ("theme", "palette")})
@@ -941,6 +959,21 @@ class Bridge(QObject):
             return
         if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(file.parent))):
             self.errorOccurred.emit("Could not open the containing folder.")
+
+    @Slot(str, str)
+    def openDocumentFolder(self, document_id, path):
+        session = self.sessions.get(document_id)
+        if not session or not session.document.path:
+            return
+        # Only ancestors of this open document can be opened from its breadcrumb.
+        folder = Path(path)
+        if folder not in Path(session.document.path).parents:
+            return
+        if not folder.is_dir():
+            self.errorOccurred.emit("The folder is no longer available.")
+            return
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder))):
+            self.errorOccurred.emit("Could not open the folder.")
 
     @Slot(str)
     def openLibraryWindow(self, path):

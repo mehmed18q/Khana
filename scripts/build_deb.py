@@ -110,7 +110,7 @@ def main():
         "Maintainer: Khana local build <noreply@localhost>\n"
         f"Installed-Size: {installed_size}\n"
         "Depends: libc6 (>= 2.39), libgl1, libegl1, desktop-file-utils, hicolor-icon-theme, libreoffice-writer\n"
-        "Description: Khana - document and text editor for Persian and English\n"
+        "Description: Khana - document and text editor for Persian, Arabic and English\n"
         " A local desktop reader and editor with smart bidirectional text,\n"
         " synchronized preview, Word, PDF, structured text, tables and flowcharts.\n"
         " Includes its own Python and Qt runtime. Built for Ubuntu 24.04+ amd64.\n",

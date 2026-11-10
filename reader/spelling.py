@@ -2,7 +2,7 @@
 
 from contextlib import closing
 from functools import lru_cache
-from itertools import islice
+from itertools import islice, zip_longest
 
 from spylls.hunspell import Dictionary, readers
 from spylls.hunspell.readers.file_reader import FileReader
@@ -27,8 +27,17 @@ class Spelling:
         self.correct = lru_cache(maxsize=20000)(self.correct)
         self.suggestions = lru_cache(maxsize=512)(self.suggestions)
 
-    def dictionary(self, word):
-        language = "fa-IR" if any("\u0600" <= char <= "\u06ff" for char in word) else "en-US"
+    @staticmethod
+    def languages(word):
+        if not any("\u0600" <= char <= "\u06ff" for char in word):
+            return ("en-US",)
+        if any(char in "پچژگکی\u200c" for char in word):
+            return ("fa-IR",)
+        # Persian and Arabic share many letters. Accept either dictionary, and
+        # prefer Arabic suggestions when the word uses distinct Arabic letters.
+        return ("ar", "fa-IR") if any(char in "كةىي" for char in word) else ("fa-IR", "ar")
+
+    def dictionary(self, language):
         if language not in self.dictionaries:
             path = WEB / "dictionaries" / language
             with closing(DictionaryReader(str(path) + ".aff")) as source:
@@ -41,9 +50,19 @@ class Spelling:
     def correct(self, word):
         if len(word) > 80 or len(word) < 2:
             return True
-        return self.dictionary(word).lookup(word)
+        return any(self.dictionary(language).lookup(word) for language in self.languages(word))
 
     def suggestions(self, word):
         if len(word) > 40:
             return []
-        return list(islice(self.dictionary(word).suggest(word), 6))
+        candidates = [
+            islice(self.dictionary(language).suggest(word), 6) for language in self.languages(word)
+        ]
+        result = []
+        for group in zip_longest(*candidates):
+            for suggestion in group:
+                if suggestion and suggestion not in result:
+                    result.append(suggestion)
+                    if len(result) == 6:
+                        return result
+        return result

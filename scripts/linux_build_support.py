@@ -6,7 +6,7 @@ import re
 import subprocess
 from pathlib import Path
 
-DEBIAN_REVISION = "2"
+DEBIAN_REVISION = "1"
 BUILD_TARGET = {"distribution": "ubuntu", "release": "24.04", "architecture": "amd64"}
 MAX_GLIBC = (2, 39)
 

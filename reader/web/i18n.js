@@ -1,22 +1,32 @@
 /* UI-only localization. Observers are scoped to chrome, never to document text. */
 (() => {
   'use strict';
-  const catalog = new Map(Object.entries(window.ReaderPersian));
-  const patterns = [...catalog]
-    .filter(([key]) => key.includes('{0}'))
-    .map(([key, value]) => [
-      new RegExp(
-        '^' +
-          key
-            .split(/(\{\d+\})/)
-            .map((part) =>
-              /^\{\d+\}$/.test(part) ? '(.*?)' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            )
-            .join('') +
-          '$'
-      ),
-      value,
-    ]);
+  const catalogs = Object.fromEntries(
+    Object.entries({ fa: window.ReaderPersian, ar: window.ReaderArabic }).map(([code, entries]) => [
+      code,
+      new Map(Object.entries(entries)),
+    ])
+  );
+  const patterns = Object.fromEntries(
+    Object.entries(catalogs).map(([code, catalog]) => [
+      code,
+      [...catalog]
+        .filter(([key]) => key.includes('{0}'))
+        .map(([key, value]) => [
+          new RegExp(
+            '^' +
+              key
+                .split(/(\{\d+\})/)
+                .map((part) =>
+                  /^\{\d+\}$/.test(part) ? '(.*?)' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                )
+                .join('') +
+              '$'
+          ),
+          value,
+        ]),
+    ])
+  );
   let language = 'en';
   const records = new WeakMap();
   const roots = new Set();
@@ -25,9 +35,10 @@
   const excluded =
     'script,style,svg,textarea,.document,.source-editor,.source-mirror,.source-search-layer,.spelling-layer,[translate="no"],.file-name,.library-name,.outline-title,.category-name,.annotation-name,.annotation-jump,.annotation-note,.annotation-excerpt,.annotation-quote,.annotation-context,.annotation-body,.search-result bdi,#current-filename,#compact-filename,#annotation-context,#pdf-text-context';
   function text(value) {
-    if (language !== 'fa') return value;
+    const catalog = catalogs[language];
+    if (!catalog) return value;
     if (catalog.has(value)) return catalog.get(value);
-    for (const [pattern, translated] of patterns) {
+    for (const [pattern, translated] of patterns[language]) {
       const match = pattern.exec(value);
       if (match)
         return translated.replace(/\{(\d+)\}/g, (_, index) => match[Number(index) + 1] || '');
@@ -68,7 +79,7 @@
     for (const child of root.childNodes) translate(child);
   }
   const observer = new MutationObserver((changes) => {
-    if (language !== 'fa') return;
+    if (language === 'en') return;
     const pending = new Set();
     for (const change of changes) {
       if (change.type === 'childList') for (const node of change.addedNodes) pending.add(node);
@@ -91,11 +102,11 @@
     });
   }
   function apply(value) {
-    const next = value === 'fa' ? 'fa' : 'en';
+    const next = Object.hasOwn(catalogs, value) ? value : 'en';
     if (next === language && roots.size) return;
     language = next;
     document.documentElement.lang = language;
-    document.documentElement.dir = language === 'fa' ? 'rtl' : 'ltr';
+    document.documentElement.dir = language === 'en' ? 'ltr' : 'rtl';
     register();
     for (const root of roots) translate(root);
     document.dispatchEvent(new CustomEvent('reader-language-changed'));
