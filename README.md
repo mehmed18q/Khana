@@ -8,25 +8,27 @@ Current version: **0.10.0**. See [CHANGELOG.md](CHANGELOG.md) for release change
 
 | Method | Requirements | Desktop integration |
 | --- | --- | --- |
-| [Ubuntu installer](#install-on-ubuntu) | Ubuntu 26.04, x86_64 / amd64 | Application search, logo, dock pinning, and Open With |
+| [Ubuntu installer](#install-on-ubuntu) | Ubuntu 24.04+, x86_64 / amd64 | Application search, logo, dock pinning, and Open With |
 | [Run from source](#run-from-source) | Python 3.10–3.15 and a graphical desktop | Run from a terminal or IDE |
-| [Portable executable](#portable-desktop-app) | Ubuntu 26.04, x86_64 / amd64 | Run the executable directly |
+| [Portable executable](#portable-desktop-app) | Ubuntu 24.04+, x86_64 / amd64 | Run the executable directly |
 
-The verified environment is Ubuntu 26.04 x86_64 with Python 3.14. Windows source commands are provided below, but a Windows build has not been tested or published. The Linux binaries are not intended for Windows, macOS, ARM, or older Ubuntu versions.
+Linux releases are built on Ubuntu 24.04 amd64 with Python 3.12. Development and desktop checks also run on Ubuntu 26.04 with Python 3.14. Windows source commands are provided below, but a Windows build has not been tested or published. The Linux binaries are not intended for Windows, macOS, ARM, or Ubuntu versions older than 24.04.
 
 **Downloads:** check [GitHub Releases](https://github.com/mehmed18q/khana/releases) for attached installers. If there is no `.deb` asset, [run from source](#run-from-source) or [build the installer](#build-the-ubuntu-installer). The `dist/`, `build/`, and `.venv/` directories are generated locally and are not included when cloning the repository or downloading its source ZIP.
 
 ## Install on Ubuntu
 
+A signed APT publishing workflow is prepared for GitHub Pages. See [APT setup and release instructions](packaging/APT.md). Repository installation is available after the first successful Pages deployment.
+
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.10.0 these are `khana_0.10.0-1_amd64.deb` and `khana_0.10.0-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.10.0 these are `khana_0.10.0-2_amd64.deb` and `khana_0.10.0-2_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.10.0-1_amd64.deb.sha256
-sudo apt install ./khana_0.10.0-1_amd64.deb
+sha256sum -c khana_0.10.0-2_amd64.deb.sha256
+sudo apt install ./khana_0.10.0-2_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -52,7 +54,7 @@ An internet connection is needed to download dependencies; reading and editing w
 
 ### Ubuntu
 
-On Ubuntu 26.04, install Python, Git, and the desktop libraries needed by Qt:
+On Ubuntu 24.04 or newer, install Python, Git, and the desktop libraries needed by Qt:
 
 ```bash
 sudo apt update
@@ -146,16 +148,14 @@ For PyCharm or another IDE, select the project's `.venv` interpreter and run `ma
 
 ## Build the Ubuntu installer
 
-Build on **Ubuntu 26.04 x86_64**. First follow the [Ubuntu source setup](#ubuntu) through dependency installation. From the cloned project folder:
+Install Docker on a Linux amd64 host. The build runs in an isolated **Ubuntu 24.04** container and verifies the packaged UI before copying the installer to `dist/`. From the cloned project folder:
 
 ```bash
-sudo apt install curl dpkg desktop-file-utils
-.venv/bin/python -m pip install -r requirements-build.txt
-.venv/bin/python scripts/build_deb.py
-sudo apt install ./dist/khana_0.10.0-1_amd64.deb
+python3 scripts/build_ubuntu24.py
+sudo apt install ./dist/khana_0.10.0-2_amd64.deb
 ```
 
-The build produces `dist/khana_0.10.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.10.0-2_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -171,7 +171,7 @@ chmod +x Khana
 ./Khana
 ```
 
-To build it yourself, complete the build prerequisites above and run:
+To build a portable executable directly, use **Ubuntu 24.04 amd64**, install the source dependencies and `requirements-build.txt`, then run:
 
 ```bash
 .venv/bin/python scripts/build_linux.py
@@ -186,7 +186,7 @@ The single executable includes Python and the app's resources and can be moved t
 - **`python3 -m venv` fails on Ubuntu:** install `python3-venv`, then rerun the environment-creation command.
 - **Qt reports a missing `xcb` plugin dependency:** install the Qt runtime libraries listed in the Ubuntu source instructions. Run from a graphical desktop rather than a terminal-only server session.
 - **The dock shows `io.khana.Khana`, has no icon, or cannot pin the app:** install the `.deb`, close the portable/source window, and start **Khana** from the application list.
-- **The `.deb` reports a `libc6` version or architecture mismatch:** it targets Ubuntu 26.04 amd64. Use an environment compatible with that build, or try the source setup with dependencies supported by your system.
+- **The `.deb` reports a `libc6` version or architecture mismatch:** revision `0.10.0-2` targets Ubuntu 24.04+ amd64; `0.10.0-1` required 26.04. Use an environment compatible with that build, or try the source setup with dependencies supported by your system.
 - **The whole screen is occupied:** press **F11** to leave fullscreen.
 
 ## Publishing downloads (maintainers)
@@ -195,8 +195,8 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.10.0-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.10.0-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.10.0-2_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.10.0-2_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 

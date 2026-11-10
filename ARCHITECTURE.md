@@ -123,6 +123,12 @@ the mocked completion cases in `workspace_smoke.py` alone cannot cover it.
 package builders. The browser reads the bridge's constant `appVersion` property
 through WebChannel. It must not embed a separate version string. Debian packaging
 also checks the unpacked executable's version before creating installer metadata.
+`scripts/linux_build_support.py` owns the Debian packaging revision and Ubuntu
+24.04 build baseline. Release builds use `scripts/build_ubuntu24.py`; an embedded
+build record and a scan of ELF GLIBC requirements prevent a newer-host bundle
+from being mislabeled as compatible. APT metadata is generated and signed only
+after the packaged GUI and repository verification checks pass. See
+`packaging/APT.md` for GitHub Pages setup and signing-key handling.
 
 | State | Lifetime |
 | --- | --- |

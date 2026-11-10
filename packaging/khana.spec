@@ -12,6 +12,7 @@ a = Analysis(
         (str(root / "reader" / "web"), "reader/web"),
         (str(root / "examples"), "examples"),
         (str(root / "build" / "licenses"), "licenses"),
+        (str(root / "build" / "build-platform.json"), "."),
     ],
     hiddenimports=[],
     hookspath=[],

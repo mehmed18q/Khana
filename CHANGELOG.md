@@ -1,5 +1,11 @@
 # Changelog
 
+## Packaging 0.10.0-2 — 2026-11-10
+
+- Rebuild on Ubuntu 24.04 amd64 for compatibility with Ubuntu 24.04 and newer; reject bundles requiring GLIBC newer than 2.39.
+- Add an isolated Docker build and packaged GUI compatibility check, plus signed APT repository generation and GitHub Pages publication workflow.
+- Keep the application version at 0.10.0; the Debian packaging revision advances from 1 to 2.
+
 ## 0.10.0 — 2026-11-10
 
 - Faster Find and navigation: linear rendered-text indexing, cached search ranges and scroll maps, binary interpolation, and visible-only reading gutters. Typing no longer rebuilds library and annotation lists.

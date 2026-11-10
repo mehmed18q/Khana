@@ -1,0 +1,129 @@
+name: Build and publish Ubuntu APT package
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the tested package to GitHub Releases and Pages
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*-*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: khana-apt-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Build and test on Ubuntu 24.04
+        run: python3 scripts/build_ubuntu24.py
+      - name: Verify installation on a clean Ubuntu 24.04 image
+        run: |
+          docker run --rm --init --mount "type=bind,source=$PWD/dist,target=/packages,readonly" \
+            ubuntu:24.04@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517 \
+            sh -c 'apt-get update -qq && apt-get install -y --no-install-recommends /packages/*.deb >/tmp/install.log && khana --version'
+      - name: Test signed repository installation metadata
+        run: docker run --rm --mount "type=bind,source=$PWD,target=/work,readonly" khana-builder:ubuntu24 python tests/apt_repository_smoke.py
+      - name: Upload tested installer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: khana-ubuntu24
+          path: |
+            dist/*.deb
+            dist/*.sha256
+          if-no-files-found: error
+
+  publish:
+    if: inputs.publish || startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: khana-ubuntu24
+          path: dist
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+        id: pages
+      - name: Install repository tools
+        run: sudo apt-get update && sudo apt-get install -y apt-utils dpkg-dev gnupg
+      - name: Import repository signing key
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+          APT_SIGNING_PASSPHRASE: ${{ secrets.APT_SIGNING_PASSPHRASE }}
+        run: |
+          test -n "$APT_SIGNING_KEY"
+          install -d -m 0700 "$RUNNER_TEMP/khana-gnupg"
+          printf '%s' "$APT_SIGNING_KEY" | gpg --homedir "$RUNNER_TEMP/khana-gnupg" --batch --import
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'khana-passphrase'
+          path.touch(mode=0o600)
+          path.write_text(os.environ['APT_SIGNING_PASSPHRASE'])
+          PY
+      - name: Create signed APT repository
+        env:
+          APT_SIGNING_FINGERPRINT: ${{ vars.APT_SIGNING_FINGERPRINT }}
+          PAGES_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          python3 scripts/create_apt_repository.py dist/*.deb --output dist/apt \
+            --url "$PAGES_URL" --key "$APT_SIGNING_FINGERPRINT" \
+            --gnupghome "$RUNNER_TEMP/khana-gnupg" \
+            --passphrase-file "$RUNNER_TEMP/khana-passphrase"
+      - name: Attach installer to the packaging release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(python3 -c 'from reader import VERSION; from scripts.linux_build_support import DEBIAN_REVISION; print(VERSION + "-" + DEBIAN_REVISION)')
+          tag="v$version"
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "$tag" ]]; then
+            echo "Tag does not match application/package version" >&2
+            exit 1
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            mkdir -p "$RUNNER_TEMP/existing-release"
+            for asset in dist/*.deb dist/*.sha256; do
+              filename=$(basename "$asset")
+              if gh release download "$tag" --pattern "$filename" --dir "$RUNNER_TEMP/existing-release"; then
+                cmp "$asset" "$RUNNER_TEMP/existing-release/$filename" || {
+                  echo "A different asset already exists. Bump the packaging revision." >&2
+                  exit 1
+                }
+              else
+                gh release upload "$tag" "$asset"
+              fi
+            done
+          else
+            gh release create "$tag" dist/*.deb dist/*.sha256 --target "$GITHUB_SHA" \
+              --title "Khana $version — Ubuntu 24.04+" --notes-file CHANGELOG.md
+          fi
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: dist/apt
+      - name: Deploy APT repository
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      - name: Remove temporary signing material
+        if: always()
+        run: |
+          gpgconf --homedir "$RUNNER_TEMP/khana-gnupg" --kill gpg-agent || true
+          rm -rf "$RUNNER_TEMP/khana-gnupg" "$RUNNER_TEMP/khana-passphrase"

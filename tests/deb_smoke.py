@@ -21,14 +21,15 @@ from api_fixture import api_server, api_spec
 from reader import APP_NAME, VERSION
 from reader.source_formatting import beautify_source
 from reader.word_documents import load_word, save_word
+from scripts.linux_build_support import DEBIAN_REVISION, validate_bundle
 
 
 def main():
     _app = QCoreApplication.instance() or QCoreApplication([])
-    package = ROOT / f"dist/khana_{VERSION}-1_amd64.deb"
+    package = ROOT / f"dist/khana_{VERSION}-{DEBIAN_REVISION}_amd64.deb"
     fields = subprocess.check_output(["dpkg-deb", "--field", str(package)], text=True)
     assert "Package: khana\n" in fields and "Architecture: amd64\n" in fields
-    assert f"Version: {VERSION}-1\n" in fields
+    assert f"Version: {VERSION}-{DEBIAN_REVISION}\n" in fields
     with tempfile.TemporaryDirectory(prefix="khana-deb-") as temporary:
         folder = Path(temporary)
         payload = folder / "payload"
@@ -44,6 +45,7 @@ def main():
         subprocess.run(["desktop-file-validate", str(entry)], check=True)
         assert (payload / "usr/bin/khana").readlink() == Path("/opt/khana/Khana")
         executable = payload / "opt/khana/Khana"
+        validate_bundle(executable.parent)
         assert (
             subprocess.check_output([str(executable), "--version"], text=True).strip()
             == f"{APP_NAME} {VERSION}"

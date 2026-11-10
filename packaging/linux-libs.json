@@ -1,50 +1,50 @@
 [
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/main/x/xcb-util/libxcb-util1_0.4.1-1build1_amd64.deb",
-    "file": "libxcb-util1_0.4.1-1build1_amd64.deb",
-    "size": 11070,
-    "sha512": "e62d82599e70adca095087422c8cd4a62e3a27a763f4450f2c97e80d8698634169f138e9a3554054663114e9c4f33f5d3f5ad8060002aff0f8f1cd9a01bc65d5"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/x/xcb-util/libxcb-util1_0.4.0-1build3_amd64.deb",
+    "file": "libxcb-util1_0.4.0-1build3_amd64.deb",
+    "size": 10678,
+    "sha512": "7858725744e8e16a8e294acd01b51ab8e0d08a33d3bc4faa054f88ce148d89fb4ab675402927d6ca847c4e9d57a364aa9f13e09d9f52d1e45ae4836462baf966"
   },
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/main/libx/libxcb/libxcb-xkb1_1.17.0-2ubuntu1_amd64.deb",
-    "file": "libxcb-xkb1_1.17.0-2ubuntu1_amd64.deb",
-    "size": 32724,
-    "sha512": "836bd65c41cd7634c310a954d4804bfeb5d5306f76fe39e59fd71cc232a242d2aa2cf93e8ea1b2a7405fdf49d34db4634a0ea952e58ef2d9955f8a5fc82f73b7"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/libx/libxcb/libxcb-xkb1_1.15-1ubuntu2_amd64.deb",
+    "file": "libxcb-xkb1_1.15-1ubuntu2_amd64.deb",
+    "size": 32302,
+    "sha512": "519a84e5376a7aa69cb9636735530f721d03ec5d7ae6f520ddd2ce89cafd53d0097f2abb680c654c7c15e98497e000efe06937b4f44534182332b5a4e170e74e"
   },
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/main/libx/libxkbcommon/libxkbcommon-x11-0_1.13.1-1_amd64.deb",
-    "file": "libxkbcommon-x11-0_1.13.1-1_amd64.deb",
-    "size": 15024,
-    "sha512": "9b0427c6c9cbfc184a469d7e80ad466413798dc2b3954fb48c47f2f025f6626dff0f78fd616d43fb4c5e3b2aa01585a8a66f7f32cb442f8c1903098908322786"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/libx/libxkbcommon/libxkbcommon-x11-0_1.6.0-1build1_amd64.deb",
+    "file": "libxkbcommon-x11-0_1.6.0-1build1_amd64.deb",
+    "size": 14536,
+    "sha512": "e70392bd86aa668a31787cec3850b512367cf97c1eee9952d5b68a5ed20da0ce9893d5bda32d281a2ec07b7139265854db466a7b21d622cadbddeb887c809252"
   },
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/x/xcb-util-cursor/libxcb-cursor0_0.1.6-1_amd64.deb",
-    "file": "libxcb-cursor0_0.1.6-1_amd64.deb",
-    "size": 10590,
-    "sha512": "4bc54701fb0f5a77fb0c2bd814466addc2bbc0c103dbd8b199ee5938344ef7168d1f23ed6e113d173670480775afbf3a0fabcf869ad3aa4c31a0eb3eed539a3d"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/x/xcb-util-cursor/libxcb-cursor0_0.1.4-1build1_amd64.deb",
+    "file": "libxcb-cursor0_0.1.4-1build1_amd64.deb",
+    "size": 10718,
+    "sha512": "cdb4bf3afaa756eae6c01fd08a793091e76b9240aa8bb7b4de07f2074f11a1a29b81df111bfefc60e4e2b197c5d6222ed4160c2ef04030515553b68102cf3342"
   },
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/x/xcb-util-wm/libxcb-icccm4_0.4.2-1build1_amd64.deb",
-    "file": "libxcb-icccm4_0.4.2-1build1_amd64.deb",
-    "size": 11002,
-    "sha512": "a4ce114d89dd75538c9592b79c3b534861f492f423275feb3cd4c14bd0f5113f0d5c689c33e878f49726ebe857adb7d58726d5095a4016de1237a6e34b5f670d"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/x/xcb-util-wm/libxcb-icccm4_0.4.1-1.1build3_amd64.deb",
+    "file": "libxcb-icccm4_0.4.1-1.1build3_amd64.deb",
+    "size": 10788,
+    "sha512": "dd3fdb207680ea1f45ebb3e53b47d77145f68645a13ba86139204ca5800dcad4a1a23b296f95fe522371bbc68da16024a1bb61384daeaf2246fd28c486b36453"
   },
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/x/xcb-util-image/libxcb-image0_0.4.0-2build2_amd64.deb",
-    "file": "libxcb-image0_0.4.0-2build2_amd64.deb",
-    "size": 10996,
-    "sha512": "65dd572c260c8a9eb9524e0f2181a015718e97a6260baae65c2b4028858cfc855f0b2254d66cbf881eed7f957aff9294e27022dbc9bc9d279d089547a3b06a3e"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/x/xcb-util-image/libxcb-image0_0.4.0-2build1_amd64.deb",
+    "file": "libxcb-image0_0.4.0-2build1_amd64.deb",
+    "size": 10810,
+    "sha512": "4fe8047eb045f6ba9d314043fd024bc8acac39a609db6e49beb0f767403d2f08a58612a50e90deb6ec8586b3f1aca24dcadf5e5e41dbffd410bb55e8d3186501"
   },
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/x/xcb-util-keysyms/libxcb-keysyms1_0.4.1-1build1_amd64.deb",
-    "file": "libxcb-keysyms1_0.4.1-1build1_amd64.deb",
-    "size": 8704,
-    "sha512": "5da07f0d9e4b5dcf82f44a9e3850025a751c89251191a06d06d330e12b2124ff528d80a5e10796d3ff95c0b420fe361de5689592de7802362a5d2b2c7270dabe"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/x/xcb-util-keysyms/libxcb-keysyms1_0.4.0-1build4_amd64.deb",
+    "file": "libxcb-keysyms1_0.4.0-1build4_amd64.deb",
+    "size": 7956,
+    "sha512": "b2760988448f1b437cd4af4e27c53e5eaeee2311b38316e6f3e6d15d143f2bce10c56d42549e33b598fb9d7270a7d1f39b0fa5c3ead7e530d746cea3e1ebb620"
   },
   {
-    "url": "https://archive.ubuntu.com/ubuntu/pool/universe/x/xcb-util-renderutil/libxcb-render-util0_0.3.10-1build1_amd64.deb",
-    "file": "libxcb-render-util0_0.3.10-1build1_amd64.deb",
-    "size": 10450,
-    "sha512": "1cd4f7a82a47c1d49d3ba7e519c340d5500084c6483895894b464d178fa965adccd8cbd16871b64492e264dbdd620c33f3295bfc80d7f0c2c1ec3d9df8cb3274"
+    "url": "https://archive.ubuntu.com/ubuntu/pool/main/x/xcb-util-renderutil/libxcb-render-util0_0.3.9-1build4_amd64.deb",
+    "file": "libxcb-render-util0_0.3.9-1build4_amd64.deb",
+    "size": 9608,
+    "sha512": "93660646e949d94828eb269fdf6610ad2facf4278e250e14babd5255fab63397fe83202824aa0baf3cd9c9dc8f22ef596e2049d834805158d4156c699f13efd3"
   }
 ]

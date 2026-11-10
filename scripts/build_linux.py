@@ -13,6 +13,8 @@ from hashlib import sha256, sha512
 from importlib.metadata import distribution
 from pathlib import Path
 
+from linux_build_support import BUILD_TARGET, require_build_host
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -119,6 +121,9 @@ def main():
         parser.error(
             "This build script targets Linux x86_64. Build on the target operating system."
         )
+    require_build_host()
+    (ROOT / "build").mkdir(exist_ok=True)
+    (ROOT / "build/build-platform.json").write_text(json.dumps(BUILD_TARGET) + "\n")
     collect_licenses()
     prepare_linux_libraries()
     destination = ROOT / ("build/onedir" if args.onedir else "dist")
@@ -183,7 +188,7 @@ def main():
             "Khana is a single standalone executable; you can move it to another folder.\n"
             "The optional io.khana.Khana.desktop launcher uses this build folder's absolute path.\n"
             "Keep it here with khana.svg, or update Exec and Icon if you move the files.\n\n"
-            "Built and tested for Ubuntu 26.04 x86_64. Not a Windows executable.\n"
+            "Built on Ubuntu 24.04 x86_64 for Ubuntu 24.04 and newer.\n"
             "The app starts fullscreen; press F11 to leave fullscreen.\n"
             "Startup can take a few seconds while the embedded runtime is unpacked.\n"
             "Settings: $XDG_CONFIG_HOME/Khana/Khana/settings.ini (normally ~/.config/Khana/Khana/settings.ini).\n"

@@ -11,6 +11,8 @@ import sys
 from hashlib import md5, sha256
 from pathlib import Path
 
+from linux_build_support import DEBIAN_REVISION, validate_bundle
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from reader import APP_ID, APP_NAME, VERSION
@@ -56,7 +58,7 @@ def main():
     )
     args = parser.parse_args()
     if sys.platform != "linux" or platform.machine() != "x86_64":
-        parser.error("Build this package on Ubuntu 26.04 x86_64.")
+        parser.error("Build this package on Ubuntu 24.04 x86_64.")
     if not args.skip_build:
         subprocess.run(
             [sys.executable, str(ROOT / "scripts/build_linux.py"), "--onedir"], check=True
@@ -72,7 +74,8 @@ def main():
             f"Unpacked build reports {bundle_version!r}; expected {APP_NAME} {VERSION}. "
             "Rebuild without --skip-build."
         )
-    version = VERSION + "-1"
+    validate_bundle(bundle)
+    version = VERSION + "-" + DEBIAN_REVISION
     staging = ROOT / "build/deb" / f"khana_{version}_amd64"
     if staging.exists():
         shutil.rmtree(staging)
@@ -106,11 +109,11 @@ def main():
         "Section: editors\nPriority: optional\n"
         "Maintainer: Khana local build <noreply@localhost>\n"
         f"Installed-Size: {installed_size}\n"
-        "Depends: libc6 (>= 2.43), libgl1, libegl1, desktop-file-utils, hicolor-icon-theme, libreoffice-writer\n"
+        "Depends: libc6 (>= 2.39), libgl1, libegl1, desktop-file-utils, hicolor-icon-theme, libreoffice-writer\n"
         "Description: Khana - document and text editor for Persian and English\n"
         " A local desktop reader and editor with smart bidirectional text,\n"
         " synchronized preview, Word, PDF, structured text, tables and flowcharts.\n"
-        " Includes its own Python and Qt runtime. Built for Ubuntu 26.04 amd64.\n",
+        " Includes its own Python and Qt runtime. Built for Ubuntu 24.04+ amd64.\n",
         encoding="utf-8",
     )
     hashes = []
@@ -145,7 +148,7 @@ def main():
         f"{digest.hexdigest()}  {package.name}\n", encoding="utf-8"
     )
     (destination / "INSTALL.txt").write_text(
-        f"KHANA {VERSION} — UBUNTU 26.04 (64-BIT)\n\n"
+        f"KHANA {VERSION} — UBUNTU 24.04+ (64-BIT)\n\n"
         "Install this package with the system package installer, or run:\n"
         f"  sudo apt install ./" + package.name + "\n\n"
         "Installation needs your Ubuntu administrator password.\n"
