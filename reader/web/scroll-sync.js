@@ -5,24 +5,26 @@
     if (!points.length) return 0;
     const other = 1 - axis;
     if (value <= points[0][axis]) return points[0][other];
-    for (let i = 1; i < points.length; i++) {
-      if (value <= points[i][axis]) {
-        const a = points[i - 1],
-          b = points[i],
-          width = b[axis] - a[axis];
-        return width > 0
-          ? a[other] + ((b[other] - a[other]) * (value - a[axis])) / width
-          : b[other];
-      }
+    let lo = 1,
+      hi = points.length - 1;
+    if (value > points[hi][axis]) return points[hi][other];
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (points[mid][axis] < value) lo = mid + 1;
+      else hi = mid;
     }
-    return points.at(-1)[other];
+    const a = points[lo - 1],
+      b = points[lo],
+      width = b[axis] - a[axis];
+    return width > 0 ? a[other] + ((b[other] - a[other]) * (value - a[axis])) / width : b[other];
   }
   function create({ article, scroller, editor, current, enabled, lineNumbers }) {
     let points = [],
       metrics = [],
       frame = 0,
       paused = false,
-      driver = 'preview';
+      driver = 'preview',
+      dirty = true;
     const expected = new WeakMap();
     const active = () =>
       enabled() &&
@@ -33,6 +35,8 @@
       !current().apiRendering;
     function rebuild() {
       if (!active()) return;
+      if (!dirty) return;
+      dirty = false;
       metrics = lineNumbers.metrics(editor());
       const top = scroller.getBoundingClientRect().top,
         candidates = [];
@@ -114,6 +118,7 @@
     }
     scroller.addEventListener('scroll', () => scroll('preview', scroller), { passive: true });
     function mount(from = driver, caret = false) {
+      dirty = true;
       cancelAnimationFrame(frame);
       paused = true;
       driver = from;
@@ -155,10 +160,12 @@
         const anchors = [
           ...ReaderOpenAPI.contentRoot(article).querySelectorAll('[data-source-line]'),
         ]
-          .filter((node) => node.getClientRects().length && !node.closest('.diagram-source'))
+          .filter((node) => !node.closest('.diagram-source'))
           .sort((a, b) => Number(a.dataset.sourceLine) - Number(b.dataset.sourceLine));
         const target =
-          anchors.findLast((node) => Number(node.dataset.sourceLine) <= line) || anchors[0];
+          anchors.findLast(
+            (node) => Number(node.dataset.sourceLine) <= line && node.getClientRects().length
+          ) || anchors.find((node) => node.getClientRects().length);
         article.focus({ preventScroll: true });
         if (!target) {
           move(scroller, 0);

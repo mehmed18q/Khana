@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0 — 2026-11-10
+
+- Faster Find and navigation: linear rendered-text indexing, cached search ranges and scroll maps, binary interpolation, and visible-only reading gutters. Typing no longer rebuilds library and annotation lists.
+- Equivalent Persian, Arabic and Latin digits in Find and Replace.
+- Persistent Persian/English interface with mirrored layout, an icon and flag language menu, and icons in the new-document format menu.
+- Source editing context menus and offline Persian/English spelling, with a header toggle, suggestions, and persistent document/global ignore scopes.
+- Reopen tables and generated flowcharts for editing; reorder table rows/columns by dragging or keyboard, copy/paste rows, and navigate cells with arrow keys. Complex structures retain a source-editing fallback.
+
 ## 0.9.0 — 2026-11-09
 
 ### Added

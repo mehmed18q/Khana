@@ -48,3 +48,61 @@
 .focus-mode .compact-header {
   display: none;
 }
+
+.picker-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 5px;
+  min-width: 150px;
+  max-height: min(420px, calc(100vh - 16px));
+  overflow: auto;
+  background: var(--paper);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px #0002;
+  font: inherit;
+}
+.picker-menu button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  text-align: start;
+}
+.picker-menu button[aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.picker-menu .language-flag {
+  width: 26px;
+  height: 17px;
+  stroke: none;
+  border-radius: 2px;
+}
+.format-picker-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  font-size: 10px;
+}
+.format-picker-button .file-type-icon {
+  width: 17px;
+  height: 17px;
+}
+.format-picker-button svg:last-child {
+  width: 10px;
+  height: 10px;
+  transform: rotate(90deg);
+}
+#spellcheck-button[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+#spellcheck-button[aria-pressed='false'] {
+  opacity: 0.55;
+}

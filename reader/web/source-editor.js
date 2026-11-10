@@ -18,7 +18,8 @@
     searchChanged,
   }) {
     let linkContext = null,
-      lineContext = null;
+      lineContext = null,
+      structureContext = null;
     const supportsFormatting = (doc) => ['Markdown', 'HTML', 'Word'].includes(doc?.format);
     const supportsBeautify = (doc) => ['JSON', 'YAML', 'XML'].includes(doc?.format);
     function ensureEditor(doc) {
@@ -26,7 +27,7 @@
       const editor = document.createElement('textarea');
       editor.className = 'source-editor';
       editor.value = doc.source;
-      editor.spellcheck = false;
+      editor.spellcheck = false; // ReaderSpelling handles scoped dictionaries off the UI thread.
       editor.setAttribute('autocapitalize', 'off');
       editor.setAttribute('autocomplete', 'off');
       editor.setAttribute('aria-label', `${doc.format} source editor`);
@@ -111,6 +112,7 @@
       updateCursor();
       document.body.classList.toggle('editing-pdf', enabled && doc?.format === 'PDF');
       searchChanged('view');
+      document.dispatchEvent(new Event('reader-editor-view'));
     }
 
     function setEditMode(enabled) {
@@ -307,8 +309,17 @@
       if (action === 'table' || action === 'flowchart') {
         const source = editor.value,
           id = doc.id;
+        const existing = ReaderStructures.scan(source, doc.format).find(
+          (block) => block.kind === action && start >= block.start && start < block.end
+        );
+        if (existing) {
+          editStructure(existing, doc, editor);
+          return;
+        }
         ReaderBuilders.open(action, {
           format: doc.format === 'Word' ? 'HTML' : doc.format,
+          copyText: (text) => native()?.copyText(text),
+          clipboardText: (callback) => native()?.clipboardText(callback),
           onCancel: () => {
             if (current() === id && editors.get(id) === editor) {
               editor.focus();
@@ -345,6 +356,105 @@
         )
       );
     }
+
+    function editStructure(block, doc, editor) {
+      const source = editor.value;
+      const insert = (content) => {
+        if (
+          current() !== doc.id ||
+          editors.get(doc.id) !== editor ||
+          editor.value !== source ||
+          editor.readOnly
+        ) {
+          toast('The source changed. Open this structure again.', true);
+          return;
+        }
+        applySourceEdit(editor, {
+          start: block.start,
+          end: block.end,
+          text: content,
+          selectionStart: block.start,
+          selectionEnd: block.start + content.length,
+        });
+      };
+      const withinLimits =
+        block.kind === 'table'
+          ? block.model?.cells.length <= ReaderInsertions.LIMITS.rows + 1 &&
+            block.model.cells[0].length <= ReaderInsertions.LIMITS.columns
+          : Boolean(block.model);
+      if (block.model && withinLimits) {
+        ReaderBuilders.open(block.kind, {
+          format: doc.format === 'Word' ? 'HTML' : doc.format,
+          model: block.model,
+          onInsert: insert,
+          onCancel: () => editor.focus({ preventScroll: true }),
+          copyText: (text) => native()?.copyText(text),
+          clipboardText: (callback) => native()?.clipboardText(callback),
+        });
+      } else {
+        structureContext = { insert, editor };
+        $('structure-source').value = source.slice(block.start, block.end);
+        $('structure-dialog').showModal();
+        $('structure-source').focus();
+      }
+    }
+    $('structure-cancel').onclick = () => $('structure-dialog').close();
+    $('structure-form').onsubmit = (event) => {
+      event.preventDefault();
+      const context = structureContext,
+        value = $('structure-source').value;
+      structureContext = null;
+      $('structure-dialog').close();
+      context?.insert(value);
+    };
+    $('structure-dialog').addEventListener('close', () => {
+      structureContext?.editor.focus({ preventScroll: true });
+      structureContext = null;
+    });
+    function bindStructures(article, doc) {
+      if (!supportsFormatting(doc)) return;
+      const source = editors.get(doc.id)?.value ?? doc.source;
+      const blocks = ReaderStructures.scan(source, doc.format);
+      const used = new Set();
+      article.querySelectorAll('table,.diagram-frame').forEach((node) => {
+        if (doc.format === 'Markdown' && node.dataset.sourceLine === undefined) return;
+        const kind = node.matches('table') ? 'table' : 'flowchart';
+        const line = Number(node.dataset.sourceLine);
+        const offset = Number.isFinite(line)
+          ? source.split('\n').slice(0, line).join('\n').length + (line ? 1 : 0)
+          : -1;
+        const block =
+          blocks.find(
+            (block) =>
+              !used.has(block) &&
+              block.kind === kind &&
+              (offset < 0 || (offset >= block.start && offset <= block.end))
+          ) ||
+          (doc.format !== 'Markdown' &&
+            blocks.find((block) => !used.has(block) && block.kind === kind));
+        if (!block) return;
+        used.add(block);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'structure-edit';
+        button.dataset.i18n = kind === 'table' ? 'Edit table' : 'Edit flowchart';
+        button.textContent = ReaderI18n.text(button.dataset.i18n);
+        button.onclick = () => {
+          if (doc.moving || (editors.get(doc.id)?.value ?? doc.source) !== source) {
+            toast('Wait for the preview to update, then try again.');
+            return;
+          }
+          setEditMode(true);
+          editStructure(block, doc, editors.get(doc.id));
+        };
+        node.before(button);
+      });
+    }
+    document.addEventListener('reader-language-changed', () => {
+      document.querySelectorAll('.structure-edit').forEach((button) => {
+        button.textContent = ReaderI18n.text(button.dataset.i18n);
+      });
+    });
 
     $('beautify-button').onmousedown = (event) => event.preventDefault();
     $('beautify-button').onclick = beautifyDocument;
@@ -393,6 +503,7 @@
       if (doc) {
         doc.editorDirection = event.target.value;
         showEditor(doc);
+        sync.mount('editor');
       }
     };
 
@@ -404,6 +515,7 @@
       goToLine,
       receiveFormatted: receiveSourceFormatted,
       applyEdit: applySourceEdit,
+      bindStructures,
     };
   }
   window.ReaderSourceEditor = { create };

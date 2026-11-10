@@ -91,6 +91,7 @@ class ReaderWindow(QMainWindow):
         self.bridge.settings.sync()
         self.bridge.api_requests.cancel()
         self.bridge.jobs.shutdown()
+        self.bridge.spelling.shutdown()
         if self in self.manager.windows:
             self.manager.windows.remove(self)
         if self.manager.recent is self:

@@ -75,6 +75,7 @@ def collect_licenses():
         "PyInstaller",
         "PyMuPDF",
         "ruamel.yaml",
+        "spylls",
     ]
     notices = ["Khana bundles these third-party components:", ""]
     for name in packages:
@@ -93,6 +94,7 @@ def collect_licenses():
         "Mermaid 11.12.2: reader/web/vendor/MERMAID-LICENSE.txt",
         "Swagger UI 5.34.0: reader/web/vendor/SWAGGER-UI-LICENSE.txt; swagger-ui-bundle.js.LICENSE.txt",
         "Noto Sans Arabic: reader/web/fonts/LICENSE.txt",
+        "Persian/English spelling dictionaries: reader/web/dictionaries/README.md and LICENSE-*.txt",
     ]
     (output / "THIRD-PARTY.txt").write_text("\n".join(notices) + "\n", encoding="utf-8")
 

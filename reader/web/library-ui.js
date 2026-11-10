@@ -163,7 +163,7 @@
       }
     }
 
-    function refresh() {
+    function refresh(decorate = true) {
       const doc = current(),
         entry = record();
       $('star-document').disabled = !persistent();
@@ -193,9 +193,11 @@
               : resume
                 ? `Continue: ${resume.label}`
                 : 'Your reading places stay with this document';
-      libraryList();
-      annotationList();
-      ReaderAnnotations.decorate(blocks, items(), entry?.resumeId);
+      if (decorate) {
+        libraryList();
+        annotationList();
+        ReaderAnnotations.decorate(blocks, items(), entry?.resumeId);
+      }
     }
 
     function openDialog(kind, block = null, item = null) {

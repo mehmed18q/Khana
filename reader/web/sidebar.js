@@ -248,7 +248,9 @@
         finish(true);
         return;
       }
-      resize(drag.start + event.clientX - drag.x);
+      resize(
+        drag.start + (event.clientX - drag.x) * (document.documentElement.dir === 'rtl' ? -1 : 1)
+      );
     });
     handle.addEventListener('pointerup', (event) => {
       if (drag?.pointer === event.pointerId) finish();
@@ -262,7 +264,7 @@
       changed(width);
     });
     handle.addEventListener('keydown', (event) => {
-      const step = event.shiftKey ? 48 : 16;
+      const step = (event.shiftKey ? 48 : 16) * (document.documentElement.dir === 'rtl' ? -1 : 1);
       const value = {
         ArrowLeft: displayed() - step,
         ArrowRight: displayed() + step,

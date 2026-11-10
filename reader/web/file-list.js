@@ -31,6 +31,7 @@
           select.innerHTML = ReaderFileIcons.markup(doc);
           select.setAttribute('aria-current', doc.id === current() ? 'page' : 'false');
           const name = document.createElement('span');
+          name.className = 'file-name';
           name.dir = 'auto';
           name.textContent = doc.name;
           select.append(name);

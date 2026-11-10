@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineUrlRequestInterceptor
 from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QMenu
 
 from reader.documents import IMAGE_EXTENSIONS
 from reader.resources import WEB
@@ -42,7 +43,43 @@ class ReaderView(QWebEngineView):
         super().__init__(window)
         self.window = window
         self.setAcceptDrops(True)
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.DefaultContextMenu)
+
+    def contextMenuEvent(self, event):
+        request = self.lastContextMenuRequest()
+        if not request or not (request.isContentEditable() or request.selectedText()):
+            return
+        menu = QMenu(self)
+        persian = self.window.property("language") == "fa"
+        menu.setLayoutDirection(
+            Qt.LayoutDirection.RightToLeft if persian else Qt.LayoutDirection.LeftToRight
+        )
+        if request.misspelledWord():
+            suggestions = request.spellCheckerSuggestions()
+            for word in suggestions[:8]:
+                action = menu.addAction(word)
+                action.triggered.connect(
+                    lambda checked=False, value=word: self.page().replaceMisspelledWord(value)
+                )
+            if not suggestions:
+                menu.addAction(
+                    "پیشنهادی پیدا نشد" if persian else "No spelling suggestions"
+                ).setEnabled(False)
+            menu.addSeparator()
+        for name, english, farsi in (
+            ("Undo", "Undo", "واگرد"),
+            ("Redo", "Redo", "انجام دوباره"),
+            ("Cut", "Cut", "برش"),
+            ("Copy", "Copy", "کپی"),
+            ("Paste", "Paste", "چسباندن"),
+            ("SelectAll", "Select all", "انتخاب همه"),
+        ):
+            native = self.page().action(getattr(QWebEnginePage.WebAction, name))
+            action = menu.addAction(farsi if persian else english)
+            action.setEnabled(native.isEnabled())
+            action.triggered.connect(native.trigger)
+        menu.exec(event.globalPos())
+        menu.deleteLater()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat("application/x-khana-tab") and self.window.manager.dragging:
@@ -53,7 +90,7 @@ class ReaderView(QWebEngineView):
             event.acceptProposedAction()
             self.page().runJavaScript("document.body.classList.add('dropping')")
         else:
-            event.ignore()
+            super().dragEnterEvent(event)
 
     def dragMoveEvent(self, event):
         if event.mimeData().hasFormat("application/x-khana-tab") and self.window.manager.dragging:
@@ -61,10 +98,15 @@ class ReaderView(QWebEngineView):
             event.accept()
         elif event.mimeData().hasUrls():
             event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
 
     def dragLeaveEvent(self, event):
         self.page().runJavaScript("document.body.classList.remove('dropping')")
-        event.accept()
+        if self.window.manager.dragging:
+            event.accept()
+        else:
+            super().dragLeaveEvent(event)
 
     def dropEvent(self, event):
         self.page().runJavaScript("document.body.classList.remove('dropping')")
@@ -79,3 +121,5 @@ class ReaderView(QWebEngineView):
         if paths:
             self.window.bridge.load_paths(paths)
             event.acceptProposedAction()
+        else:
+            super().dropEvent(event)

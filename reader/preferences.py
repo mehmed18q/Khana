@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 
 DEFAULTS = {
+    "language": "en",
+    "spellcheck": True,
     "theme": "light",
     "palette": "forest",
     "direction": "smart",
@@ -37,13 +39,14 @@ def normalize_preferences(values: object) -> dict:
     values = values if isinstance(values, dict) else {}
     result = dict(DEFAULTS)
     for key, options in (
+        ("language", ("en", "fa")),
         ("theme", ("light", "dark", "auto")),
         ("palette", ("forest", "ocean", "violet", "rose", "amber", "slate")),
         ("direction", ("smart", "rtl", "ltr")),
     ):
         if values.get(key) in options:
             result[key] = values[key]
-    for key in ("wide", "syncScroll", "sidebarCollapsed", "headerCollapsed"):
+    for key in ("wide", "syncScroll", "sidebarCollapsed", "headerCollapsed", "spellcheck"):
         if isinstance(values.get(key), bool):
             result[key] = values[key]
     for key, minimum, maximum, integer in (

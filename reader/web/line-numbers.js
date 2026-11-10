@@ -39,22 +39,25 @@
     }
     container.append(labels);
     let key = '',
+      source = null,
       lines = [],
       points = [],
       stride = 1,
       frame = 0;
     const chunks = new Map();
     function measure(field) {
-      const width = `${Math.max(3, String(field.value.split('\n').length).length) * 8 + 18}px`;
-      container.style.setProperty('--line-gutter-width', width);
+      const text = field.value;
+      const changed = source !== text;
+      if (changed) {
+        source = text;
+        lines = text.split('\n');
+        const width = `${Math.max(3, String(lines.length).length) * 8 + 18}px`;
+        if (container.style.getPropertyValue('--line-gutter-width') !== width)
+          container.style.setProperty('--line-gutter-width', width);
+      }
       const css = getComputedStyle(field),
-        next = [
-          field.value,
-          field.clientWidth,
-          field.dir,
-          ...mirrorStyles.map((name) => css[name]),
-        ].join('\0');
-      if (key === next) return points;
+        next = [field.clientWidth, field.dir, ...mirrorStyles.map((name) => css[name])].join('\0');
+      if (!changed && key === next) return points;
       key = next;
       chunks.clear();
       for (const node of [mirror, detail]) {
@@ -62,7 +65,6 @@
         node.dir = field.dir;
         node.style.width = `${field.clientWidth}px`;
       }
-      lines = field.value.split('\n');
       stride = Math.max(1, Math.ceil(lines.length / 10000));
       const fragment = document.createDocumentFragment();
       for (let i = 0; i < lines.length; i += stride) {
@@ -151,6 +153,17 @@
       anchors = [],
       dirty = true,
       disposed = false;
+    const visibleAnchors = new Set();
+    const visibility = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visibleAnchors.add(entry.target);
+          else visibleAnchors.delete(entry.target);
+        }
+        refresh();
+      },
+      { root: scroller, rootMargin: '80px 0px' }
+    );
     const selector =
       'p,h1,h2,h3,h4,h5,h6,li,pre,table,tr,blockquote,div,section,article,figure,summary,dt,dd,.source-line';
     function sourceRows(node, line, viewport, rows) {
@@ -192,6 +205,9 @@
           (node) => node.matches(selector) && !node.closest('.diagram-source')
         );
         dirty = false;
+        visibility.disconnect();
+        visibleAnchors.clear();
+        anchors.forEach((node) => visibility.observe(node));
       }
       const visible =
         !article.hidden && !article.classList.contains('pdf-document') && anchors.length > 0;
@@ -202,7 +218,7 @@
         rows = [],
         seen = new Set(),
         fragment = document.createDocumentFragment();
-      for (const node of anchors) {
+      for (const node of visibleAnchors) {
         const rect = node.getBoundingClientRect(),
           line = Number(node.dataset.sourceLine);
         if (node.matches('.source-line') && Number(node.dataset.sourceEnd) > line + 1) {
@@ -240,7 +256,12 @@
       observer = new MutationObserver(changed),
       shadow = new MutationObserver(changed),
       size = new ResizeObserver(refresh);
-    observer.observe(article, { subtree: true, childList: true, attributes: true });
+    observer.observe(article, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-source-line', 'data-source-end', 'hidden', 'open'],
+    });
     size.observe(article);
     size.observe(scroller);
     scroller.addEventListener('scroll', refresh, { passive: true });
@@ -255,6 +276,7 @@
         observer.disconnect();
         shadow.disconnect();
         size.disconnect();
+        visibility.disconnect();
         scroller.removeEventListener('scroll', refresh);
         article.removeEventListener('toggle', refresh, true);
       },

@@ -90,7 +90,8 @@ def main():
         "Runtime component licenses are installed in /opt/khana/_internal/licenses.\n"
         "Mermaid: /opt/khana/_internal/reader/web/vendor/MERMAID-LICENSE.txt\n"
         "Swagger UI: /opt/khana/_internal/reader/web/vendor/SWAGGER-UI-LICENSE.txt; swagger-ui-bundle.js.LICENSE.txt\n"
-        "Noto Sans Arabic: /opt/khana/_internal/reader/web/fonts/LICENSE.txt\n",
+        "Noto Sans Arabic: /opt/khana/_internal/reader/web/fonts/LICENSE.txt\n"
+        "Spelling dictionaries: /opt/khana/_internal/reader/web/dictionaries/README.md and LICENSE-*.txt\n",
         encoding="utf-8",
     )
     # Bytecode/runtime .so files are intentionally kept as emitted by the

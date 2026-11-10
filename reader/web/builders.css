@@ -12,7 +12,6 @@
 }
 .builder-dialog::backdrop {
   background: #14291e70;
-  backdrop-filter: blur(3px);
 }
 .builder-title {
   display: flex;
@@ -337,4 +336,36 @@
   .builder-dialog .dialog-actions {
     bottom: -20px;
   }
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block: 10px;
+}
+.table-actions button,
+.table-handle,
+.structure-edit {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 3px 8px;
+  color: var(--accent);
+  background: var(--paper);
+  font: inherit;
+}
+.table-handle {
+  cursor: grab;
+}
+.table-handle:active {
+  cursor: grabbing;
+}
+.structure-edit {
+  font-size: 11px;
+  margin-block: 6px;
+}
+#structure-source {
+  width: 100%;
+  min-height: 300px;
+  font-family: monospace;
 }

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from hashlib import sha256
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 from uuid import uuid4
@@ -21,7 +22,7 @@ from PySide6.QtCore import (
     Slot,
 )
 from PySide6.QtGui import QCursor, QDesktopServices, QDrag, QPalette
-from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
+from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox, QWidget
 
 from reader import APP_NAME, VERSION
 from reader.api_requests import ApiRequests
@@ -40,6 +41,7 @@ from reader.preferences import normalize_preferences
 from reader.resources import SAMPLE
 from reader.ui.jobs import DocumentJobs, PreviewRequest
 from reader.ui.settings import default_settings_path
+from reader.ui.spelling import SpellingJobs
 
 
 class Bridge(QObject):
@@ -61,6 +63,9 @@ class Bridge(QObject):
     sourceFormatted = Signal(str)
     apiResponse = Signal(str)
     command = Signal(str)
+    spellingReady = Signal(str)
+    spellingChanged = Signal()
+    interfacePreferencesChanged = Signal(str)
 
     def __init__(self, window, initial_paths, settings_path=None):
         super().__init__(window)
@@ -92,6 +97,9 @@ class Bridge(QObject):
         self.jobs.pdfPageReady.connect(self.pdfPageReady)
         self.initialized = False
         self.api_requests = ApiRequests(self)
+        self.spelling = SpellingJobs(self)
+        self.spelling.ready.connect(self.spellingReady)
+        self.draft_spelling = {}
         self.api_requests.finished.connect(self.apiResponse)
         application = QApplication.instance()
         if isinstance(application, QApplication):
@@ -136,7 +144,15 @@ class Bridge(QObject):
         except ValueError:
             preferences = {}
         self.publish_system_theme()
-        self.settingsLoaded.emit(json.dumps(normalize_preferences(preferences)))
+        preferences = normalize_preferences(preferences)
+        self.window.setProperty("language", preferences["language"])
+        if isinstance(self.window, QWidget):
+            self.window.setLayoutDirection(
+                Qt.LayoutDirection.RightToLeft
+                if preferences["language"] == "fa"
+                else Qt.LayoutDirection.LeftToRight
+            )
+        self.settingsLoaded.emit(json.dumps(preferences))
         self.focusModeChanged.emit(self.window.focus_mode)
         entries = self.publish_library()
         if self.library_error:
@@ -539,12 +555,36 @@ class Bridge(QObject):
 
     def _ask(self, title, text, buttons, default):
         box = QMessageBox(self.window)
+        persian = self.window.property("language") == "fa"
+        if persian:
+            title = {"Unsaved changes": "تغییرات ذخیره‌نشده", "Replace file?": "جایگزینی فایل؟"}.get(
+                title, title
+            )
+            if text.startswith('Save changes to "'):
+                text = "تغییرات «" + text[17:-2] + "» ذخیره شود؟"
+            else:
+                text = text.replace(
+                    "The file has changed on disk since it was opened.",
+                    "فایل از زمان باز شدن روی دیسک تغییر کرده است.",
+                ).replace("A file already exists at this location.", "فایلی در این مسیر وجود دارد.")
+                if 'Replace "' in text:
+                    prefix, name = text.split('Replace "', 1)
+                    text = prefix + "فایل «" + name.split('"', 1)[0] + "» با متن فعلی جایگزین شود؟"
         box.setWindowTitle(title)
         box.setTextFormat(Qt.TextFormat.PlainText)
         box.setText(text)
         box.setIcon(QMessageBox.Icon.Warning)
         box.setStandardButtons(buttons)
         box.setDefaultButton(default)
+        if persian:
+            for flag, label in (
+                (QMessageBox.StandardButton.Save, "ذخیره"),
+                (QMessageBox.StandardButton.Discard, "ذخیره نشود"),
+                (QMessageBox.StandardButton.Cancel, "انصراف"),
+                (QMessageBox.StandardButton.Yes, "بله"),
+            ):
+                if box.button(flag):
+                    box.button(flag).setText(label)
         return box.exec()
 
     def _confirm_changes(self, session):
@@ -621,6 +661,7 @@ class Bridge(QObject):
                 return False
         try:
             previous_path = doc.path if not doc.sample else None
+            spelling_key = self._spelling_key(doc.id)
             expected = fingerprint(target)
             same_file = str(target) == doc.path
             changed = same_file and expected != doc.fingerprint
@@ -641,6 +682,13 @@ class Bridge(QObject):
                     return False
             if session.dirty or choose_path or changed:
                 session.save(target, expected)
+            new_spelling_key = self._spelling_key(doc.id)
+            ignored = self.draft_spelling.pop(doc.id, set())
+            if spelling_key and spelling_key != new_spelling_key:
+                ignored.update(self.settings.value(spelling_key, [], type=list))
+            if ignored and new_spelling_key:
+                ignored.update(self.settings.value(new_spelling_key, [], type=list))
+                self.settings.setValue(new_spelling_key, sorted(ignored))
             self.settings.setValue("lastFolder", str(target.parent))
             self._library_change("remember", doc.path, doc.format, previous_path)
             self.documentSaved.emit(json.dumps(session.payload(), ensure_ascii=False))
@@ -752,14 +800,89 @@ class Bridge(QObject):
         except (ValueError, TypeError):
             return
         self.settings.setValue("reading", json.dumps(cleaned))
+        self.window.setProperty("language", cleaned["language"])
+        if isinstance(self.window, QWidget):
+            self.window.setLayoutDirection(
+                Qt.LayoutDirection.RightToLeft
+                if cleaned["language"] == "fa"
+                else Qt.LayoutDirection.LeftToRight
+            )
         appearance = json.dumps({key: cleaned[key] for key in ("theme", "palette")})
+        interface = json.dumps({key: cleaned[key] for key in ("language", "spellcheck")})
         for window in self.window.manager.windows:
             if window is not self.window:
                 window.bridge.themePreferencesChanged.emit(appearance)
+                window.setProperty("language", cleaned["language"])
+                if isinstance(window, QWidget):
+                    window.setLayoutDirection(self.window.layoutDirection())
+                window.bridge.interfacePreferencesChanged.emit(interface)
 
     @Slot(str)
     def copyText(self, text):
         QApplication.clipboard().setText(text)
+
+    @Slot(result=str)
+    def clipboardText(self):
+        return QApplication.clipboard().text()
+
+    def _spelling_key(self, document_id):
+        session = self.sessions.get(document_id)
+        path = session.document.path if session else None
+        return "spelling/documents/" + sha256(str(path).encode()).hexdigest() if path else None
+
+    def _ignored_spelling(self, document_id):
+        key = self._spelling_key(document_id)
+        words = self.settings.value("spelling/global", [], type=list)
+        words += self.settings.value(key, [], type=list) if key else []
+        return words + list(self.draft_spelling.get(document_id, set()))
+
+    @Slot(str, int, str)
+    def checkSpelling(self, document_id, token, raw):
+        if document_id not in self.sessions:
+            return
+        try:
+            words = json.loads(raw)
+            if not isinstance(words, list) or len(words) > 20000:
+                return
+            words = list(
+                dict.fromkeys(
+                    word for word in words if isinstance(word, str) and 1 < len(word) <= 80
+                )
+            )
+        except (ValueError, TypeError):
+            return
+        self.spelling.submit(
+            {
+                "id": document_id,
+                "token": token,
+                "kind": "check",
+                "words": words,
+                "ignored": self._ignored_spelling(document_id),
+            }
+        )
+
+    @Slot(str, int, str)
+    def spellingSuggestions(self, document_id, token, word):
+        if document_id in self.sessions and 1 < len(word) <= 80:
+            self.spelling.submit(
+                {"id": document_id, "token": token, "kind": "suggest", "word": word}
+            )
+
+    @Slot(str, str, bool)
+    def ignoreSpelling(self, document_id, word, everywhere):
+        if document_id not in self.sessions or not 1 < len(word) <= 80:
+            return
+        key = "spelling/global" if everywhere else self._spelling_key(document_id)
+        word = word.casefold()
+        if key:
+            values = set(self.settings.value(key, [], type=list))
+            values.add(word)
+            self.settings.setValue(key, sorted(values))
+            self.settings.sync()
+        else:
+            self.draft_spelling.setdefault(document_id, set()).add(word)
+        for window in self.window.manager.windows:
+            window.bridge.spellingChanged.emit()
 
     def _known_file(self, path):
         if not path:

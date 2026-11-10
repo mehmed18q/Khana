@@ -23,6 +23,7 @@ DESKTOP_CHECKS = (
     "categories",
     "theme",
     "navigation",
+    "features",
     "search",
     "api_requests",
     "api_transport",

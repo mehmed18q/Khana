@@ -32,6 +32,7 @@
           node.tabIndex = -1;
           node.dataset.action = action.id;
           node.textContent = action.label;
+          if (action.translate === false) node.setAttribute('translate', 'no');
           node.disabled = Boolean(action.disabled);
           node.title = action.title || '';
           node.onclick = () => {

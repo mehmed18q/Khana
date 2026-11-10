@@ -32,6 +32,7 @@
     <script src="insertions.js" defer></script>
     <script src="vendor/mermaid.min.js" defer></script>
     <script src="diagrams.js" defer></script>
+    <script src="structures.js" defer></script>
     <script src="builders.js" defer></script>
     <script src="annotations.js" defer></script>
     <script src="library-ui.js" defer></script>
@@ -50,10 +51,14 @@
     <script src="categories.js" defer></script>
     <script src="file-selection.js" defer></script>
     <script src="source-editor.js" defer></script>
+    <script src="spelling.js" defer></script>
     <script src="window-controls.js" defer></script>
     <script src="file-icons.js" defer></script>
     <script src="theme.js" defer></script>
     <script src="header.js" defer></script>
+    <script src="fa.js" defer></script>
+    <script src="i18n.js" defer></script>
+    <script src="pickers.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -333,6 +338,26 @@
             >
               <svg viewBox="0 0 24 24">
                 <path d="M11 6h10M11 12h10M11 18h10M3 9l3 3-3 3M2 12h5" />
+              </svg>
+            </button>
+            <span class="header-language"
+              ><select id="ui-language" aria-label="Application language">
+                <option value="en">English</option>
+                <option value="fa">فارسی</option>
+              </select></span
+            >
+            <input id="spellcheck" type="checkbox" checked hidden />
+            <button
+              id="spellcheck-button"
+              class="icon-button"
+              aria-label="Spell check"
+              title="Spell check: on"
+              aria-pressed="true"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m3 14 4-10 4 10M4.5 10h5M13 4h4a3 3 0 0 1 0 6h-4V4m0 6h4a3 3 0 0 1 0 6h-4v-6M5 19l3 3 5-5"
+                />
               </svg>
             </button>
             <div class="theme-anchor">
@@ -915,8 +940,17 @@
           ><span>Header row is included separately.</span>
         </div>
         <div id="table-grid" class="table-grid" aria-label="Table cells"></div>
+        <div class="table-actions">
+          <button id="table-copy-row" type="button">Copy row</button>
+          <button id="table-paste-row" type="button">Paste row below</button>
+          <button id="table-add-row" type="button">Add row below</button>
+          <button id="table-delete-row" type="button">Delete row</button>
+          <button id="table-add-column" type="button">Add column</button>
+          <button id="table-delete-column" type="button">Delete column</button>
+        </div>
         <p class="builder-help">
-          You can paste tab-separated cells from a spreadsheet. Up to 12 columns and 50 data rows.
+          Drag the row or column handles to reorder. Use arrow keys to move between cells, or
+          Alt+Shift+arrows to reorder. Paste cells from a spreadsheet.
         </p>
         <p id="table-error" class="builder-error" role="alert" hidden></p>
         <div class="dialog-actions">
@@ -966,6 +1000,23 @@
         <div class="dialog-actions">
           <button id="flow-cancel" class="secondary-button" type="button">Cancel</button
           ><button id="flow-insert" class="save-button" type="submit">Insert flowchart</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="structure-dialog" class="builder-dialog" aria-labelledby="structure-title">
+      <form id="structure-form">
+        <h2 id="structure-title">Edit source</h2>
+        <p>Edit this structure's source. The preview updates after saving.</p>
+        <textarea
+          id="structure-source"
+          dir="ltr"
+          spellcheck="false"
+          aria-label="Structure source"
+        ></textarea>
+        <p id="structure-error" role="alert" hidden></p>
+        <div class="dialog-actions">
+          <button id="structure-cancel" type="button">Cancel</button
+          ><button type="submit" class="save-button">Save changes</button>
         </div>
       </form>
     </dialog>

@@ -196,12 +196,12 @@ def main():
             click("theme-button")
             assert evaluate("getComputedStyle(document.documentElement).colorScheme==='dark'")
             assert evaluate(
-                "(()=>{const s=getComputedStyle(document.getElementById('new-format')),o=getComputedStyle(document.querySelector('#new-format option'));return s.backgroundColor==='rgb(33, 44, 38)' && o.backgroundColor===s.backgroundColor && o.color===s.color})()"
+                "document.querySelectorAll('#new-format-menu [role=option] .file-type-icon').length===8 && getComputedStyle(document.getElementById('new-format-menu')).backgroundColor===getComputedStyle(document.querySelector('.document')).backgroundColor"
             )
             (ROOT / "artifacts").mkdir(exist_ok=True)
             window.grab().save(str(ROOT / "artifacts" / "sidebar-dark.png"))
-            # Open the actual native select popup and navigate it with the keyboard.
-            QTest.mouseClick(handle, Qt.MouseButton.LeftButton, pos=point("#new-format"))
+            # Open the icon picker and navigate it with real keyboard input.
+            QTest.mouseClick(handle, Qt.MouseButton.LeftButton, pos=point("#new-format-button"))
             QTest.qWait(150)
             QTest.keyClick(window.view.focusProxy() or window.view, Qt.Key.Key_Down)
             QTest.keyClick(window.view.focusProxy() or window.view, Qt.Key.Key_Return)

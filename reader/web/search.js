@@ -10,7 +10,10 @@
     // Folding an entire string can change its length (e.g. İ), corrupting offsets.
     // An escaped Unicode regexp keeps original UTF-16 coordinates and literal text.
     const expression = new RegExp(
-        query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[0-9۰-۹٠-٩]/g, (digit) => {
+          const value = digit.charCodeAt(0) & 15;
+          return `[${value}${String.fromCharCode(0x6f0 + value, 0x660 + value)}]`;
+        }),
         matchCase ? 'gu' : 'giu'
       ),
       found = [];
@@ -56,7 +59,6 @@
     editor,
     applyEdit,
     edit,
-    lineNumbers,
     formatNumber,
   }) {
     const panel = $('search-panel'),
@@ -80,6 +82,28 @@
       sourceField = null,
       replacementMessage = '',
       replacing = false;
+    let renderedCache = null;
+    const invalidateRendered = () => {
+      renderedCache = null;
+    };
+    const contentObserver = new MutationObserver(invalidateRendered);
+    let observedRoot = null;
+    function cachedRenderedText() {
+      const root = contentRoot();
+      if (root !== observedRoot) {
+        contentObserver.disconnect();
+        contentObserver.observe(root, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributes: true,
+        });
+        observedRoot = root;
+        invalidateRendered();
+      }
+      if (contentObserver.takeRecords().length) invalidateRendered();
+      return (renderedCache ||= renderedText());
+    }
 
     function highlight(name, ranges) {
       if (!globalThis.CSS?.highlights || typeof Highlight === 'undefined') return;
@@ -109,6 +133,7 @@
       updateControls();
     }
     function clearPreview() {
+      invalidateRendered();
       globalThis.CSS?.highlights?.delete('reader-search');
       globalThis.CSS?.highlights?.delete('reader-current');
       if (!snapshot?.field) snapshot = null;
@@ -117,54 +142,83 @@
     function renderedText() {
       const root = contentRoot(),
         nodes = [],
+        metadata = new WeakMap([[root, { block: root, collapse: true }]]),
+        blockTags = new Set(
+          'P H1 H2 H3 H4 H5 H6 LI TD TH PRE DIV SECTION ARTICLE BLOCKQUOTE DT DD TR FIGCAPTION'.split(
+            ' '
+          )
+        ),
         walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
           acceptNode(node) {
-            const closed = node.parentElement?.closest('details:not([open])');
-            if (closed && !closed.querySelector(':scope > summary')?.contains(node))
+            const parent = node.parentNode;
+            if (
+              parent.tagName === 'DETAILS' &&
+              !parent.open &&
+              node !== parent.querySelector(':scope > summary')
+            )
               return NodeFilter.FILTER_REJECT;
             if (node.nodeType === Node.ELEMENT_NODE) {
               if (
                 node.matches(
                   'input,textarea,select,style,script,[hidden],.katex-mathml,.code-toolbar,.annotation-tools,.annotation-badges,.empty-document'
                 ) ||
-                (node.getAttribute('aria-hidden') === 'true' && !node.matches('.katex-html')) ||
-                (node.matches('button') &&
+                (node.getAttribute('aria-hidden') === 'true' &&
+                  !node.classList.contains('katex-html')) ||
+                (node.tagName === 'BUTTON' &&
                   !node.matches('.opblock-summary-control,.model-box-control'))
               )
                 return NodeFilter.FILTER_REJECT;
-              const css = getComputedStyle(node);
+              // Ordinary documents are sanitized and have no author CSS. Avoid
+              // resolving computed styles for every KaTeX glyph (tens of thousands
+              // in textbooks). Retained Swagger views do have their own styles.
+              const css = root === article ? node.style : getComputedStyle(node);
               if (css.display === 'none' || css.visibility === 'hidden')
                 return NodeFilter.FILTER_REJECT;
+              const inherited = metadata.get(parent) || metadata.get(root);
+              metadata.set(node, {
+                block:
+                  blockTags.has(node.tagName) || node.classList.contains('source-line')
+                    ? node
+                    : inherited.block,
+                collapse:
+                  root === article
+                    ? inherited.collapse &&
+                      !['PRE', 'CODE'].includes(node.tagName) &&
+                      !node.classList.contains('source-line')
+                    : ['normal', 'nowrap'].includes(css.whiteSpace),
+              });
             }
             return NodeFilter.FILTER_ACCEPT;
           },
         });
-      let full = '',
+      const parts = [];
+      let length = 0,
+        tail = '',
         previousBlock = null,
         node;
+      function append(text) {
+        parts.push(text);
+        length += text.length;
+        tail = text.at(-1) || tail;
+      }
       while ((node = walker.nextNode())) {
         if (node.nodeType === Node.ELEMENT_NODE) {
-          if (node.tagName === 'BR') full += '\n';
+          if (node.tagName === 'BR') append('\n');
           continue;
         }
-        const block = node.parentElement?.closest(
-          'p,h1,h2,h3,h4,h5,h6,li,td,th,pre,div,section,article,blockquote,dt,dd,tr,figcaption,.source-line'
-        );
-        if (full && block !== previousBlock && !full.endsWith('\n')) full += '\n';
+        const { block, collapse } = metadata.get(node.parentNode) || metadata.get(root);
+        if (length && block !== previousBlock && tail !== '\n') append('\n');
         previousBlock = block;
         // Match the whitespace the reader sees, retaining original DOM offsets
         // for ranges across inline formatting and collapsed HTML whitespace.
-        const collapse = ['normal', 'nowrap'].includes(
-            getComputedStyle(node.parentElement || root.host || article).whiteSpace
-          ),
-          offsets = [];
+        const offsets = [];
         let text = '';
         for (let i = 0; i < node.length; i++) {
           const char = node.data[i];
           if (collapse && /[\t\n\r\f ]/.test(char)) {
             const start = i;
             while (i + 1 < node.length && /[\t\n\r\f ]/.test(node.data[i + 1])) i++;
-            if (!text && (!full || /[ \n]$/.test(full))) continue;
+            if (!text && (!length || tail === ' ' || tail === '\n')) continue;
             offsets.push(start);
             text += ' ';
           } else {
@@ -178,18 +232,17 @@
           node,
           original: node.data,
           offsets,
-          start: full.length,
-          end: full.length + text.length,
+          start: length,
+          end: length + text.length,
         });
-        full += text;
+        append(text);
       }
-      return { text: full, nodes, root };
+      return { text: parts.join(''), nodes, root };
     }
 
     function syncMirror() {
       const field = sourceField;
       if (!field || layer.hidden) return;
-      lineNumbers.metrics(field);
       const css = getComputedStyle(field);
       for (const name of [
         'font',
@@ -389,7 +442,12 @@
         clear();
         return true;
       }
-      const data = field ? { text: field.value, field } : { ...renderedText(), field };
+      // Opening Find with an empty query must not walk or measure the document.
+      if (!input.value) {
+        clear();
+        return true;
+      }
+      const data = field ? { text: field.value, field } : { ...cachedRenderedText(), field };
       data.id = doc.id;
       data.query = input.value;
       data.matchCase = $('search-case').getAttribute('aria-pressed') === 'true';
@@ -405,14 +463,7 @@
           snapshot.matchCase === data.matchCase &&
           snapshot.wholeWord === data.wholeWord,
         unchanged =
-          sameQuery &&
-          snapshot.text === data.text &&
-          (field ||
-            snapshot.nodes.every(
-              (entry, index) =>
-                entry.node === data.nodes[index]?.node &&
-                entry.original === data.nodes[index]?.original
-            ));
+          sameQuery && snapshot.text === data.text && (field || snapshot.nodes === data.nodes);
       if (unchanged && anchor === undefined) {
         syncMirror();
         selectResult(navigate);

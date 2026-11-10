@@ -43,7 +43,11 @@
       name.value = values.name || '';
       destination.replaceChildren(
         new Option('Uncategorized', ''),
-        ...records.map((c) => new Option(c.name, c.id))
+        ...records.map((c) => {
+          const option = new Option(c.name, c.id);
+          option.setAttribute('translate', 'no');
+          return option;
+        })
       );
       destination.value =
         values.paths?.length === 1 ? entry(values.paths[0])?.categoryId || '' : '';

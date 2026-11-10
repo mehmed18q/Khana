@@ -1,8 +1,8 @@
 # Khana
 
-A local desktop reader and editor for mixed Persian and English documents. Open Markdown, HTML, Word, PDF, JSON, YAML, logs, configuration files, and XML. Edit supported content with a synchronized preview. Each prose paragraph is displayed in its own direction. The application interface is English; document content keeps its original language.
+A local desktop reader and editor for mixed Persian and English documents. Open Markdown, HTML, Word, PDF, JSON, YAML, logs, configuration files, and XML. Edit supported content with a synchronized preview. Each prose paragraph is displayed in its own direction. The application interface switches between Persian (RTL) and English (LTR); document content keeps its original language and direction.
 
-Current version: **0.9.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Current version: **0.10.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 ## Installation
 
@@ -21,12 +21,12 @@ The verified environment is Ubuntu 26.04 x86_64 with Python 3.14. Windows source
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.9.0 these are `khana_0.9.0-1_amd64.deb` and `khana_0.9.0-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.10.0 these are `khana_0.10.0-1_amd64.deb` and `khana_0.10.0-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.9.0-1_amd64.deb.sha256
-sudo apt install ./khana_0.9.0-1_amd64.deb
+sha256sum -c khana_0.10.0-1_amd64.deb.sha256
+sudo apt install ./khana_0.10.0-1_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -152,10 +152,10 @@ Build on **Ubuntu 26.04 x86_64**. First follow the [Ubuntu source setup](#ubuntu
 sudo apt install curl dpkg desktop-file-utils
 .venv/bin/python -m pip install -r requirements-build.txt
 .venv/bin/python scripts/build_deb.py
-sudo apt install ./dist/khana_0.9.0-1_amd64.deb
+sudo apt install ./dist/khana_0.10.0-1_amd64.deb
 ```
 
-The build produces `dist/khana_0.9.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.10.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -195,18 +195,18 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.9.0-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.9.0-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.10.0-1_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.10.0-1_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 
-These names describe version 0.9.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+These names describe version 0.10.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
 
 ### Versioning
 
 `reader/__init__.py` defines the application version. The native app, sidebar, CLI and build scripts all read it; package checks verify that the executable, visible version and installer metadata agree. Debian packaging rejects an unpacked build whose version differs from the source, including with `--skip-build`.
 
-During the `0.x` series, new features advance the minor version (`0.9.0`); fixes to that release advance the patch version (`0.9.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
+During the `0.x` series, new features advance the minor version (`0.10.0`); fixes to that release advance the patch version (`0.10.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
 
 ## Reading
 
@@ -279,6 +279,14 @@ Reading information is local to this device, in `library.sqlite3` beside `settin
 | Ctrl+Shift+I | Format JSON, YAML or XML source in editing mode |
 | Escape | Close a dialog, appearance/search, or leave reading fullscreen |
 
+## Interface language and spelling
+
+Use the **globe icon** in the header to choose فارسی or English from the flag menu. Sidebar placement, menus, toolbars and reading panes follow the selected interface direction; source and document direction remain independently configurable. The new-document format menu displays the same format icons used in the file list.
+
+The **spelling icon** in the header enables or disables offline Persian and English spelling in the source editor. Its highlighted state means it is on. Right-click an underlined word for suggestions, **Ignore in this document**, or **Ignore in all documents**. Corrections preserve undo. Exceptions are stored locally in settings; document exceptions follow saved paths, while draft exceptions remain in the session and are retained when saving the draft. Language and spelling preferences persist and update other open windows.
+
+Spelling dictionaries load and run in a worker, with cached word checks. The editor's context menu also offers undo, redo, cut, copy, paste and select all. Persian, Arabic and Latin digit forms are equivalent in Find and Replace, including whole-word searches, without changing the original text until a replacement is requested.
+
 ## Tables and flowcharts
 
 In **Edit & Preview**, place the caret in the source and choose **Table** or **Flowchart**. Insertion replaces selected source text, if any, and supports Ctrl+Z / Ctrl+Shift+Z.
@@ -286,7 +294,8 @@ In **Edit & Preview**, place the caret in the source and choose **Table** or **F
 - **Table** opens an editable grid with a header row and 1–50 data rows, with up to 12 columns. Fill the cells or paste tab-separated cells from a spreadsheet. Pasting expands the grid within those limits; oversized pastes show an error. Cells support Persian and English. Markdown cells may use inline Markdown formatting; HTML cell contents are escaped as literal text.
 - **Flowchart** lets you add and remove steps, choose **Process**, **Start / End**, **Decision**, or **Input / Output** shapes, and connect them with optional labels. Branches and loops are supported. Choose top-to-bottom, bottom-to-top, left-to-right, or right-to-left layout. A chart can have up to 30 steps and 60 connections in the builder.
 - Diagrams render offline in both reading mode and live preview, with mixed-language labels, light/dark themes, zoom, **Fit**, **Copy source**, and an expandable **Mermaid source** section. Invalid diagrams show an error beside their source while the rest of the document stays readable.
-- The builders insert editable source. To change an existing table or flowchart, edit that source in **Edit & Preview**. The forms currently create new items; they do not reopen existing ones for visual editing.
+- Use **Edit table** / **Edit flowchart** above an existing structure, or place the source cursor inside it and click its toolbar button. Rectangular tables and builder-generated flowcharts reopen in their forms. Complex tables (including merged cells) and other Mermaid syntax open in a source dialog to preserve unsupported content. Applying an edit replaces only that structure and is a single undo operation.
+- Drag the numbered row handles or column handles to reorder. **Alt+Shift+arrows** also reorders; Up/Down moves between cells, and Left/Right moves at text boundaries. Select a row handle and copy it, or use **Copy row** / **Paste row below**. Add/delete rows and columns using the grid controls. Unchanged HTML cells retain their markup and attributes.
 
 Markdown diagrams use standard Mermaid fences:
 

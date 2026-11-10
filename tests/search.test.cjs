@@ -6,6 +6,18 @@ const slices = (text, query, options) =>
 const apply = (text, operation) =>
   text.slice(0, operation.start) + operation.text + text.slice(operation.end);
 
+test('Persian, Arabic and Latin digits match without changing replacement offsets', () => {
+  const text = '😀 ۱۳۸۱ / 1381 / ١٣٨١ / ۲۱۳۸۱';
+  for (const query of ['۱۳۸۱', '1381', '١٣٨١', '۱3٨1']) {
+    const found = matches(text, query, { wholeWord: true });
+    assert.deepEqual(
+      found.map(({ start, end }) => text.slice(start, end)),
+      ['۱۳۸۱', '1381', '١٣٨١']
+    );
+    assert.equal(apply(text, replacement(text, found, 'سال')), '😀 سال / سال / سال / ۲۱۳۸۱');
+  }
+});
+
 test('literal search preserves spaces, punctuation and regexp metacharacters', () => {
   for (const query of ['a.b', '[a]', '(a)', '$&', '\\', 'x+y?', '^a$', '{a}', 'a|b'])
     assert.deepEqual(slices(`prefix ${query} suffix`, query), [query]);

@@ -2,9 +2,13 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const formatNumber = (number) =>
-    new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(number);
+    new Intl.NumberFormat(settings.language === 'fa' ? 'fa-IR' : 'en-US', {
+      maximumFractionDigits: 1,
+    }).format(number);
   const icon = (name) => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const defaults = {
+    language: 'en',
+    spellcheck: true,
     theme: 'light',
     palette: 'forest',
     direction: 'smart',
@@ -37,6 +41,7 @@
     systemChanged: () => preferences(false),
   });
   const contextMenu = ReaderContextMenu.create();
+  ReaderPickers.create();
   const categories = ReaderCategories.create({
     native: () => bridge,
     menu: contextMenu,
@@ -217,6 +222,15 @@
     schedulePreview,
     searchChanged: (kind) => find.changed(kind),
   });
+  const spelling = ReaderSpelling.create({
+    current: () => documents.get(activeId),
+    editor: () => editors.get(activeId),
+    native: () => bridge,
+    enabled: () => settings.spellcheck,
+    menu: contextMenu,
+    applyEdit: sourceEditor.applyEdit,
+    toast,
+  });
   ReaderWindowControls.create({ native: () => bridge });
   const header = ReaderHeader.create({
     changed: (collapsed) => {
@@ -247,6 +261,8 @@
   }
 
   function preferences(save = true) {
+    ReaderI18n.apply(settings.language);
+    $('ui-language').value = settings.language;
     theme.apply();
     document.documentElement.style.setProperty('--font-size', `${settings.fontSize}px`);
     document.documentElement.style.setProperty('--line-height', settings.lineHeight);
@@ -257,6 +273,8 @@
     $('line-value').textContent = formatNumber(settings.lineHeight);
     $('wide-page').checked = settings.wide;
     $('sync-scroll').checked = settings.syncScroll;
+    $('spellcheck').checked = settings.spellcheck;
+    updateSpellingButton();
     zoom.restore(settings.previewZoom);
     document.querySelectorAll('button[data-direction]').forEach((button) => {
       const selected = button.dataset.direction === settings.direction;
@@ -455,6 +473,7 @@
         toast('Diagram source copied');
       },
     });
+    sourceEditor.bindStructures(article, documents.get(activeId));
   }
 
   function paintPreview(doc) {
@@ -504,6 +523,7 @@
     paintPreview(doc);
     workspace.render();
     sourceEditor.show(doc);
+    spelling.changed();
     updateCaption();
     files.render();
     const target = refresh
@@ -601,7 +621,7 @@
     $('beautify-button').disabled = Boolean(doc?.formatting);
     $('beautify-button').textContent = doc?.formatting ? 'Formatting…' : 'Format document';
     bridge?.setDocumentTitle(doc ? `${doc.dirty ? '● ' : ''}${doc.name}` : '');
-    reading.refresh();
+    reading.refresh(false);
   }
 
   function schedulePreview(doc, delay = 300) {
@@ -816,6 +836,26 @@
     preferences();
     sync.mount('preview');
   };
+  $('spellcheck').onchange = (event) => {
+    settings.spellcheck = event.target.checked;
+    updateSpellingButton();
+    spelling.changed();
+    bridge?.saveSettings(JSON.stringify(settings));
+  };
+  function updateSpellingButton() {
+    const button = $('spellcheck-button');
+    button.setAttribute('aria-pressed', String(settings.spellcheck));
+    button.title = settings.spellcheck ? 'Spell check: on' : 'Spell check: off';
+  }
+  $('spellcheck-button').onclick = () => $('spellcheck').click();
+  $('ui-language').onchange = (event) => {
+    settings.language = event.target.value;
+    preferences();
+    updateProgress();
+    sync.resize();
+  };
+  document.getElementById('edit-mode').addEventListener('click', () => spelling.changed());
+  document.getElementById('read-mode').addEventListener('click', () => spelling.changed());
   $('quit-button').onclick = () => bridge?.quit();
   $('appearance-button').onclick = () => {
     $('appearance-panel').hidden = !$('appearance-panel').hidden;
@@ -1008,6 +1048,15 @@
         workspace.receivePdf(result);
       });
       bridge.sourceFormatted.connect(sourceEditor.receiveFormatted);
+      bridge.spellingReady.connect(spelling.receive);
+      bridge.spellingChanged.connect(spelling.changed);
+      bridge.interfacePreferencesChanged.connect((raw) => {
+        const values = JSON.parse(raw);
+        if (Object.entries(values).every(([key, value]) => settings[key] === value)) return;
+        Object.assign(settings, values);
+        preferences(false);
+        spelling.changed();
+      });
       bridge.apiResponse.connect((raw) => apiRequests.receive(raw));
       bridge.command.connect(command);
       bridge.focusModeChanged.connect(applyFocusMode);

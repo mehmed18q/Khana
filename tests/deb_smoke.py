@@ -144,6 +144,33 @@ def main():
                 )
             # Exercise SQLite and the annotation UI in the frozen executable,
             # including a full process restart with the same user configuration.
+            spelling_file = folder / "spelling.md"
+            spelling_file.write_text("hello helllo سلام سللام\n", encoding="utf-8")
+            running = PackagedApp(executable, folder, [spelling_file])
+            running.evaluate("readerApp.setEditMode(true)")
+            running.wait(
+                "CSS.highlights.get('reader-spelling')?.size===2",
+                "packaged Persian and English dictionaries check spelling offline",
+            )
+            running.evaluate("document.getElementById('spellcheck-button').click()")
+            assert running.evaluate("!CSS.highlights.has('reader-spelling')")
+            running.evaluate("document.getElementById('spellcheck-button').click()")
+            running.wait(
+                "CSS.highlights.get('reader-spelling')?.size===2",
+                "packaged header toggle restores spelling",
+            )
+            running.evaluate("document.getElementById('ui-language-button').click()")
+            assert running.evaluate(
+                "document.querySelectorAll('#ui-language-menu .language-flag').length===2"
+            )
+            running.evaluate("document.querySelector('#ui-language-menu [data-value=fa]').click()")
+            running.wait(
+                "document.documentElement.dir==='rtl' && document.getElementById('save-button').textContent.includes('ذخیره')",
+                "packaged language picker applies Persian labels and RTL",
+            )
+            running.evaluate("document.getElementById('ui-language-button').click()")
+            running.evaluate("document.querySelector('#ui-language-menu [data-value=en]').click()")
+            running.close()
             source = folder / "reading.md"
             original = "# Reading\n\nA place to remember.\n\nیادداشت روی متن فارسی و English.\n"
             source.write_text(original)

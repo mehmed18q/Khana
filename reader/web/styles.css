@@ -1387,3 +1387,41 @@ body {
 [data-window-drag]:active {
   cursor: grabbing;
 }
+
+html[lang='fa'] body {
+  font-family: Reader, 'DejaVu Sans', sans-serif;
+}
+html[lang='fa'] .file-context-menu {
+  font-family: Reader, sans-serif;
+}
+html[dir='rtl'] .sidebar-collapse {
+  right: auto;
+  left: 8px;
+}
+html[dir='rtl'] .sidebar-collapse svg {
+  transform: none;
+}
+html[dir='rtl'] .sidebar-collapsed .sidebar-collapse {
+  right: auto;
+  left: 12px;
+}
+html[dir='rtl'] .sidebar-collapsed .sidebar-collapse svg {
+  transform: rotate(180deg);
+}
+html[dir='rtl'] .sidebar-toggle[aria-expanded='false'] .sidebar-chevron {
+  transform: rotate(180deg);
+}
+html[dir='rtl'] .reading-line-numbers {
+  left: auto;
+  right: 0;
+  border-right: 0;
+  border-left: 1px solid var(--line);
+}
+html[dir='rtl'] .has-line-numbers > .reading-scroll {
+  padding-left: 24px;
+  padding-right: 62px;
+}
+html[lang='fa'] .section-label,
+html[lang='fa'] .sidebar-toggle {
+  letter-spacing: 0;
+}

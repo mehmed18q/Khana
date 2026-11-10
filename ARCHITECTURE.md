@@ -33,6 +33,7 @@ flowchart TD
 | `reader/ui/bridge.py` | Native command facade: synchronize the latest source, validate operations, display save/close prompts, and publish session/library events. Qt slot names intentionally match the JavaScript contract. |
 | `reader/ui/jobs.py` | Own each window's serial worker pool, deduplicate work, coalesce pending previews, and discard results for closed documents or a stopped window. |
 | `reader/ui/workers.py` | Execute snapshots and emit results. Workers never access widgets, the session dictionary or SQLite. |
+| `reader/spelling.py`, `reader/ui/spelling.py` | Load bundled Hunspell dictionaries lazily, cache lookup results, and check words on a separate serial worker pool. |
 | `reader/documents.py` | Load supported formats, preserve source metadata, render previews and sanitize HTML. Word/PDF/OpenAPI details live in their existing adapters. |
 | `reader/editing.py` | Buffer baseline, dirty state, conflict detection and atomic file replacement. This uses QtCore's `QSaveFile`, but has no dependency on windows or the WebChannel. |
 | `reader/library.py` | Store documents, annotations and workspace paths. `get(path)` reads only that document and its annotations; `entries()` deliberately reads the full library view. |
@@ -69,6 +70,9 @@ global declaration.
 | `openapi-ui.js`, `api-requests.js` | Retained Swagger views and request promises, independently of which tab is visible. |
 | `library-ui.js`, `annotations.js` | Library controls and text anchors. |
 | `formatting.js`, `insertions.js`, `bidi.js` | Text transformations and direction rules, with Node-testable exports. |
+| `i18n.js`, `fa.js`, `pickers.js` | Translate application controls, mirror the interface, and render accessible language and format menus. UI translation excludes document text and user labels. |
+| `spelling.js` | Debounced source checking, mirrored underlines, scoped ignore actions and undoable suggestions. Results must match the active document and source snapshot. |
+| `structures.js`, `builders.js` | Locate and safely replace existing tables/diagrams, preserve cell metadata, and edit tables and supported flowcharts. Unsupported structures retain a source editor. |
 
 Other existing feature modules own sidebar layout, preview zoom, scroll mapping,
 diagram rendering and builder forms. `window.readerApp` remains the narrow
@@ -125,6 +129,7 @@ also checks the unpacked executable's version before creating installer metadata
 | Source files | Written only by successful Save/Save As operations. |
 | Library, stars, notes and reopenable workspace paths | SQLite beside `settings.ini`. Unsaved drafts are not persisted. |
 | Reading preferences and native geometry | QSettings; source runs use `.local`, frozen builds use the platform configuration directory. |
+| Spelling exceptions | QSettings for global words and saved document paths; draft exceptions stay in memory until saving. |
 | Editor selections, undo history, pane positions and API credentials/responses | In memory for the open session. API runtime state is never written to settings or source. |
 | PDF originals, edits and rendered page images | Process-local temporary cache. PyMuPDF access is serialized by a shared lock across window pools. |
 
@@ -174,3 +179,10 @@ also need LibreOffice Writer. Keep builds and GUI checks separate to
 reduce timing contention. After building both packages, run
 `python scripts/smoke.py bundle deb`. Packaged checks isolate configuration and
 IPC and do not install the package into the system.
+
+`python tests/performance_smoke.py /path/to/document.md` measures Find, next-result
+navigation, Go to line and typing in a temporary copy of a real document. An
+optional second argument supplies a baseline source tree. It also asserts that
+these interactions execute no SQLite statements. Rendered search text and scroll
+maps are invalidated when their content changes, while reading gutters measure
+only visible anchors.
