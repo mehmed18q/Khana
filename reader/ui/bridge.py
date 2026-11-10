@@ -53,7 +53,7 @@ class Bridge(QObject):
     previewReady = Signal(str)
     previewFailed = Signal(str, int, str)
     errorOccurred = Signal(str)
-    busyChanged = Signal(bool)
+    busyChanged = Signal(bool, str)
     settingsLoaded = Signal(str)
     systemThemeChanged = Signal(str)
     themePreferencesChanged = Signal(str)
@@ -800,6 +800,8 @@ class Bridge(QObject):
             QTimer.singleShot(0, self.window.close)
         finally:
             self.window.close_pending = False
+            if not self.window.allow_close:
+                self.window.manager.tray.cancel_exit()
 
     @Slot()
     def openSample(self):
@@ -838,6 +840,28 @@ class Bridge(QObject):
     @Slot(str)
     def copyText(self, text):
         QApplication.clipboard().setText(text)
+
+    @Slot(str, str, float)
+    def reportDiagnostic(self, kind, message, elapsed):
+        import logging
+
+        if kind not in {"error", "slow-task", "interaction"}:
+            return
+        logging.getLogger(__name__).warning(
+            "Browser %s elapsed=%.1fms document=%s %s",
+            kind,
+            elapsed,
+            self.active_id,
+            message[:2000],
+        )
+
+    @Slot()
+    def openLogs(self):
+        from reader.diagnostics import log_directory
+
+        folder = log_directory()
+        if folder:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 
     @Slot(result=str)
     def clipboardText(self):

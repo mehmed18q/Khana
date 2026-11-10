@@ -273,7 +273,7 @@ kbd {
 #outline button.active {
   color: var(--accent);
   border-color: var(--accent);
-  background: linear-gradient(to left, var(--accent-soft), transparent);
+  background: var(--accent-soft);
   font-weight: 600;
 }
 #outline button.nested {
@@ -807,6 +807,7 @@ kbd {
 }
 .statusbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   padding: 9px 25px;
@@ -818,8 +819,17 @@ kbd {
 }
 .statusbar > div {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+}
+.statusbar span,
+.statusbar button {
+  white-space: nowrap;
+}
+#status-cursor {
+  padding: 0;
+  font-size: inherit;
 }
 .status-separator {
   color: #b1b7af;
@@ -1060,30 +1070,39 @@ kbd {
   margin: 27px auto;
   width: 170px;
 }
-.toast {
+.notifications {
   position: fixed;
-  bottom: 60px;
+  bottom: 52px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  z-index: 50;
+  pointer-events: none;
+}
+.notifications > div {
+  max-width: min(680px, calc(100vw - 32px));
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+.toast {
   padding: 12px 22px;
-  max-width: 75vw;
   border: 1px solid var(--line);
   background: var(--text);
   color: var(--paper);
   box-shadow: 0 6px 30px #0002;
   border-radius: 9px;
   font-size: 12px;
-  z-index: 50;
-  overflow-wrap: anywhere;
 }
 .toast.error {
   background: #8b4343;
   color: #fff;
 }
 .loading {
-  position: fixed;
-  bottom: 57px;
-  inset-inline-start: 290px;
   background: var(--paper);
   border: 1px solid var(--line);
   padding: 8px 15px;
@@ -1092,9 +1111,9 @@ kbd {
   align-items: center;
   gap: 9px;
   font-size: 11px;
-  z-index: 20;
 }
 .spinner {
+  flex-shrink: 0;
   height: 13px;
   width: 13px;
   border: 2px solid var(--line);
@@ -1139,9 +1158,6 @@ kbd {
 }
 .focus-mode .reading-label::after {
   content: ' · Focus';
-}
-.focus-mode .loading {
-  inset-inline-start: 25px;
 }
 .document .k,
 .document .kn,

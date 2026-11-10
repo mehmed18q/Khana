@@ -1,7 +1,7 @@
 /* Background spelling and source-editor menus. Source and undo stay in the textarea. */
 (() => {
   'use strict';
-  function create({ current, editor, native, enabled, menu, applyEdit, toast }) {
+  function create({ current, editor, native, enabled, menu, applyEdit, toast, lineNumbers }) {
     const container = document.getElementById('editor-container'),
       layer = document.createElement('div'),
       mirror = document.createElement('div');
@@ -28,12 +28,17 @@
       snapshot = null,
       words = [],
       misspelled = new Set(),
-      pendingMenu = null;
+      pendingMenu = null,
+      paintFrame = 0,
+      painted = '';
     function clear() {
       CSS.highlights?.delete('reader-spelling');
       layer.hidden = true;
       snapshot = null;
       pendingMenu = null;
+      painted = '';
+      cancelAnimationFrame(paintFrame);
+      CSS.highlights?.delete('reader-editor-selection');
       token++;
     }
     function sync() {
@@ -44,8 +49,10 @@
         if (mirror.style[property] !== css[property]) mirror.style[property] = css[property];
       mirror.dir = field.dir;
       mirror.style.width = `${field.clientWidth}px`;
-      layer.style.left = `${field.offsetLeft}px`;
-      layer.style.top = `${field.offsetTop}px`;
+      // The textarea's RTL scrollbar sits on the left. Its text viewport starts
+      // after clientLeft (scrollbar plus border), not at the element's edge.
+      layer.style.left = `${field.offsetLeft + field.clientLeft}px`;
+      layer.style.top = `${field.offsetTop + field.clientTop}px`;
       layer.style.width = `${field.clientWidth}px`;
       layer.style.height = `${field.clientHeight}px`;
       mirror.style.transform = `translate(${-field.scrollLeft}px, ${-field.scrollTop}px)`;
@@ -54,17 +61,53 @@
       if (!snapshot || editor() !== snapshot.field || snapshot.source !== snapshot.field.value)
         return;
       layer.hidden = false;
-      mirror.textContent = snapshot.source + '\u200b';
+      if (mirror.textContent !== snapshot.source + '\u200b')
+        mirror.textContent = snapshot.source + '\u200b';
       sync();
+      const field = snapshot.field,
+        metrics = lineNumbers.metrics(field),
+        first = Math.max(
+          0,
+          Math.floor(ReaderScrollSync.interpolate(metrics, field.scrollTop - field.clientHeight, 1))
+        ),
+        last =
+          Math.ceil(
+            ReaderScrollSync.interpolate(metrics, field.scrollTop + field.clientHeight * 2, 1)
+          ) + 1,
+        start = snapshot.lines[first] ?? 0,
+        end = snapshot.lines[last] ?? snapshot.source.length,
+        key = `${snapshot.token}:${start}:${end}:${misspelled.size}`;
+      if (key === painted) return;
+      painted = key;
       const highlight = new Highlight();
-      for (const word of words)
+      // Only visible lines (plus a screen on each side) need painted ranges.
+      // Thousands of offscreen ranges make Chromium repaint on every caret move.
+      for (let index = wordIndex(start); index < words.length; index++) {
+        const word = words[index];
+        if (word.start >= end) break;
         if (misspelled.has(word.value)) {
           const range = new Range();
           range.setStart(mirror.firstChild, word.start);
           range.setEnd(mirror.firstChild, word.end);
           highlight.add(range);
         }
+      }
       CSS.highlights?.set('reader-spelling', highlight);
+    }
+    function wordIndex(offset) {
+      let low = 0,
+        high = words.length;
+      while (low < high) {
+        const middle = (low + high) >>> 1;
+        if (words[middle].end < offset) low = middle + 1;
+        else high = middle;
+      }
+      return low;
+    }
+    function refresh() {
+      sync();
+      cancelAnimationFrame(paintFrame);
+      paintFrame = requestAnimationFrame(draw);
     }
     function check() {
       const field = editor(),
@@ -81,6 +124,7 @@
         return;
       }
       snapshot = { source: field.value, field, id: doc.id, token: ++token };
+      snapshot.lines = ReaderSourceText.get(field).starts;
       words = [
         ...field.value.matchAll(
           /[A-Za-z]+(?:['’][A-Za-z]+)?|[\u0621-\u063a\u0641-\u064a\u066e-\u06d3][\u0621-\u063a\u0640-\u065f\u066e-\u06d3\u200c]*/gu
@@ -110,14 +154,23 @@
     }
     function wordAt(event, field) {
       if (!snapshot || snapshot.source !== field.value || layer.hidden) return null;
-      // Hit-test the identical mirror without moving the editor's selection.
-      field.style.pointerEvents = 'none';
-      layer.style.pointerEvents = 'auto';
-      const caret = document.caretRangeFromPoint(event.clientX, event.clientY);
-      field.style.pointerEvents = '';
-      layer.style.pointerEvents = '';
-      if (caret?.startContainer !== mirror.firstChild) return null;
-      return words.find((word) => word.start <= caret.startOffset && word.end >= caret.startOffset);
+      if (field.selectionStart !== field.selectionEnd) {
+        const word = words[wordIndex(field.selectionStart)];
+        return word?.start === field.selectionStart && word.end === field.selectionEnd
+          ? word
+          : null;
+      }
+      // Hit-test the few painted errors without changing textarea styles or focus.
+      for (const range of CSS.highlights?.get('reader-spelling') || [])
+        for (const rect of range.getClientRects())
+          if (
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom
+          )
+            return words[wordIndex(range.startOffset)];
+      return null;
     }
     function showMenu(context, suggestions = null) {
       const { event, field, source, start, end, word, id } = context;
@@ -206,7 +259,21 @@
         },
         { id: 'select-all', label: 'Select all', run: () => field.select() }
       );
-      menu.open(event, field, 'Edit text', actions);
+      menu.open(event, field, 'Edit text', actions, false, () => {
+        CSS.highlights?.delete('reader-editor-selection');
+        pendingMenu = null;
+        if (!snapshot) layer.hidden = true;
+      });
+      pendingMenu = context;
+      if (start !== end) {
+        if (mirror.textContent !== source + '\u200b') mirror.textContent = source + '\u200b';
+        layer.hidden = false;
+        sync();
+        const range = new Range();
+        range.setStart(mirror.firstChild, start);
+        range.setEnd(mirror.firstChild, end);
+        CSS.highlights?.set('reader-editor-selection', new Highlight(range));
+      }
     }
     container.addEventListener('contextmenu', (event) => {
       const field = event.target.closest('.source-editor');
@@ -226,11 +293,13 @@
       if (context.word && misspelled.has(context.word.value) && enabled())
         native()?.spellingSuggestions(context.id, context.token, context.word.value);
     });
-    container.addEventListener('input', changed);
+    // Drop old ranges before other input handlers read layout for the new text.
+    container.addEventListener('beforeinput', clear, true);
+    container.addEventListener('input', changed, true);
     document.addEventListener('reader-editor-view', changed);
-    container.addEventListener('scroll', sync, true);
-    new ResizeObserver(sync).observe(container);
-    document.fonts.ready.then(sync);
+    container.addEventListener('scroll', refresh, true);
+    new ResizeObserver(refresh).observe(container);
+    document.fonts.ready.then(refresh);
     return {
       changed,
       receive(raw) {

@@ -172,6 +172,13 @@ Ln {0}|خط {0}
 Match {0}|نتیجهٔ {0}
 {0} of {1}|{0} از {1}
 {0} words|{0} واژه
+{0} lines|{0} خط
+File size|حجم فایل
+Logs|گزارش‌ها
+Open application logs|باز کردن پوشهٔ گزارش‌های برنامه
+Source lines|خط‌های متن مبدأ
+Insert sample|درج نمونه
+Insert sample (Ctrl+Shift+Space) · sample + Tab|درج نمونه (Ctrl+Shift+Space) · sample + Tab
 {0} min read|{0} دقیقه مطالعه
 {0}% read|{0}٪ خوانده‌شده
 {0} matches for “{1}” · {2}|{0} نتیجه برای «{1}» · {2}
@@ -361,7 +368,8 @@ Delete|حذف
 Remove from library (keeps the source file)|حذف از کتابخانه (فایل اصلی باقی می‌ماند)
 Close the document before removing it from the library|پیش از حذف از کتابخانه، سند را ببندید
 Drop your document here|سند را اینجا رها کنید
-Opening document…|در حال باز کردن سند…
+Opening documents…|در حال باز کردن سندها…
+Opening {0}…|در حال باز کردن {0}…
 Meet Khana|با خوانا آشنا شوید
 Make room for a little reading.|جایی برای کمی مطالعه باز کنید.
 Settle in. Khana takes care of the rest.|آسوده بنشینید؛ خوانا به بقیه رسیدگی می‌کند.

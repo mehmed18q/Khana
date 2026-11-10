@@ -2,7 +2,7 @@
 
 Khana's Linux baseline is **Ubuntu 24.04 amd64**. Package revision `0.10.0-2`
 rebuilds the application on that baseline; `0.10.0-1` required Ubuntu 26.04.
-The current application version is `0.11.0`, packaged as `0.11.0-1`. ARM and Ubuntu 22.04 are not supported by
+The current application version is `0.12.0`, packaged as `0.12.0-1`. ARM and Ubuntu 22.04 are not supported by
 these binaries. Later Ubuntu releases still need runtime verification.
 
 ## Build and check locally
@@ -21,7 +21,7 @@ system libraries are not used to build the package. Reusing a native 26.04
 bundle with `--skip-build` is rejected.
 
 ```bash
-sudo apt install ./dist/khana_0.11.0-1_amd64.deb
+sudo apt install ./dist/khana_0.12.0-1_amd64.deb
 ```
 
 For the repository integration test (temporary key, isolated APT state):
@@ -49,7 +49,7 @@ for package `0.10.0-2`. The steps below document setup for maintainers and forks
    Set the **Actions variable** `APT_SIGNING_FINGERPRINT` to its full fingerprint.
 4. Run **Build and publish Ubuntu APT package** first with `publish` unchecked to
    verify the build. Run it with `publish` checked to publish the tested installer
-   to Releases and the signed repository to Pages. A tag such as `v0.11.0-1` also
+   to Releases and the signed repository to Pages. A tag such as `v0.12.0-1` also
    runs build and publication; its name must match the source/package versions.
 
 For an existing key, GitHub CLI can configure secrets without printing the key:

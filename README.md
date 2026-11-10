@@ -2,7 +2,7 @@
 
 A local desktop reader and editor for mixed Persian, Arabic and English documents. Open Markdown, HTML, Word, PDF, JSON, YAML, logs, configuration files, and XML. Edit supported content with a synchronized preview. Each prose paragraph is displayed in its own direction. The application interface switches between Persian and Arabic (RTL) and English (LTR); document content keeps its original language and direction.
 
-Current version: **0.11.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Current version: **0.12.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 ## Installation
 
@@ -23,12 +23,12 @@ The [signed APT repository and installation guide](https://mehmed18q.github.io/K
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.11.0 these are `khana_0.11.0-1_amd64.deb` and `khana_0.11.0-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.12.0 these are `khana_0.12.0-1_amd64.deb` and `khana_0.12.0-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.11.0-1_amd64.deb.sha256
-sudo apt install ./khana_0.11.0-1_amd64.deb
+sha256sum -c khana_0.12.0-1_amd64.deb.sha256
+sudo apt install ./khana_0.12.0-1_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -152,10 +152,10 @@ Install Docker on a Linux amd64 host. The build runs in an isolated **Ubuntu 24.
 
 ```bash
 python3 scripts/build_ubuntu24.py
-sudo apt install ./dist/khana_0.11.0-1_amd64.deb
+sudo apt install ./dist/khana_0.12.0-1_amd64.deb
 ```
 
-The build produces `dist/khana_0.11.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.12.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -195,18 +195,18 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.11.0-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.11.0-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.12.0-1_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.12.0-1_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 
-These names describe version 0.11.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+These names describe version 0.12.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
 
 ### Versioning
 
 `reader/__init__.py` defines the application version. The native app, sidebar, CLI and build scripts all read it; package checks verify that the executable, visible version and installer metadata agree. Debian packaging rejects an unpacked build whose version differs from the source, including with `--skip-build`.
 
-During the `0.x` series, new features advance the minor version (`0.11.0`); fixes to that release advance the patch version (`0.11.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
+During the `0.x` series, new features advance the minor version (`0.12.0`); fixes to that release advance the patch version (`0.12.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
 
 ## Reading
 
@@ -232,14 +232,22 @@ During the `0.x` series, new features advance the minor version (`0.11.0`); fixe
 
 Reading information is local to this device, in `library.sqlite3` beside `settings.ini`: installed/portable builds use `~/.config/Khana/Khana/`, and source runs use the project's `.local/` folder. Back up that database with the app closed to preserve the library. Moving a source file outside Khana does not automatically update its library path. Unsaved drafts are not restored after closing the app.
 
+Empty category folders are hidden from the file and library lists. They remain available in **Move to category**, so adding a file makes them visible again. **On this page** highlights the current heading while reading, scrolling the source, or moving its caret; the outline keeps its own scroll position.
+
+Closing a window offers **Exit**, **Cancel**, and **Stay in background**. Background mode hides the window from the taskbar and keeps its buffers and undo history in memory. Use the system tray icon's **Open** or **Exit** menu to restore the windows or exit the app. Exit checks unsaved changes in each window. Background mode is disabled on desktops without a system tray.
+
+Choose **Logs** in the footer to open the local diagnostics folder: `.local/logs/` for source runs, or `~/.config/Khana/Khana/logs/` for installed/portable builds on Linux. `khana.log` records errors, renderer exits and slow operations; it rotates at 2 MB with three backups. `crash.log` records native Python crash traces and keeps one previous log when rotated at startup. Logs do not provide document recovery. Opening messages and transient notifications appear at the bottom center; single-file opening messages include the filename.
+
 ## Create, edit, and save
 
 - Select **MD**, **HTML**, **Word**, **JSON**, **YAML**, **LOG**, **CONF**, or **XML** beside **New document**, then click the button (or press Ctrl+N) to create a draft.
+- Use **Insert sample** or **Ctrl+Shift+Space** in the editor to insert an example for the current format. Type `sample` on its own line and press **Tab** for the same result; HTML also supports `doc` or `!` followed by **Tab**. Samples replace the selection or abbreviation, preserve other text, and can be undone.
 - Select **Edit & Preview** (Ctrl+E) to edit the original source beside a live preview. The preview updates after a brief pause in typing. Use **Read** to return to the full reading layout.
 - **Sync scroll** is enabled by default: scrolling the editor moves the preview to corresponding source lines, and scrolling the preview moves the editor back to those lines. Wrapped source lines and rendered block heights are taken into account. Live updates follow the editing position. Uncheck **Sync scroll** in the editor footer for independent scrolling; this preference survives restarts. HTML with several elements on one source line is mapped at that line's granularity.
 - The formatting and image toolbar appears only for **Markdown**, **HTML**, and **Word**. JSON, YAML, LOG, CONF, XML, and PDF do not display text-formatting controls; formatting shortcuts do not insert markup into data files.
 - **Image** opens a local file picker. Markdown and HTML use an absolute `file:///…` URL, including files outside the document folder. Images can be inserted before saving a draft. Moving or deleting that image later breaks the reference; Word embeds images when saved.
 - Each document keeps its own source buffer and undo history while switching tabs or reading modes. Standard Ctrl+Z / Ctrl+Shift+Z editing shortcuts work in the source field.
+- Selected source text stays highlighted while its context menu is open. The footer shows file size, source line/column, word count and source line count. File size refers to the saved file; a new draft shows its UTF-8 size. PDFs omit source coordinates.
 - The replacement row is collapsed when opening **Find**. Use the chevron beside the search field or **Ctrl+H** to expand it and enter editing mode. **Replace** changes the current match and advances; **Replace All** changes every match in the active document as one undoable edit. Matching uses the same case/whole-word options. Search and replacement text are literal, including `$` and backslashes; an empty replacement deletes matches. Use **Save** to write the result. In the replacement field, **Enter** replaces one and **Ctrl+Enter** replaces all. PDF text replacement uses the page's **Edit text** control.
 - The editor has independent **Auto / LTR / RTL** direction controls. The reading toolbar controls the preview direction.
 - The source toolbar provides **Bold**, **Italic**, **Strikethrough**, **H1–H3**, **Link**, **Inline code**, **Code block**, **Quote**, **Bulleted list**, **Numbered list**, and **Horizontal rule**. Select source text and choose a button; without a selection, inline tools insert a selected placeholder. Headings and Markdown lists act on the selected/current lines.
@@ -277,6 +285,7 @@ Reading information is local to this device, in `library.sqlite3` beside `settin
 | Ctrl++ / Ctrl+− | Zoom the document preview in / out |
 | Ctrl+0 | Reset preview zoom to 100% |
 | Ctrl+Shift+I | Format JSON, YAML or XML source in editing mode |
+| Ctrl+Shift+Space | Insert a sample for the current source format |
 | Escape | Close a dialog, appearance/search, or leave reading fullscreen |
 
 The header shows the document’s folder path beneath its name. Click any breadcrumb segment to open that folder in your file manager. Long paths scroll horizontally; drafts have no folder path until saved. The footer’s GitHub icon opens the project repository, and the developer’s name opens their GitHub profile.
@@ -296,7 +305,7 @@ In **Edit & Preview**, place the caret in the source and choose **Table** or **F
 - **Table** opens an editable grid with a header row and 1–50 data rows, with up to 12 columns. Fill the cells or paste tab-separated cells from a spreadsheet. Pasting expands the grid within those limits; oversized pastes show an error. Cells support Persian, Arabic and English. Markdown cells may use inline Markdown formatting; HTML cell contents are escaped as literal text.
 - **Flowchart** lets you add and remove steps, choose **Process**, **Start / End**, **Decision**, or **Input / Output** shapes, and connect them with optional labels. Branches and loops are supported. Choose top-to-bottom, bottom-to-top, left-to-right, or right-to-left layout. A chart can have up to 30 steps and 60 connections in the builder.
 - Diagrams render offline in both reading mode and live preview, with mixed-language labels, light/dark themes, zoom, **Fit**, **Copy source**, and an expandable **Mermaid source** section. Invalid diagrams show an error beside their source while the rest of the document stays readable.
-- Use **Edit table** / **Edit flowchart** above an existing structure, or place the source cursor inside it and click its toolbar button. Rectangular tables and builder-generated flowcharts reopen in their forms. Complex tables (including merged cells) and other Mermaid syntax open in a source dialog to preserve unsupported content. Applying an edit replaces only that structure and is a single undo operation.
+- In **Edit & Preview**, use **Edit table** / **Edit flowchart** above an existing structure, or place the source cursor inside it and click its toolbar button. These controls are hidden in reading mode. Rectangular tables and builder-generated flowcharts reopen in their forms. Complex tables (including merged cells) and other Mermaid syntax open in a source dialog to preserve unsupported content. Applying an edit replaces only that structure and is a single undo operation.
 - Drag the numbered row handles or column handles to reorder. **Alt+Shift+arrows** also reorders; Up/Down moves between cells, and Left/Right moves at text boundaries. Select a row handle and copy it, or use **Copy row** / **Paste row below**. Add/delete rows and columns using the grid controls. Unchanged HTML cells retain their markup and attributes.
 
 Markdown diagrams use standard Mermaid fences:

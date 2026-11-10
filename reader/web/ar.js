@@ -165,6 +165,13 @@ Ln {0}|السطر {0}
 Match {0}|النتيجة {0}
 {0} of {1}|{0} من {1}
 {0} words|{0} كلمة
+{0} lines|{0} سطر
+File size|حجم الملف
+Logs|السجلات
+Open application logs|فتح سجلات التطبيق
+Source lines|أسطر المصدر
+Insert sample|إدراج مثال
+Insert sample (Ctrl+Shift+Space) · sample + Tab|إدراج مثال (Ctrl+Shift+Space) · sample + Tab
 {0} min read|{0} دقيقة قراءة
 {0}% read|تمت قراءة {0}٪
 {0} matches for “{1}” · {2}|{0} نتائج لـ «{1}» · {2}
@@ -354,7 +361,8 @@ Delete|حذف
 Remove from library (keeps the source file)|إزالة من المكتبة (مع الاحتفاظ بالملف الأصلي)
 Close the document before removing it from the library|أغلق المستند قبل إزالته من المكتبة
 Drop your document here|أفلت مستندك هنا
-Opening document…|جارٍ فتح المستند…
+Opening documents…|جارٍ فتح المستندات…
+Opening {0}…|جارٍ فتح {0}…
 Meet Khana|تعرّف على Khana
 Make room for a little reading.|خصص وقتاً لقليل من القراءة.
 Settle in. Khana takes care of the rest.|استرح. يتولى Khana الباقي.

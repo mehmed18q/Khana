@@ -452,8 +452,9 @@ def main():
             # Check native window-close protection, including the most recent input.
             evaluate("readerApp.showDocument(" + json.dumps(html_id) + ")")
             edit(html + "\n<!-- unsaved -->")
-            with patch.object(
-                window.bridge, "_ask", return_value=QMessageBox.StandardButton.Cancel
+            with (
+                patch.object(window, "_close_choice", return_value="exit"),
+                patch.object(window.bridge, "_ask", return_value=QMessageBox.StandardButton.Cancel),
             ):
                 window.close()
                 QTest.qWait(200)
@@ -469,8 +470,11 @@ def main():
             )
             print("PASS: source and preview remain usable in a small window", flush=True)
             assert not console_errors, console_errors
-            with patch.object(
-                window.bridge, "_ask", return_value=QMessageBox.StandardButton.Discard
+            with (
+                patch.object(window, "_close_choice", return_value="exit"),
+                patch.object(
+                    window.bridge, "_ask", return_value=QMessageBox.StandardButton.Discard
+                ),
             ):
                 window.close()
                 QTest.qWait(200)

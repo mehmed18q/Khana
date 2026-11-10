@@ -66,22 +66,24 @@ class DocumentJobsTests(unittest.TestCase):
 
     def test_loading_reserves_path_until_completion_and_tracks_busy_state(self):
         busy, reservations_at_delivery = [], []
-        self.jobs.busyChanged.connect(busy.append)
+        self.jobs.busyChanged.connect(lambda *state: busy.append(state))
         self.jobs.loaded.connect(
             lambda path, payload: reservations_at_delivery.append(path in self.jobs.loads)
         )
         path = Path("/tmp/khana-jobs-first.md")
         self.jobs.load(path)
+        self.assertEqual(busy[-1], (True, path.name))
         first = self.start.call_args.args[0]
         self.jobs.load(path)
         self.jobs.load(Path("/tmp/khana-jobs-second.md"))
         second = self.start.call_args.args[0]
         self.assertEqual(self.start.call_count, 2)
+        self.assertEqual(busy, [(True, path.name), (True, "")])
         first.signals.finished.emit(str(path), "document")
         self.assertEqual(reservations_at_delivery, [False])
-        self.assertTrue(busy[-1])
+        self.assertEqual(busy[-1], (True, second.path.name))
         second.signals.failed.emit(str(second.path), "missing")
-        self.assertFalse(busy[-1])
+        self.assertEqual(busy[-1], (False, ""))
         self.assertFalse(self.jobs.loads)
 
     def test_pdf_requests_deduplicate_by_document_page_and_revision(self):

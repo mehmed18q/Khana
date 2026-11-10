@@ -1,10 +1,17 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const formatNumber = (number) =>
-    new Intl.NumberFormat({ fa: 'fa-IR', ar: 'ar', en: 'en-US' }[settings.language], {
-      maximumFractionDigits: 1,
-    }).format(number);
+  const numberFormats = new Map();
+  const formatNumber = (number) => {
+    if (!numberFormats.has(settings.language))
+      numberFormats.set(
+        settings.language,
+        new Intl.NumberFormat({ fa: 'fa-IR', ar: 'ar', en: 'en-US' }[settings.language], {
+          maximumFractionDigits: 1,
+        })
+      );
+    return numberFormats.get(settings.language).format(number);
+  };
   const icon = (name) => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const defaults = {
     language: 'en',
@@ -41,6 +48,8 @@
     systemChanged: () => preferences(false),
   });
   const contextMenu = ReaderContextMenu.create();
+  ReaderDiagnostics.create(() => bridge);
+  $('open-logs').onclick = () => bridge?.openLogs();
   ReaderPickers.create();
   const categories = ReaderCategories.create({
     native: () => bridge,
@@ -191,7 +200,15 @@
     lineNumbers,
     formatNumber,
   });
-  const outline = ReaderOutline.create({ contentRoot, scroller });
+  const outline = ReaderOutline.create({
+    article,
+    contentRoot,
+    scroller,
+    current: () => documents.get(activeId),
+    editor: () => editors.get(activeId),
+    lineNumbers,
+    syncEnabled: () => settings.syncScroll,
+  });
   const files = ReaderFileList.create({
     documents,
     current: () => activeId,
@@ -214,6 +231,7 @@
     workspace,
     sync,
     lineNumbers,
+    outline,
     native: () => bridge,
     toast,
     updateCaption,
@@ -221,8 +239,10 @@
     renderFiles: () => files.render(),
     schedulePreview,
     searchChanged: (kind) => find.changed(kind),
+    formatNumber,
   });
   const spelling = ReaderSpelling.create({
+    lineNumbers,
     current: () => documents.get(activeId),
     editor: () => editors.get(activeId),
     native: () => bridge,
@@ -292,6 +312,7 @@
       ltr: 'Left-to-right text',
     }[settings.direction];
     if (save) bridge?.saveSettings(JSON.stringify(settings));
+    sourceEditor.refreshStatus();
     requestAnimationFrame(updateProgress);
   }
 
@@ -496,7 +517,6 @@
     $('empty-state').hidden = Boolean(doc);
     $('paper-end').hidden = !doc;
     document.querySelector('.paper-topline').hidden = !doc;
-    $('word-count').textContent = `${formatNumber(doc?.words || 0)} words`;
     $('encoding').textContent = doc?.encoding || '—';
     $('document-format').textContent = doc?.format || '—';
     $('reading-time').textContent = doc?.words
@@ -624,6 +644,7 @@
     $('beautify-button').textContent = doc?.formatting ? 'Formatting…' : 'Format document';
     bridge?.setDocumentTitle(doc ? `${doc.dirty ? '● ' : ''}${doc.name}` : '');
     reading.refresh(false);
+    sourceEditor.refreshStatus();
   }
 
   function schedulePreview(doc, delay = 300) {
@@ -761,6 +782,7 @@
       },
       edit: () => sourceEditor.setMode(!documents.get(activeId)?.editMode),
       beautify: () => sourceEditor.beautify(),
+      'insert-sample': () => sourceEditor.insertSample(),
       'go-to-line': () => sourceEditor.goToLine(),
       empty: () => showDocument(null),
       'add-mark': () => reading.add('mark'),
@@ -913,6 +935,8 @@
             m: 'add-note',
             KeyI: 'beautify',
             i: 'beautify',
+            Space: 'insert-sample',
+            ' ': 'insert-sample',
           }[key]
         : {
             KeyO: 'open',
@@ -1019,7 +1043,8 @@
         }
       });
       bridge.errorOccurred.connect((message) => toast(message, true));
-      bridge.busyChanged.connect((busy) => {
+      bridge.busyChanged.connect((busy, name) => {
+        $('loading-message').textContent = name ? `Opening ${name}…` : 'Opening documents…';
         $('loading').hidden = !busy;
       });
       bridge.settingsLoaded.connect((raw) => {

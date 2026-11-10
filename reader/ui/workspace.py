@@ -12,6 +12,7 @@ from PySide6.QtCore import QObject, QTimer
 from PySide6.QtWidgets import QApplication
 
 from reader.editing import EditSession
+from reader.ui.tray import TrayController
 
 if TYPE_CHECKING:
     from reader.ui.window import ReaderWindow
@@ -43,6 +44,7 @@ class WindowManager(QObject):
         self.recent = None
         self.transfers: dict[tuple[ReaderWindow, str], TabTransfer] = {}
         self.dragging = None
+        self.tray = TrayController(self)
 
     def path_owner(self, path, exclude=None):
         """A queued open reserves its path before the worker finishes loading it."""
@@ -78,6 +80,8 @@ class WindowManager(QObject):
         self.reveal(target)
 
     def reveal(self, window):
+        if not window.isVisible():
+            window.show()
         if window.isMinimized():
             window.showNormal()
         window.raise_()

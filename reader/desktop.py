@@ -9,6 +9,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from reader import APP_ID, APP_NAME, VERSION
+from reader.diagnostics import configure, monitor
 from reader.instance import SingleInstance
 from reader.resources import WEB
 from reader.ui.window import ReaderWindow
@@ -26,7 +27,9 @@ def main():
     QApplication.setOrganizationName(APP_NAME)
     QApplication.setApplicationVersion(VERSION)
     QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+    configure()
     app = QApplication(sys.argv[:1])
+    monitor(app)
     app.setApplicationDisplayName(APP_NAME)
     # Wayland app_id must match the installed .desktop basename. The desktop
     # shell reads the human-readable Name and themed Icon from that entry.

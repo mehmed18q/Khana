@@ -8,19 +8,23 @@
     menu.setAttribute('role', 'menu');
     menu.hidden = true;
     document.body.append(menu);
-    let origin;
+    let origin, onClose;
     function close(focus = false) {
       if (menu.hidden) return;
       menu.hidden = true;
       if (focus && origin?.isConnected) origin.focus({ preventScroll: true });
       origin?.setAttribute('aria-expanded', 'false');
       origin = null;
+      const closed = onClose;
+      onClose = null;
+      closed?.();
     }
-    function open(event, anchor, title, actions, keyboard = false) {
+    function open(event, anchor, title, actions, keyboard = false, closed = null) {
       event.preventDefault();
       event.stopPropagation();
       close();
       origin = anchor;
+      onClose = closed;
       origin.setAttribute('aria-expanded', 'true');
       menu.setAttribute('aria-label', title);
       menu.replaceChildren();

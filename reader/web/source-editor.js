@@ -9,6 +9,7 @@
     workspace,
     sync,
     lineNumbers,
+    outline,
     native,
     toast,
     updateCaption,
@@ -16,6 +17,7 @@
     renderFiles,
     schedulePreview,
     searchChanged,
+    formatNumber,
   }) {
     let linkContext = null,
       lineContext = null,
@@ -40,7 +42,7 @@
         doc.source = editor.value;
         const wasDirty = doc.dirty;
         doc.dirty = doc.source !== doc.savedSource;
-        updateCaption();
+        if (wasDirty !== doc.dirty) updateCaption();
         updateCursor();
         if (wasDirty !== doc.dirty) renderFiles();
         schedulePreview(doc);
@@ -48,6 +50,27 @@
       });
       editor.addEventListener('compositionend', () => schedulePreview(doc));
       editor.addEventListener('keydown', (event) => {
+        if (
+          event.key === 'Tab' &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey &&
+          !event.shiftKey &&
+          !event.isComposing &&
+          !editor.readOnly
+        ) {
+          const replacement = ReaderSamples.expand(
+            editor.value,
+            editor.selectionStart,
+            editor.selectionEnd,
+            doc.format
+          );
+          if (replacement && ReaderSamples.sample(doc.format)) {
+            event.preventDefault();
+            insertSample(replacement);
+            return;
+          }
+        }
         if (
           !supportsFormatting(doc) ||
           !(event.ctrlKey || event.metaKey) ||
@@ -81,6 +104,7 @@
       $('editor-container').append(editor);
       sync.bind(editor);
       lineNumbers.bind(editor);
+      outline.bind(editor);
       return editor;
     }
 
@@ -92,6 +116,8 @@
       $('editor-pane').hidden = !enabled || doc?.format === 'PDF';
       $('format-toolbar').hidden = !supportsFormatting(doc);
       $('beautify-button').hidden = !enabled || !supportsBeautify(doc);
+      $('insert-sample').hidden = !ReaderSamples.sample(doc?.format);
+      $('insert-sample').disabled = Boolean(doc?.moving);
       $('go-to-line-button').disabled = !doc || doc.format === 'PDF' || Boolean(doc.moving);
       $('word-editing-note').hidden = doc?.format !== 'Word';
       $('sync-control').hidden = !enabled || doc?.format === 'PDF';
@@ -111,6 +137,7 @@
       $('preview-status').textContent = doc?.previewPending ? 'Updating preview…' : 'Live preview';
       updateCursor();
       document.body.classList.toggle('editing-pdf', enabled && doc?.format === 'PDF');
+      if (enabled) bindStructures($('document'), doc);
       searchChanged('view');
       document.dispatchEvent(new Event('reader-editor-view'));
     }
@@ -128,11 +155,36 @@
 
     function updateCursor() {
       lineNumbers.refresh();
-      const editor = editors.get(current());
-      if (!editor) return;
-      const before = editor.value.slice(0, editor.selectionStart).split('\n');
-      $('cursor-position').textContent =
-        `Ln ${before.length}, Col ${[...before.at(-1)].length + 1}`;
+      const doc = documents.get(current()),
+        editor = editors.get(current()),
+        text = doc && doc.format !== 'PDF' ? ReaderSourceText.get(editor || doc) : null,
+        cursor = text ? ReaderSourceText.position(text, editor?.selectionStart || 0) : null;
+      const write = (id, value) => {
+        const node = $(id);
+        if (node.dataset.value !== value) {
+          node.dataset.value = value;
+          node.textContent = value;
+        }
+      };
+      if (cursor) {
+        const label = `Ln ${cursor.line + 1}, Col ${cursor.column + 1}`;
+        write('cursor-position', label);
+        write('status-cursor', label);
+      }
+      $('status-cursor').hidden = !cursor;
+      write('line-count', text ? `${formatNumber(text.lines.length)} lines` : '—');
+      write(
+        'word-count',
+        `${formatNumber(doc?.editMode && text ? text.words : doc?.words || 0)} words`
+      );
+      const bytes = doc?.path ? doc.size : (text?.bytes ?? null),
+        unit = bytes === null || bytes < 1024 ? 0 : Math.min(3, Math.floor(Math.log2(bytes) / 10));
+      write(
+        'file-size',
+        bytes === null
+          ? '—'
+          : `${formatNumber(bytes / 1024 ** unit)} ${['B', 'KB', 'MB', 'GB'][unit]}`
+      );
     }
 
     const sourceOf = (doc) => (editors.get(doc.id)?.value ?? doc.source).replace(/\r\n?/g, '\n');
@@ -156,6 +208,7 @@
       $('go-to-line-input').select();
     }
     $('cursor-position').onclick = goToLine;
+    $('status-cursor').onclick = goToLine;
     $('go-to-line-button').onclick = goToLine;
     $('go-to-line-cancel').onclick = () => $('go-to-line-dialog').close();
     $('go-to-line-dialog').addEventListener('close', () => {
@@ -222,6 +275,30 @@
       updateCursor();
       return true;
     }
+
+    function insertSample(replacement = null) {
+      const doc = documents.get(current()),
+        editor = editors.get(current()),
+        content = ReaderSamples.sample(doc?.format);
+      if (
+        !doc?.editMode ||
+        !editor ||
+        editor.readOnly ||
+        !content ||
+        document.querySelector('dialog[open]')
+      )
+        return;
+      const start = replacement?.start ?? editor.selectionStart,
+        end = replacement?.end ?? editor.selectionEnd;
+      applySourceEdit(editor, {
+        start,
+        end,
+        text: content,
+        selectionStart: start + content.length,
+        selectionEnd: start + content.length,
+      });
+    }
+    $('insert-sample').onclick = () => insertSample();
 
     function beautifyDocument() {
       const doc = documents.get(current()),
@@ -412,17 +489,19 @@
       structureContext = null;
     });
     function bindStructures(article, doc) {
-      if (!supportsFormatting(doc)) return;
+      if (!supportsFormatting(doc) || !doc.editMode || article.querySelector('.structure-edit'))
+        return;
+      const nodes = article.querySelectorAll('table,.diagram-frame');
+      if (!nodes.length) return;
       const source = editors.get(doc.id)?.value ?? doc.source;
       const blocks = ReaderStructures.scan(source, doc.format);
+      const starts = ReaderSourceText.get(editors.get(doc.id) || doc).starts;
       const used = new Set();
-      article.querySelectorAll('table,.diagram-frame').forEach((node) => {
+      nodes.forEach((node) => {
         if (doc.format === 'Markdown' && node.dataset.sourceLine === undefined) return;
         const kind = node.matches('table') ? 'table' : 'flowchart';
         const line = Number(node.dataset.sourceLine);
-        const offset = Number.isFinite(line)
-          ? source.split('\n').slice(0, line).join('\n').length + (line ? 1 : 0)
-          : -1;
+        const offset = Number.isFinite(line) ? (starts[line] ?? -1) : -1;
         const block =
           blocks.find(
             (block) =>
@@ -440,11 +519,11 @@
         button.dataset.i18n = kind === 'table' ? 'Edit table' : 'Edit flowchart';
         button.textContent = ReaderI18n.text(button.dataset.i18n);
         button.onclick = () => {
+          if (!doc.editMode || !document.body.classList.contains('editing')) return;
           if (doc.moving || (editors.get(doc.id)?.value ?? doc.source) !== source) {
             toast('Wait for the preview to update, then try again.');
             return;
           }
-          setEditMode(true);
           editStructure(block, doc, editors.get(doc.id));
         };
         node.before(button);
@@ -509,6 +588,8 @@
 
     return {
       show: showEditor,
+      refreshStatus: updateCursor,
+      insertSample,
       setMode: setEditMode,
       format: formatSelection,
       beautify: beautifyDocument,

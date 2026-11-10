@@ -99,7 +99,10 @@
       else if (maximum > 1 && source.scrollTop >= maximum - 1) top = target.scrollHeight;
       move(target, top);
       if (caret && from === 'editor' && document.activeElement === field) {
-        const line = field.value.slice(0, field.selectionStart).split('\n').length - 1;
+        const line = ReaderSourceText.position(
+          ReaderSourceText.get(field),
+          field.selectionStart
+        ).line;
         const y = interpolate(points, interpolate(metrics, line));
         if (y < scroller.scrollTop + 12 || y > scroller.scrollTop + scroller.clientHeight - 35)
           move(scroller, y - scroller.clientHeight / 3);

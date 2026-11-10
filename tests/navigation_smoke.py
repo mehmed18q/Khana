@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -89,6 +90,89 @@ def main():
             assert evaluate(
                 "[...document.querySelectorAll('#outline .outline-line')].every((n,i)=>n.textContent===`Ln ${i*4+1}`) && document.querySelectorAll('#outline .outline-line').length===100"
             )
+            evaluate("document.getElementById('outline').scrollTop=200")
+            outline_top = evaluate("document.getElementById('outline').scrollTop")
+            for index in (40, 80, 15):
+                evaluate(
+                    "(()=>{const s=document.getElementById('reading-scroll'),"
+                    f"h=document.querySelectorAll('#document h2')[{index}],"
+                    f"next=document.querySelectorAll('#document h2')[{index + 1}];"
+                    "s.scrollTo({top:s.scrollTop+h.getBoundingClientRect().top-"
+                    "s.getBoundingClientRect().top+"
+                    "(next.getBoundingClientRect().top-h.getBoundingClientRect().top)/2,"
+                    "behavior:'instant'})})()"
+                )
+                wait(
+                    f"document.querySelector('#outline button.active .outline-title')?.textContent==='Line {index}'",
+                    "outline follows the current section between headings in either direction",
+                )
+                assert evaluate("document.getElementById('outline').scrollTop") == outline_top
+                assert evaluate(
+                    "document.querySelectorAll('#outline [aria-current=location]').length===1"
+                )
+            for top, index in ((1000000, 99), (0, 0)):
+                evaluate(
+                    f"document.getElementById('reading-scroll').scrollTo({{top:{top},behavior:'instant'}})"
+                )
+                wait(
+                    f"document.querySelector('#outline button.active .outline-title')?.textContent==='Line {index}'",
+                    "outline handles document boundaries",
+                )
+            evaluate("document.querySelectorAll('#outline button')[35].click()")
+            wait(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 35' && document.getElementById('reading-scroll').scrollTop>1000",
+                "outline click navigates to the heading",
+            )
+            QTest.qWait(800)
+            assert evaluate(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 35'"
+            )
+            for _ in range(5):
+                click("preview-zoom-in")
+            evaluate("document.querySelectorAll('#outline button')[55].click()")
+            QTest.qWait(900)
+            assert evaluate(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 55'"
+            ), evaluate(
+                "JSON.stringify({selected:document.querySelector('#outline button.active')?.textContent,heading:document.querySelectorAll('#document h2')[55].getBoundingClientRect().top,scroller:document.getElementById('reading-scroll').getBoundingClientRect().top})"
+            )
+            click("preview-zoom-reset")
+            print("PASS: outline navigation stays selected with preview zoom", flush=True)
+
+            # Hold actual load jobs so that messages can be inspected before completion.
+            with patch.object(window.bridge.jobs.pool, "start") as start:
+                missing = folder / "فایل <missing>.md"
+                window.bridge.load_paths([missing])
+                first_load = start.call_args.args[0]
+                wait(
+                    "!document.getElementById('loading').hidden && "
+                    "document.getElementById('loading-message').textContent==='Opening فایل <missing>.md…'",
+                    "opening message names the file safely",
+                )
+                window.bridge.load_paths([folder / "also-missing.md"])
+                second_load = start.call_args.args[0]
+                wait(
+                    "document.getElementById('loading-message').textContent==='Opening documents…'",
+                    "opening message describes multiple documents",
+                )
+                first_load.run()
+                wait(
+                    "!document.getElementById('loading').hidden && !document.getElementById('toast').hidden",
+                    "load errors and pending opens appear together",
+                )
+                for language in ("en", "fa", "ar"):
+                    evaluate(f"ReaderI18n.apply('{language}')")
+                    assert evaluate(
+                        "(()=>{const l=document.getElementById('loading').getBoundingClientRect(),"
+                        "t=document.getElementById('toast').getBoundingClientRect();"
+                        "return Math.abs(l.x+l.width/2-innerWidth/2)<2 && "
+                        "Math.abs(t.x+t.width/2-innerWidth/2)<2 && l.bottom<t.top && "
+                        "t.bottom<innerHeight && l.top>innerHeight/2})()"
+                    )
+                evaluate("ReaderI18n.apply('en')")
+                second_load.run()
+                wait("document.getElementById('loading').hidden", "loading clears after failure")
+
             jump("۲۰۱")
             assert evaluate("!document.body.classList.contains('editing')")
             assert evaluate(
@@ -114,8 +198,62 @@ def main():
             assert evaluate("!document.getElementById('go-to-line-dialog').open")
             assert evaluate("!document.body.classList.contains('editing')")
             click("edit-mode")
+            evaluate(
+                "(()=>{const e=document.querySelector('.source-editor:not([hidden])'),"
+                "m=document.querySelector('.source-mirror [data-line=\"220\"]');"
+                "e.scrollTop=m.offsetTop+30})()"
+            )
+            wait(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 55'",
+                "outline follows the section during synchronized editing",
+            )
+            QTest.qWait(300)
+            assert evaluate(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 55'"
+            )
+            for _ in range(5):
+                click("preview-zoom-in")
+            evaluate("document.querySelectorAll('#outline button')[60].click()")
+            QTest.qWait(600)
+            assert evaluate(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 60'"
+            )
+            click("preview-zoom-reset")
+            print("PASS: outline navigation keeps zoomed editing panes in agreement", flush=True)
             # Navigation must scroll correctly even with preview sync disabled.
             click("sync-scroll")
+            preview_top = evaluate("document.getElementById('reading-scroll').scrollTop")
+            evaluate(
+                "(()=>{const e=document.querySelector('.source-editor:not([hidden])'),"
+                "m=document.querySelector('.source-mirror [data-line=\"240\"]');"
+                "e.scrollTop=m.offsetTop+30})()"
+            )
+            wait(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 60'",
+                "outline follows wrapped source scrolling with preview sync disabled",
+            )
+            assert evaluate("document.getElementById('reading-scroll').scrollTop") == preview_top
+            offset = sum(len(line) + 1 for line in source.split("\n")[:246])
+            evaluate(
+                "(()=>{const e=document.querySelector('.source-editor:not([hidden])');"
+                f"e.focus({{preventScroll:true}});e.setSelectionRange({offset},{offset});"
+                "document.execCommand('insertText',false,'draft ')})()"
+            )
+            wait(
+                "document.getElementById('preview-status').textContent==='Live preview' && document.querySelector('#outline button.active .outline-title')?.textContent==='Line 61'",
+                "outline follows the caret after the edited preview is rebuilt",
+            )
+            assert evaluate("document.getElementById('outline').scrollTop") == outline_top
+            key(Qt.Key.Key_Z, Qt.KeyboardModifier.ControlModifier)
+            wait(
+                "document.getElementById('save-status').textContent==='Saved' && document.getElementById('preview-status').textContent==='Live preview'",
+                "outline navigation preserves editing undo",
+            )
+            evaluate("document.querySelectorAll('#outline button')[75].click()")
+            wait(
+                "document.querySelector('#outline button.active .outline-title')?.textContent==='Line 75' && document.querySelector('.source-editor:not([hidden])').value.slice(0,document.querySelector('.source-editor:not([hidden])').selectionStart).split('\\n').length===301",
+                "outline click navigates both preview and editor",
+            )
             jump(301)
             expected = sum(len(line) + 1 for line in source.split("\n")[:300])
             assert (

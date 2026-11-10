@@ -1,5 +1,6 @@
 """Offline WebEngine resource policy, navigation and native drop events."""
 
+import logging
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -29,6 +30,18 @@ class LocalRequests(QWebEngineUrlRequestInterceptor):
 
 
 class ReaderPage(QWebEnginePage):
+    def javaScriptConsoleMessage(self, level, message, line, source):
+        severity = (
+            logging.ERROR
+            if level == QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel
+            else logging.WARNING
+            if level == QWebEnginePage.JavaScriptConsoleMessageLevel.WarningMessageLevel
+            else logging.INFO
+        )
+        logging.getLogger(__name__).log(
+            severity, "JavaScript %s:%s %s", source, line, message[:4000]
+        )
+
     def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
         if url.isLocalFile() and Path(url.toLocalFile()).resolve() == WEB / "index.html":
             return True

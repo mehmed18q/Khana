@@ -60,8 +60,8 @@ def main():
             assert values, script
             return values[0]
 
-        def wait(script, label):
-            deadline = time.monotonic() + 20
+        def wait(script, label, timeout=20):
+            deadline = time.monotonic() + timeout
             while time.monotonic() < deadline:
                 if js(script):
                     print("PASS:", label, flush=True)
@@ -124,8 +124,11 @@ def main():
                 "English labels restored",
             )
             assert js("document.querySelector('.sidebar').getBoundingClientRect().left===0")
+            assert js("document.querySelectorAll('#document .structure-edit').length===0")
             click("edit-mode")
-            wait(f"{count}>=2", "both dictionaries mark misspellings")
+            # Cold loading the bundled dictionaries takes 17–25 s on this host;
+            # subsequent checks and menu suggestions retain the normal deadline.
+            wait(f"{count}>=2", "both dictionaries mark misspellings", timeout=45)
             spelling_menu("helllo")
             wait(
                 "!!document.querySelector('[data-action=spelling-suggestion]')",
@@ -166,6 +169,15 @@ def main():
             )
             value("#ui-language", "fa", "change")
             QTest.qWait(100)
+            click("read-mode")
+            assert js(
+                "[...document.querySelectorAll('.structure-edit')].every(n=>!n.getClientRects().length)"
+            )
+            js("document.querySelector('.structure-edit').click()")
+            assert js(
+                "!document.body.classList.contains('editing') && !document.getElementById('table-dialog').open"
+            )
+            click("edit-mode")
             js("document.querySelector('.structure-edit').click()")
             wait("document.getElementById('table-dialog').open", "existing table opens for editing")
             assert js(

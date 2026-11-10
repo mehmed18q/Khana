@@ -142,9 +142,9 @@
         },
         byId = new Map(groups.map((group) => [group.id, group]));
       for (const item of items) (byId.get(categoryOf(item)) || unfiled).items.push(item);
-      // The default category is also a drop target when it currently has no files.
       groups.push(unfiled);
       for (const group of groups) {
+        if (!group.items.length) continue;
         const section = document.createElement('section');
         section.className = 'file-category';
         section.dataset.categoryId = group.id;
@@ -192,13 +192,6 @@
         });
         heading.append(toggle, options);
         group.items.forEach((item) => body.append(makeRow(item)));
-        if (!group.items.length) {
-          const empty = document.createElement('div');
-          empty.className = 'category-empty';
-          empty.textContent =
-            scope === 'files' ? 'No open files · Drop files here' : 'Drop files here';
-          body.append(empty);
-        }
         section.append(heading, body);
         container.append(section);
       }

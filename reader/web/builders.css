@@ -361,8 +361,12 @@
   cursor: grabbing;
 }
 .structure-edit {
+  display: none;
   font-size: 11px;
   margin-block: 6px;
+}
+.editing .structure-edit {
+  display: inline-block;
 }
 #structure-source {
   width: 100%;

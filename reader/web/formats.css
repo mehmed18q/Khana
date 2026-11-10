@@ -1,4 +1,5 @@
 .source-mirror {
+  contain: layout style;
   position: fixed;
   top: -100000px;
   left: 0;

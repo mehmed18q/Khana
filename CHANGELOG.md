@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.12.0 — 2026-11-10
+
+- Add Exit, Cancel and Stay in background choices when closing a window, with a system tray menu to restore windows or exit after checking unsaved changes.
+- Reduce source editing, context-menu and undo/redo delays with cached source indexes and measurements, and spelling highlights limited to visible lines. Preserve the selected text highlight while its context menu is open.
+- Align spelling underlines with mixed RTL/LTR text, prioritize common typo corrections, cancel obsolete checks, and reject late spelling work after a window closes.
+- Keep the current heading selected in On this page while reading or editing, without moving the outline's own scroll position.
+- Show loading messages and notifications at the bottom center, including the filename when opening one document.
+- Add file size, line/column, word count and source line count to the footer; hide empty category folders.
+- Add undoable format samples through Insert sample, Ctrl+Shift+Space and sample + Tab; HTML also supports doc + Tab and ! + Tab.
+- Show table and flowchart editing controls only in Edit & Preview.
+- Add rotating local application logs, Python crash traces, renderer error reporting and slow-operation diagnostics, accessible through Logs in the footer.
+- Publish the Ubuntu 24.04+ amd64 package as `0.12.0-1` through the existing signed APT repository.
+
 ## 0.11.0 — 2026-11-10
 
 - Add an Arabic interface with right-to-left layout, translated menus and dialogs, and a flag in the language picker.

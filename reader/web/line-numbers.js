@@ -46,11 +46,12 @@
       frame = 0;
     const chunks = new Map();
     function measure(field) {
-      const text = field.value;
+      const text = field.value,
+        previousLines = lines;
       const changed = source !== text;
       if (changed) {
         source = text;
-        lines = text.split('\n');
+        lines = ReaderSourceText.get(field).lines;
         const width = `${Math.max(3, String(lines.length).length) * 8 + 18}px`;
         if (container.style.getPropertyValue('--line-gutter-width') !== width)
           container.style.setProperty('--line-gutter-width', width);
@@ -58,23 +59,60 @@
       const css = getComputedStyle(field),
         next = [field.clientWidth, field.dir, ...mirrorStyles.map((name) => css[name])].join('\0');
       if (!changed && key === next) return points;
+      const reuse = key === next && stride === 1 && lines.length <= 10000;
       key = next;
       chunks.clear();
-      for (const node of [mirror, detail]) {
-        for (const name of mirrorStyles) node.style[name] = css[name];
-        node.dir = field.dir;
-        node.style.width = `${field.clientWidth}px`;
-      }
+      if (!reuse)
+        for (const node of [mirror, detail]) {
+          for (const name of mirrorStyles) node.style[name] = css[name];
+          node.dir = field.dir;
+          node.style.width = `${field.clientWidth}px`;
+        }
       stride = Math.max(1, Math.ceil(lines.length / 10000));
+      let first = 0,
+        tail = 0;
+      if (reuse) {
+        while (
+          first < Math.min(previousLines.length, lines.length) &&
+          previousLines[first] === lines[first]
+        )
+          first++;
+        while (
+          tail < Math.min(previousLines.length, lines.length) - first &&
+          previousLines.at(-tail - 1) === lines.at(-tail - 1)
+        )
+          tail++;
+      }
       const fragment = document.createDocumentFragment();
-      for (let i = 0; i < lines.length; i += stride) {
+      for (let i = first; i < lines.length - tail; i += stride) {
         const row = document.createElement('div'),
           text = lines.slice(i, i + stride).join('\n');
         row.dataset.line = i;
         row.textContent = text + (!text || text.endsWith('\n') ? '\u200b' : '');
         fragment.append(row);
       }
-      mirror.replaceChildren(fragment);
+      if (reuse) {
+        const children = [...mirror.children],
+          anchor = children[previousLines.length - tail] || null;
+        for (let i = first; i < previousLines.length - tail; i++) children[i].remove();
+        mirror.insertBefore(fragment, anchor);
+        if (previousLines.length !== lines.length)
+          for (let i = first; i < mirror.children.length; i++) mirror.children[i].dataset.line = i;
+        const boundary = lines.length - tail,
+          top = anchor ? anchor.offsetTop : mirror.scrollHeight - parseFloat(css.paddingBottom),
+          delta = top - points[previousLines.length - tail][1],
+          previous = points;
+        points = lines.map((_, i) => {
+          if (i < first) return previous[i];
+          if (i < boundary) return [i, mirror.children[i].offsetTop];
+          return [i, previous[i - lines.length + previousLines.length][1] + delta];
+        });
+        points.push([
+          lines.length,
+          top + (previous.at(-1)[1] - previous[previousLines.length - tail][1]),
+        ]);
+        return points;
+      } else mirror.replaceChildren(fragment);
       points = [...mirror.children].map((row) => [Number(row.dataset.line), row.offsetTop]);
       points.push([lines.length, mirror.scrollHeight - parseFloat(css.paddingBottom)]);
       return points;
@@ -113,7 +151,7 @@
       const css = getComputedStyle(field),
         top = field.scrollTop,
         bottom = top + field.clientHeight,
-        active = field.value.slice(0, field.selectionStart).split('\n').length - 1,
+        active = ReaderSourceText.position(ReaderSourceText.get(field), field.selectionStart).line,
         fragment = document.createDocumentFragment();
       labels.style.lineHeight = css.lineHeight;
       for (let i = 0; i < points.length - 1; i++) {

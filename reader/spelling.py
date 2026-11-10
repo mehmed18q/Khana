@@ -55,6 +55,21 @@ class Spelling:
     def suggestions(self, word):
         if len(word) > 40:
             return []
+        # Common extra-letter and swapped-letter typos can be resolved with a
+        # handful of dictionary lookups. Do not wait for exhaustive suggestions
+        # from a second language before showing an already valid correction.
+        edits = dict.fromkeys(
+            [word[:i] + word[i + 1 :] for i in range(1, len(word)) if word[i] == word[i - 1]]
+            + [word[:i] + word[i + 1 :] for i in range(len(word))]
+            + [word[:i] + word[i + 1] + word[i] + word[i + 2 :] for i in range(len(word) - 1)]
+        )
+        quick = [
+            candidate
+            for candidate in edits
+            if len(candidate) > 1 and candidate != word and self.correct(candidate)
+        ]
+        if quick:
+            return quick[:6]
         candidates = [
             islice(self.dictionary(language).suggest(word), 6) for language in self.languages(word)
         ]

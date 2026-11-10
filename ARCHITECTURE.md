@@ -29,6 +29,8 @@ flowchart TD
 | `reader/desktop.py` | CLI, application metadata, single-instance service and top-level composition. |
 | `reader/resources.py` | Paths to bundled resources, shared by source and frozen builds. |
 | `reader/ui/window.py` | Construct the WebEngine profile, page, channel and bridge; join workers before closing. |
+| `reader/ui/tray.py` | One tray icon per window manager; hide/restore windows and exit sequentially through existing unsaved-change checks. |
+| `reader/diagnostics.py` | Rotating application logs, fatal traces, Python/Qt exception hooks, worker timings and native event-loop delays. |
 | `reader/ui/workspace.py` | Reserve document paths across windows, select a target window and coordinate acknowledged transfers. A supplied `window_factory` avoids importing the concrete window at runtime. |
 | `reader/ui/bridge.py` | Native command facade: synchronize the latest source, validate operations, display save/close prompts, and publish session/library events. Qt slot names intentionally match the JavaScript contract. |
 | `reader/ui/jobs.py` | Own each window's serial worker pool, deduplicate work, coalesce pending previews, and discard results for closed documents or a stopped window. |
@@ -59,8 +61,10 @@ global declaration.
 | --- | --- |
 | `app.js` | Document map, active document, preview revisions, save/close coordination, native event wiring and command dispatch. |
 | `source-editor.js` | Textarea lifecycle, cursor state, editing mode, undo-preserving source operations, formatting and link/builder dialogs. |
+| `source-text.js`, `samples.js` | Cached source lines, offsets, statistics and Unicode caret positions; format samples and Tab abbreviations. |
+| `diagnostics.js` | Forward browser errors and throttled long-task timings to the local native log. Activity labels contain event/control names, not typed text. |
 | `search.js` | Search results, highlight ranges, result navigation and search-panel controls. |
-| `outline.js` | Heading buttons and the active-heading observer. |
+| `outline.js` | Heading navigation and active-section tracking in the preview and source editor. |
 | `line-numbers.js` | Visible editor/reading line numbers and shared, wrap-aware source measurements for navigation and scroll sync. |
 | `file-list.js` | File rows, dirty indicators, close/detach buttons and drag gestures. |
 | `window-controls.js` | Native move, minimize and fullscreen gestures. |
@@ -71,7 +75,7 @@ global declaration.
 | `library-ui.js`, `annotations.js` | Library controls and text anchors. |
 | `formatting.js`, `insertions.js`, `bidi.js` | Text transformations and direction rules, with Node-testable exports. |
 | `i18n.js`, `fa.js`, `pickers.js` | Translate application controls, mirror the interface, and render accessible language and format menus. UI translation excludes document text and user labels. |
-| `spelling.js` | Debounced source checking, mirrored underlines, scoped ignore actions and undoable suggestions. Results must match the active document and source snapshot. |
+| `spelling.js` | Debounced source checking, underlines limited to visible lines, context-menu selection highlighting, scoped ignore actions and undoable suggestions. Results must match the active document and source snapshot. |
 | `structures.js`, `builders.js` | Locate and safely replace existing tables/diagrams, preserve cell metadata, and edit tables and supported flowcharts. Unsupported structures retain a source editor. |
 
 Other existing feature modules own sidebar layout, preview zoom, scroll mapping,
@@ -97,6 +101,15 @@ application API used by desktop smoke checks.
    requested immediately, even if Chromium defers visibility callbacks; later
    pages are requested near the visible area. Responses must match the current
    mount. Main and extra panes use the same implementation.
+6. Background mode hides windows without closing buffers or stopping workers.
+   Tray exit goes through each window's browser snapshot and native save checks;
+   canceling any check stops the remaining exit queue. The last closed window
+   removes the tray icon and quits the application.
+
+Editor caret operations reuse source indexes. Source measurement retains unchanged
+line nodes and shifts cached offsets after edits. Input handlers schedule geometry
+reads for animation frames; spelling hit tests use only painted ranges. Table and
+diagram edit controls bind only in editing mode, and their handlers recheck it.
 
 ### Tab transfer
 

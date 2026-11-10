@@ -131,6 +131,7 @@
 }
 .editor-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   padding: 10px 18px;
@@ -403,6 +404,10 @@ body[data-theme='dark'] .save-button {
 ::highlight(reader-spelling) {
   text-decoration: underline wavy #d33b36;
   text-decoration-thickness: 1px;
+  color: transparent;
+}
+::highlight(reader-editor-selection) {
+  background-color: #78a9d780;
   color: transparent;
 }
 .header-language,

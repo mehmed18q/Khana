@@ -30,6 +30,8 @@
     <script src="openapi-ui.js" defer></script>
     <script src="formatting.js" defer></script>
     <script src="insertions.js" defer></script>
+    <script src="samples.js" defer></script>
+    <script src="diagnostics.js" defer></script>
     <script src="vendor/mermaid.min.js" defer></script>
     <script src="diagrams.js" defer></script>
     <script src="structures.js" defer></script>
@@ -37,6 +39,7 @@
     <script src="annotations.js" defer></script>
     <script src="library-ui.js" defer></script>
     <script src="scroll-sync.js" defer></script>
+    <script src="source-text.js" defer></script>
     <script src="line-numbers.js" defer></script>
     <script src="preview-zoom.js" defer></script>
     <script src="pdf-pages.js" defer></script>
@@ -691,6 +694,14 @@
             <div class="editor-heading">
               <span id="editor-name">SOURCE</span
               ><button
+                id="insert-sample"
+                class="source-format-button"
+                type="button"
+                title="Insert sample (Ctrl+Shift+Space) · sample + Tab"
+              >
+                Insert sample
+              </button>
+              <button
                 id="beautify-button"
                 class="source-format-button"
                 type="button"
@@ -840,12 +851,20 @@
         </div>
         <footer class="statusbar">
           <div>
-            <span id="word-count">0 words</span><span class="status-separator">·</span
-            ><span id="encoding" dir="ltr">UTF-8</span><span class="status-separator">·</span
-            ><span id="document-format">Markdown</span><span class="status-separator">·</span
+            <button id="status-cursor" title="Go to line (Ctrl+G)" hidden>Ln 1, Col 1</button>
+            <span id="file-size" title="File size" dir="ltr">—</span
+            ><span class="status-separator">·</span>
+            <span id="line-count" title="Source lines">0 lines</span
+            ><span class="status-separator">·</span> <span id="word-count">0 words</span
+            ><span class="status-separator">·</span><span id="encoding" dir="ltr">UTF-8</span
+            ><span class="status-separator">·</span><span id="document-format">Markdown</span
+            ><span class="status-separator">·</span
             ><span id="direction-status">Smart direction is on</span>
           </div>
           <span class="developer-credit" dir="ltr">
+            <button id="open-logs" title="Open application logs" aria-label="Open application logs">
+              Logs
+            </button>
             <a
               id="repository-link"
               href="https://github.com/mehmed18q/Khana"
@@ -1070,9 +1089,6 @@
         </div>
       </form>
     </dialog>
-    <div id="loading" class="loading" role="status" hidden>
-      <span class="spinner"></span>Opening document…
-    </div>
     <dialog
       id="pdf-dialog"
       class="link-dialog annotation-dialog"
@@ -1093,7 +1109,13 @@
         </div>
       </form>
     </dialog>
-    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <div class="notifications">
+      <div id="loading" class="loading" role="status" aria-live="polite" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="loading-message">Opening documents…</span>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    </div>
     <div class="drop-overlay">
       <div>
         <svg><use href="#i-file" /></svg>

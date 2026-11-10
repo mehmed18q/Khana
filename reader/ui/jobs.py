@@ -25,7 +25,7 @@ class DocumentJobs(QObject):
 
     loaded = Signal(str, str)
     loadFailed = Signal(str, str)
-    busyChanged = Signal(bool)
+    busyChanged = Signal(bool, str)
     previewReady = Signal(str)
     previewFailed = Signal(str, int, str)
     sourceFormatted = Signal(str)
@@ -63,21 +63,25 @@ class DocumentJobs(QObject):
         task.signals.failed.connect(self._load_failed)
         self.loads[key] = task
         self.pool.start(task)
-        self.busyChanged.emit(True)
+        self._publish_loading()
+
+    def _publish_loading(self) -> None:
+        name = Path(next(iter(self.loads))).name if len(self.loads) == 1 else ""
+        self.busyChanged.emit(bool(self.loads), name)
 
     @Slot(str, str)
     def _loaded(self, path: str, payload: str) -> None:
         self.loads.pop(path, None)
         if not self.stopped:
             self.loaded.emit(path, payload)
-            self.busyChanged.emit(bool(self.loads))
+            self._publish_loading()
 
     @Slot(str, str)
     def _load_failed(self, path: str, message: str) -> None:
         self.loads.pop(path, None)
         if not self.stopped:
             self.loadFailed.emit(path, message)
-            self.busyChanged.emit(bool(self.loads))
+            self._publish_loading()
 
     def preview(self, document_id: str, request: PreviewRequest) -> None:
         if self.stopped:

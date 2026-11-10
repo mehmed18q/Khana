@@ -185,7 +185,7 @@ def main():
             submit_name("Work")
             b = category("Work")
             assert evaluate(
-                "document.querySelectorAll('#file-list .file-category').length===3 && document.querySelectorAll('#library-list .file-category').length===3"
+                "document.querySelectorAll('#file-list .file-category').length===1 && document.querySelectorAll('#library-list .file-category').length===1"
             )
             mouse(row(first))
             mouse(row(second), control=True)
@@ -218,6 +218,17 @@ def main():
                 flush=True,
             )
 
+            # Empty categories remain available in the destination picker.
+            mouse(row(third))
+            menu(row(third))
+            action("move-category")
+            assert evaluate("document.getElementById('category-destination').options.length===3")
+            evaluate("document.getElementById('category-destination').value=" + json.dumps(b))
+            click("category-submit")
+            wait("!document.getElementById('category-dialog').open")
+            wait(f"!!document.querySelector('#file-list [data-category-id=\"{b}\"]')")
+            assert evaluate("!document.querySelector('#file-list [data-category-id=\"\"]')")
+
             group_b = f'#file-list [data-category-id="{b}"] .category-toggle'
             menu(group_b)
             action("category-up")
@@ -225,6 +236,8 @@ def main():
             menu(group_b)
             action("category-rename")
             submit_name("پروژه <۱۴۰۵>")
+            mouse(row(first))
+            mouse(row(second), control=True)
             drag(row(first), group_b)
             native_wait(
                 lambda: all(
@@ -232,6 +245,9 @@ def main():
                 )
             )
             assert all(path.is_file() for path in paths)
+            wait(
+                f"!document.querySelector('#file-list [data-category-id=\"{a}\"]') && !document.querySelector('#library-list [data-category-id=\"{a}\"]')"
+            )
             print(
                 "PASS: category rename/order and real multi-file pointer drag preserve original paths",
                 flush=True,
@@ -239,6 +255,16 @@ def main():
 
             section("files", False)
             section("library", True)
+            mouse(row(third, True))
+            menu(row(third, True))
+            action("move-category")
+            evaluate("document.getElementById('category-destination').value=" + json.dumps(a))
+            click("category-submit")
+            wait("!document.getElementById('category-dialog').open")
+            wait(f"!!document.querySelector('#library-list [data-category-id=\"{a}\"]')")
+            click("library-starred")
+            assert evaluate("!document.querySelector('#library-list .file-category')")
+            click("library-all")
             mouse(row(first, True))
             group_a = f'#library-list [data-category-id="{a}"] .category-toggle'
             drag(row(first, True), group_a, cancel=True)

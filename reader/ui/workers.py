@@ -1,10 +1,12 @@
 """Worker-thread operations; only immutable snapshots and signals cross threads."""
 
 import json
+import logging
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QRunnable, Signal
 
+from reader.diagnostics import measured
 from reader.documents import load_document, render_source
 
 
@@ -20,6 +22,7 @@ class LoadTask(QRunnable):
         self.sample = sample
         self.signals = LoadSignals()
 
+    @measured("load")
     def run(self):
         try:
             document = load_document(self.path, sample=self.sample)
@@ -27,6 +30,7 @@ class LoadTask(QRunnable):
                 str(self.path), json.dumps(document.to_dict(), ensure_ascii=False)
             )
         except (OSError, ValueError) as error:
+            logging.getLogger(__name__).exception("Could not load %s", self.path)
             if isinstance(error, FileNotFoundError):
                 message = "File not found. It may have been moved or deleted."
             elif isinstance(error, PermissionError):
@@ -35,6 +39,7 @@ class LoadTask(QRunnable):
                 message = str(error)
             self.signals.failed.emit(str(self.path), message)
         except Exception:
+            logging.getLogger(__name__).exception("Could not load %s", self.path)
             self.signals.failed.emit(str(self.path), "This file could not be read.")
 
 
@@ -49,6 +54,7 @@ class PdfPageTask(QRunnable):
         )
         self.signals = LoadSignals()
 
+    @measured("pdf-page")
     def run(self):
         from reader.pdf_documents import page_image
 
@@ -56,6 +62,9 @@ class PdfPageTask(QRunnable):
         try:
             payload["url"] = page_image(self.source, self.number)
         except Exception as error:
+            logging.getLogger(__name__).exception(
+                "PDF page failed document=%s page=%s", self.document_id, self.number
+            )
             payload["error"] = str(error)
         self.signals.finished.emit(self.document_id, json.dumps(payload))
 
@@ -67,6 +76,7 @@ class PreviewTask(QRunnable):
         self.document_format, self.folder, self.revision = document_format, folder, revision
         self.signals = LoadSignals()
 
+    @measured("preview")
     def run(self):
         try:
             rendered = render_source(self.source, self.document_format, self.folder)
@@ -78,6 +88,7 @@ class PreviewTask(QRunnable):
                 ),
             )
         except Exception as error:
+            logging.getLogger(__name__).exception("Preview failed document=%s", self.document_id)
             self.signals.failed.emit(self.document_id, str(error))
 
 
@@ -87,6 +98,7 @@ class FormatSourceTask(QRunnable):
         self.document_id, self.source, self.document_format = document_id, source, document_format
         self.signals = LoadSignals()
 
+    @measured("format")
     def run(self):
         result = {"id": self.document_id}
         try:
@@ -94,5 +106,6 @@ class FormatSourceTask(QRunnable):
 
             result["source"] = beautify_source(self.source, self.document_format)
         except Exception as error:
+            logging.getLogger(__name__).exception("Formatting failed document=%s", self.document_id)
             result["error"] = f"Could not format {self.document_format}: {str(error)[:500]}"
         self.signals.finished.emit(self.document_id, json.dumps(result, ensure_ascii=False))
