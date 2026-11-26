@@ -27,7 +27,7 @@ def main():
         running = PackagedApp(executable, folder, [source])
         try:
             assert running.evaluate(
-                f"document.getElementById('app-version').textContent === {json.dumps('/ ' + VERSION)}"
+                f"document.getElementById('app-version').textContent === {json.dumps('v' + VERSION)}"
             )
             running.evaluate(
                 "readerApp.command('search');document.getElementById('search-input').value='۱۲۳';readerApp.search()"

@@ -91,7 +91,7 @@ def main():
         try:
             running = PackagedApp(executable, folder, extra_env={"WAYLAND_DEBUG": "client"})
             assert running.evaluate(
-                f"document.getElementById('app-version').textContent === {json.dumps('/ ' + VERSION)}"
+                f"document.getElementById('app-version').textContent === {json.dumps('v' + VERSION)}"
             )
             running.wait(
                 "!!document.querySelector('.reading-line-numbers [data-line=\"1\"]') && document.querySelector('#outline .outline-line')?.textContent==='Ln 1'",
