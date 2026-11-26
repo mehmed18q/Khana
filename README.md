@@ -2,7 +2,7 @@
 
 A local desktop reader and editor for mixed Persian, Arabic and English documents. Open Markdown, HTML, Word, PDF, JSON, YAML, logs, configuration files, and XML. Edit supported content with a synchronized preview. Each prose paragraph is displayed in its own direction. The application interface switches between Persian and Arabic (RTL) and English (LTR); document content keeps its original language and direction.
 
-Current version: **0.12.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Current version: **0.13.0**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 ## Installation
 
@@ -23,12 +23,12 @@ The [signed APT repository and installation guide](https://mehmed18q.github.io/K
 The `.deb` package includes Python, Qt WebEngine, the PDF engine, fonts, and the offline diagram renderer. Its LibreOffice Writer dependency provides `.doc` / `.docx` import and export; `apt install` installs it when needed. You do not need to clone the project or install Python separately.
 
 1. Open [Releases](https://github.com/mehmed18q/khana/releases) and expand the release's **Assets**.
-2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.12.0 these are `khana_0.12.0-1_amd64.deb` and `khana_0.12.0-1_amd64.deb.sha256`.
+2. Download the `.deb` file and its matching `.deb.sha256` file. For version 0.13.0 these are `khana_0.13.0-1_amd64.deb` and `khana_0.13.0-1_amd64.deb.sha256`.
 3. Open a terminal in the download folder and run the following commands. Use the downloaded filenames if the version differs.
 
 ```bash
-sha256sum -c khana_0.12.0-1_amd64.deb.sha256
-sudo apt install ./khana_0.12.0-1_amd64.deb
+sha256sum -c khana_0.13.0-1_amd64.deb.sha256
+sudo apt install ./khana_0.13.0-1_amd64.deb
 ```
 
 The checksum command should report **OK**. Installation asks for your Ubuntu administrator password. You can also open the `.deb` with your system's package installer.
@@ -152,10 +152,10 @@ Install Docker on a Linux amd64 host. The build runs in an isolated **Ubuntu 24.
 
 ```bash
 python3 scripts/build_ubuntu24.py
-sudo apt install ./dist/khana_0.12.0-1_amd64.deb
+sudo apt install ./dist/khana_0.13.0-1_amd64.deb
 ```
 
-The build produces `dist/khana_0.12.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
+The build produces `dist/khana_0.13.0-1_amd64.deb` and its `.deb.sha256` checksum. Build as your normal user; only the final installation command needs administrator access.
 
 The installer registers `/usr/bin/khana`, `/usr/share/applications/io.khana.Khana.desktop`, and the SVG/PNG logo under the system icon theme. Its runtime is installed in `/opt/khana`. The application ID, desktop entry, and icon name match so the desktop displays **Khana** and associates its running window with the launcher.
 
@@ -195,18 +195,18 @@ Build outputs are excluded by `.gitignore`; pushing the source does not publish 
 
 | Asset | Purpose |
 | --- | --- |
-| `dist/khana_0.12.0-1_amd64.deb` | Ubuntu installer |
-| `dist/khana_0.12.0-1_amd64.deb.sha256` | Installer checksum |
+| `dist/khana_0.13.0-1_amd64.deb` | Ubuntu installer |
+| `dist/khana_0.13.0-1_amd64.deb.sha256` | Installer checksum |
 | `dist/Khana` (optional) | Portable Linux executable |
 | `dist/SHA256SUMS` (with the portable executable) | Portable executable checksum |
 
-These names describe version 0.12.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
+These names describe version 0.13.0. Update versioned examples when publishing a newer package. Build and test each asset from the same release source before uploading it.
 
 ### Versioning
 
 `reader/__init__.py` defines the application version. The native app, sidebar, CLI and build scripts all read it; package checks verify that the executable, visible version and installer metadata agree. Debian packaging rejects an unpacked build whose version differs from the source, including with `--skip-build`.
 
-During the `0.x` series, new features advance the minor version (`0.12.0`); fixes to that release advance the patch version (`0.12.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
+During the `0.x` series, new features advance the minor version (`0.13.0`); fixes to that release advance the patch version (`0.13.1`). The Debian suffix (`-1`) is a packaging revision. For each release, update `VERSION`, this README's versioned examples and `CHANGELOG.md`, then rebuild and verify the packages.
 
 ## Reading
 
@@ -234,7 +234,7 @@ Reading information is local to this device, in `library.sqlite3` beside `settin
 
 Empty category folders are hidden from the file and library lists. They remain available in **Move to category**, so adding a file makes them visible again. **On this page** highlights the current heading while reading, scrolling the source, or moving its caret; the outline keeps its own scroll position.
 
-Closing a window offers **Exit**, **Cancel**, and **Stay in background**. Background mode hides the window from the taskbar and keeps its buffers and undo history in memory. Use the system tray icon's **Open** or **Exit** menu to restore the windows or exit the app. Exit checks unsaved changes in each window. Background mode is disabled on desktops without a system tray.
+Closing the last window asks, as in Bandar, whether to **Run in background** or **Quit**; turn on **Remember my choice** to skip the question, and change it later under **Settings → When the last window is closed**. Background mode hides the window and keeps its buffers and undo history in memory. While Khana runs, its tray icon shows or hides the windows, opens a file, or quits. Without a system tray, open Khana again from the applications menu to bring the windows back. Quit checks unsaved changes in each window. Closing one of several visible windows closes only that window.
 
 Choose **Logs** in the footer to open the local diagnostics folder: `.local/logs/` for source runs, or `~/.config/Khana/Khana/logs/` for installed/portable builds on Linux. `khana.log` records errors, renderer exits and slow operations; it rotates at 2 MB with three backups. `crash.log` records native Python crash traces and keeps one previous log when rotated at startup. Logs do not provide document recovery. Opening messages and transient notifications appear at the bottom center; single-file opening messages include the filename.
 
@@ -266,6 +266,7 @@ Choose **Logs** in the footer to open the local diagnostics folder: `.local/logs
 | Ctrl+E | Toggle Edit & Preview |
 | Ctrl+S | Save |
 | Ctrl+Shift+S | Save As |
+| Ctrl+Alt+S | Save every document with unsaved changes |
 | Ctrl+W | Close the current document |
 | Ctrl+B | Toggle bold in the source editor |
 | Ctrl+I | Toggle italic in the source editor |
@@ -286,6 +287,7 @@ Choose **Logs** in the footer to open the local diagnostics folder: `.local/logs
 | Ctrl+0 | Reset preview zoom to 100% |
 | Ctrl+Shift+I | Format JSON, YAML or XML source in editing mode |
 | Ctrl+Shift+Space | Insert a sample for the current source format |
+| Ctrl+, | Open Settings |
 | Escape | Close a dialog, appearance/search, or leave reading fullscreen |
 
 The header shows the document’s folder path beneath its name. Click any breadcrumb segment to open that folder in your file manager. Long paths scroll horizontally; drafts have no folder path until saved. The footer’s GitHub icon opens the project repository, and the developer’s name opens their GitHub profile.

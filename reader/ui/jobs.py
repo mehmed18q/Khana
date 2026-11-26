@@ -152,4 +152,5 @@ class DocumentJobs(QObject):
         """Join workers before their QObject signal owners can be destroyed."""
         self.stopped = True
         self.pending_previews.clear()
+        self.pool.clear()  # queued work would only be discarded; do not wait for it
         self.pool.waitForDone()

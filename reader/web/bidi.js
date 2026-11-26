@@ -40,6 +40,21 @@
     return text;
   }
 
+  /* A left-to-right run: a URL, or Latin words and numbers separated by spaces.
+     Inside a word, separators such as "1,234.5", "v2.0", "don't" and "25°C" keep it
+     whole, and a currency sign, a leading +/- sign or a trailing percent stays attached.
+     Splitting there would isolate each piece and reverse their order in RTL prose. */
+  const WORD = String.raw`[A-Za-z0-9][A-Za-z0-9_]*(?:[.,'’/@:+#°-][A-Za-z0-9_]+)*`;
+  const TOKEN = String.raw`(?:[$€£¥]|(?<![A-Za-z0-9_])[-+−](?=[0-9]))?${WORD}[%‰°]?`;
+  const LTR_RUN = new RegExp(String.raw`https?:\/\/[^\s<>"«»]+|${TOKEN}(?:[ \t]+${TOKEN})*`, 'g');
+
+  function latinRuns(text) {
+    return [...text.matchAll(LTR_RUN)].map((match) => ({
+      start: match.index,
+      text: match[0],
+    }));
+  }
+
   function isolateLatin(root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes = [];
@@ -51,18 +66,16 @@
       )
         nodes.push(node);
     }
-    const runs =
-      /(?:https?:\/\/[^\s<>"«»]+|[A-Za-z0-9][A-Za-z0-9_]*(?:[./@:+#-][A-Za-z0-9_]+)*(?:[ \t]+[A-Za-z0-9][A-Za-z0-9_]*(?:[./@:+#-][A-Za-z0-9_]+)*)*)/g;
     for (const node of nodes) {
       const fragment = document.createDocumentFragment();
       let offset = 0;
-      for (const match of node.textContent.matchAll(runs)) {
-        fragment.append(node.textContent.slice(offset, match.index));
+      for (const match of latinRuns(node.textContent)) {
+        fragment.append(node.textContent.slice(offset, match.start));
         const isolated = document.createElement('bdi');
         isolated.dir = 'ltr';
-        isolated.textContent = match[0];
+        isolated.textContent = match.text;
         fragment.append(isolated);
-        offset = match.index + match[0].length;
+        offset = match.start + match.text.length;
       }
       fragment.append(node.textContent.slice(offset));
       node.replaceWith(fragment);
@@ -142,7 +155,7 @@
     });
   }
 
-  const api = { detectDirection, firstDirection, prepare, apply };
+  const api = { detectDirection, firstDirection, latinRuns, prepare, apply };
   if (typeof module !== 'undefined') module.exports = api;
   if (typeof window !== 'undefined') window.ReaderBidi = api;
 })();

@@ -1,0 +1,477 @@
+/* The look Khana shares with Bandar: chrome font, buttons, dialogs ("sheets"),
+   settings controls, toasts, brand and status bar. Loaded after the feature styles,
+   so these rules decide the common look. Document text keeps its own Reader font. */
+@font-face {
+  font-family: Persian;
+  src: url('fonts/NotoSansArabic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F;
+}
+@font-face {
+  font-family: Persian;
+  src: url('fonts/NotoSansArabic-SemiBold.ttf') format('truetype');
+  font-weight: 600 900;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F;
+}
+:root {
+  --font: Persian, 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --mono:
+    'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, 'DejaVu Sans Mono', monospace;
+  --radius: 10px;
+  --radius-small: 7px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+body,
+html[dir='rtl'] body,
+html[dir='rtl'] .file-context-menu {
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+::selection {
+  background: var(--accent-soft);
+}
+.muted {
+  color: var(--muted);
+}
+
+/* Buttons */
+.button,
+.secondary-button,
+.save-button,
+.dialog-actions > button:not([class]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--paper);
+  box-shadow: var(--shadow-small);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.button svg,
+.save-button svg,
+.secondary-button svg {
+  width: 15px;
+  height: 15px;
+}
+.button:hover:not(:disabled),
+.secondary-button:hover:not(:disabled),
+.dialog-actions > button:not([class]):hover:not(:disabled) {
+  background: var(--hover);
+  border-color: color-mix(in srgb, var(--line), var(--text) 12%);
+}
+.button.primary,
+.save-button,
+body[data-palette] .save-button,
+body[data-palette] .open-button {
+  background: var(--solid);
+  border-color: var(--solid);
+  color: var(--on-solid);
+  font-weight: 600;
+}
+.button.primary:hover:not(:disabled),
+.save-button:hover:not(:disabled),
+body[data-palette] .save-button:hover:not(:disabled),
+body[data-palette] .open-button:hover:not(:disabled) {
+  background: var(--solid-hover);
+  border-color: var(--solid-hover);
+  filter: none;
+}
+.button.danger {
+  color: var(--err);
+}
+.button.danger:hover:not(:disabled) {
+  background: var(--err-soft);
+  border-color: color-mix(in srgb, var(--err), transparent 60%);
+}
+.icon-button {
+  border-radius: var(--radius-small);
+}
+.icon-button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.icon-button.active,
+.icon-button[aria-expanded='true'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.quit-button:hover:not(:disabled) {
+  background: var(--err-soft);
+  color: var(--err);
+}
+
+/* Segmented choices, switches and settings rows */
+.segmented,
+body[data-palette] .segmented,
+body[data-theme='dark'] .segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-small);
+  background: var(--hover);
+  border: 1px solid var(--line-soft);
+}
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 5px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.segmented button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--text);
+}
+.segmented button.active,
+.segmented button[aria-pressed='true'] {
+  background: var(--paper);
+  color: var(--text);
+  box-shadow: var(--shadow-small);
+  font-weight: 600;
+}
+.segmented button svg {
+  width: 14px;
+  height: 14px;
+}
+.switch {
+  position: relative;
+  display: inline-flex;
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.switch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.switch span {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.2s;
+  pointer-events: none;
+}
+.switch span::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px #0003;
+  transition: transform 0.2s var(--ease);
+}
+.switch input:checked + span {
+  background: var(--solid);
+}
+.switch input:checked + span::after {
+  transform: translateX(14px);
+}
+[dir='rtl'] .switch input:checked + span::after {
+  transform: translateX(-14px);
+}
+.switch input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.toggle-row,
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 7px 0;
+}
+.toggle-row .text,
+.setting .text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.toggle-row .text small,
+.setting .text small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.settings-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.settings-section:last-child {
+  border-bottom: 0;
+}
+.settings-section h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+[dir='rtl'] .settings-section h3 {
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.settings-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.palette-choice {
+  border-radius: var(--radius-small);
+  font-size: 11px;
+}
+.palette-swatch {
+  width: 46px;
+  height: 22px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--hue) var(--sat) 40%) 0 40%,
+    hsl(var(--hue) 35% 75%) 40% 70%,
+    hsl(var(--hue) 25% 93%) 70%
+  );
+}
+.shortcuts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.shortcuts kbd,
+.sheet kbd {
+  justify-self: start;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--muted);
+}
+
+/* Dialogs */
+dialog.sheet {
+  width: min(640px, calc(100vw - 40px));
+  max-height: calc(100vh - 60px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+dialog.sheet.small {
+  width: min(470px, calc(100vw - 40px));
+}
+dialog.sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+.sheet > form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 60px);
+  margin: 0;
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px 12px;
+}
+.sheet-head .sheet-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sheet-head h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.sheet-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.sheet-head .icon-button {
+  margin-inline-start: auto;
+  align-self: flex-start;
+}
+.sheet-body {
+  padding: 6px 22px 16px;
+  overflow-y: auto;
+  min-height: 0;
+  font-size: 13px;
+}
+.sheet-body > p {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  background: var(--raised);
+}
+.sheet-foot .spacer {
+  flex: 1;
+}
+.link-dialog,
+.builder-dialog,
+.search-results-dialog {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+:is(dialog.sheet, .link-dialog, .builder-dialog, .search-results-dialog)[open] {
+  animation: rise 0.18s var(--ease);
+}
+:is(dialog.sheet, .link-dialog, .builder-dialog, .search-results-dialog)::backdrop {
+  background: var(--overlay);
+  backdrop-filter: blur(2px);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+/* Toasts and the loading notice: cards with a tone, as in Bandar */
+.toast,
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font-size: 12.5px;
+  animation: rise 0.2s var(--ease);
+}
+.toast.error {
+  background: var(--raised);
+  color: var(--text);
+  border-inline-start-color: var(--err);
+}
+.toast > svg {
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+}
+.toast.error > svg {
+  color: var(--err);
+}
+
+/* Brand and status bar */
+.brand {
+  gap: 11px;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: linear-gradient(140deg, var(--solid), hsl(var(--hue) var(--sat) 30%));
+  color: #fff;
+  box-shadow: 0 6px 16px hsl(var(--hue) var(--sat) 35% / 0.3);
+}
+.brand-mark svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.9;
+}
+.brand-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.brand-tagline {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10.5px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brand > div {
+  min-width: 0;
+}
+.version-note {
+  display: flex;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--faint);
+}
+.local-note {
+  font-size: 11px;
+}
+.statusbar {
+  padding: 7px 24px;
+  font-size: 10.5px;
+}
+.statusbar .developer-credit {
+  font: inherit;
+  gap: 8px;
+}
+.status-separator {
+  color: var(--faint);
+}
+.status-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 5px;
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: inherit;
+}
+.status-link:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--accent);
+}
+.version-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}

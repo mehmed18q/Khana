@@ -129,6 +129,8 @@ def main():
                 "word",
                 "pdf",
             }
+            # Library rows follow the background library thread.
+            wait("document.querySelectorAll('#library-list .file-type-icon').length===10")
             for scope in ("file-list", "library-list"):
                 found = json.loads(
                     evaluate(
@@ -168,7 +170,14 @@ def main():
 
             # A rename within the Markdown format updates the extension-specific text mark.
             old = paths[1]
-            assert window.bridge.renameFile(str(old), "Notes.md") == ""
+            renamed = []
+            window.bridge.libraryReply.connect(lambda _number, message: renamed.append(message))
+            window.bridge.renameFile(1, str(old), "Notes.md")
+            deadline = time.monotonic() + 10
+            while not renamed:
+                assert time.monotonic() < deadline, "The rename did not finish"
+                QTest.qWait(20)
+            assert renamed == [""], renamed
             paths[1] = old.with_name("Notes.md")
             wait(
                 "document.querySelector('#file-list .file-item[data-id="

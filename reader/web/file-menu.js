@@ -4,6 +4,7 @@
   function create({
     documents,
     native,
+    request,
     libraryEntry,
     orderedEntries,
     orderedDocuments,
@@ -90,9 +91,9 @@
             id,
             `${enabled ? 'Un' + label.toLowerCase() : label} selected files`,
             () =>
-              bridge.setDocumentFlags(JSON.stringify(paths), flag, !enabled, (message) => {
-                if (message) toast(message, true);
-              }),
+              request('setDocumentFlags', JSON.stringify(paths), flag, !enabled).then(
+                (message) => message && toast(message, true)
+              ),
             !bridge || !allSaved
           );
         }

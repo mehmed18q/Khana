@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.13.0 — 2026-11-26
+
+- Fix comma-separated numbers such as `1,234,567` or `125,000` appearing reversed in right-to-left paragraphs and table cells; percentages, currency signs, negative numbers and words such as `don't` or `25°C` also stay whole.
+- Library work (stars, pins, categories, notes, renames and the remembered session) runs on a background thread with a write-ahead SQLite journal, so slow disks no longer freeze the window. Switching tabs no longer writes to the database when nothing changed.
+- Closing the last window works as in Bandar: an in-app prompt offers Run in background or Quit, with "Remember my choice", and the choice can be changed later in Settings. The tray icon stays available while Khana runs (show/hide, open a file, quit), and background mode also works without a tray.
+- New Settings sheet (gear button or Ctrl+,) for theme, language, palette, spell check, sync scroll, page width and the close behavior, plus shortcuts and About.
+- Same look as Bandar: shared color tokens, interface font, buttons, dialogs, switches, toasts with icons, brand mark and a version chip in the status bar.
+- Find matches Persian and Arabic letter forms (ی/ي، ک/ك، ه/ة and alef forms) and ignores vowel marks, tatweel and missing half-spaces.
+- One spelling engine is shared by all windows, and the Arabic dictionary is loaded only for Arabic text, saving hundreds of megabytes of memory.
+- Reloading Word and PDF documents no longer blocks the window; closing a window no longer waits for queued PDF pages.
+- A crashed renderer is reloaded with the same open documents and unsaved edits, and such a window can still be closed with save prompts.
+- Quitting with several windows remembers every window's documents for the next start.
+- Preference changes (font size, line height, page width, direction, sync scroll) reach all windows instead of being overwritten by another window.
+- Save all documents with Ctrl+Alt+S.
+- Save As appends the extension to names such as `report.2024`.
+- The single-instance socket lives in the private runtime folder instead of the shared temporary folder.
+- Translate common error messages into Persian and Arabic.
+
 ## 0.12.0 — 2026-11-10
 
 - Add Exit, Cancel and Stay in background choices when closing a window, with a system tray menu to restore windows or exit after checking unsaved changes.

@@ -62,7 +62,7 @@ def main():
                 "!!window.readerApp?.activeId && document.fonts.status === 'loaded'",
                 "desktop bridge, fonts and sample load",
             )
-            assert evaluate("document.getElementById('app-version').textContent") == f"/ {VERSION}"
+            assert evaluate("document.getElementById('app-version').textContent") == f"v{VERSION}"
             assert window.isFullScreen()
             print("PASS: starts fullscreen", flush=True)
 
@@ -294,6 +294,7 @@ def main():
             print("PASS: no JavaScript errors", flush=True)
             print("Desktop smoke test passed.", flush=True)
         finally:
+            window.allow_close = True
             window.close()
             QTest.qWait(100)
             window.page.deleteLater()

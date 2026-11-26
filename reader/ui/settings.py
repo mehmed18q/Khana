@@ -17,3 +17,8 @@ def default_settings_path() -> Path:
             / "settings.ini"
         )
     return ROOT / ".local" / "settings.ini"
+
+
+def library_path(settings_path: Path | None = None) -> Path:
+    """The SQLite reading library lives beside the settings file."""
+    return Path(settings_path or default_settings_path()).with_name("library.sqlite3")

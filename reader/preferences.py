@@ -18,6 +18,7 @@ DEFAULTS = {
     "sidebarWidth": 264,
     "sidebarCollapsed": False,
     "headerCollapsed": False,
+    "closeAction": "ask",
 }
 SIDEBAR_SECTIONS = ("files", "library", "outline")
 
@@ -43,6 +44,7 @@ def normalize_preferences(values: object) -> dict:
         ("theme", ("light", "dark", "auto")),
         ("palette", ("forest", "ocean", "violet", "rose", "amber", "slate")),
         ("direction", ("smart", "rtl", "ltr")),
+        ("closeAction", ("ask", "background", "quit")),
     ):
         if values.get(key) in options:
             result[key] = values[key]

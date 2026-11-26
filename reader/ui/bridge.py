@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 from hashlib import sha256
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -36,12 +35,55 @@ from reader.documents import (
     load_document,
 )
 from reader.editing import EditSession, fingerprint
-from reader.library import ReadingLibrary
 from reader.preferences import normalize_preferences
 from reader.resources import SAMPLE
 from reader.ui.jobs import DocumentJobs, PreviewRequest
 from reader.ui.settings import default_settings_path
 from reader.ui.spelling import SpellingJobs
+
+
+def saved_session(library):
+    """Read the reopenable session on the library thread, skipping vanished files."""
+    workspace = library.workspace()
+    return {
+        "paths": [path for path in workspace["paths"] if Path(path).is_file()],
+        "active": workspace["active"],
+        "empty": not library.has_documents(),
+    }
+
+
+def rename_document_file(library, old, target):
+    """Rename the file and its library record together; undo the rename on failure."""
+    renamed = False
+
+    def rename():
+        nonlocal renamed
+        file = QFile(str(old))
+        if not file.rename(str(target)):
+            raise OSError(file.errorString())
+        renamed = True
+
+    try:
+        library.rename_document(str(old), str(target), rename)
+    except Exception as error:
+        if renamed and not QFile.rename(str(target), str(old)):
+            raise OSError(
+                f"The file is now at {target}, but library update failed: {error}"
+            ) from error
+        raise
+
+
+SLOW_FORMATS = {"Word", "PDF"}
+SHARED_PREFERENCES = (
+    "language",
+    "spellcheck",
+    "closeAction",
+    "direction",
+    "fontSize",
+    "lineHeight",
+    "wide",
+    "syncScroll",
+)
 
 
 class Bridge(QObject):
@@ -59,6 +101,7 @@ class Bridge(QObject):
     themePreferencesChanged = Signal(str)
     focusModeChanged = Signal(bool)
     libraryChanged = Signal(str)
+    libraryReply = Signal(int, str)  # request number, error message ("" on success)
     pdfPageReady = Signal(str)
     sourceFormatted = Signal(str)
     apiResponse = Signal(str)
@@ -74,16 +117,13 @@ class Bridge(QObject):
         self.settings = QSettings(
             str(settings_path or default_settings_path()), QSettings.Format.IniFormat
         )
-        self.library_error = None
-        try:
-            self.library = ReadingLibrary(
-                Path(self.settings.fileName()).with_name("library.sqlite3")
-            )
-        except (OSError, sqlite3.Error) as error:
-            self.library = None
-            self.library_error = str(error)
+        # Shared by every window; it runs SQLite on its own thread.
+        self.library = window.manager.library
+        self.library.changed.connect(self.libraryChanged)
         self.active_id = None
         self.restoring = False
+        self.workspace_pending = False
+        self.reloads: dict[str, str] = {}  # path → document ID reloading on the worker
         self.restore_active = None
         self.sessions: dict[str, EditSession] = {}
         self.new_count = 0
@@ -139,12 +179,8 @@ class Bridge(QObject):
         if self.initialized:
             return
         self.initialized = True
-        try:
-            preferences = json.loads(str(self.settings.value("reading", "{}")))
-        except ValueError:
-            preferences = {}
         self.publish_system_theme()
-        preferences = normalize_preferences(preferences)
+        preferences = self.preferences()
         self.window.setProperty("language", preferences["language"])
         if isinstance(self.window, QWidget):
             self.window.setLayoutDirection(
@@ -154,71 +190,98 @@ class Bridge(QObject):
             )
         self.settingsLoaded.emit(json.dumps(preferences))
         self.focusModeChanged.emit(self.window.focus_mode)
-        entries = self.publish_library()
-        if self.library_error:
-            self.errorOccurred.emit(f"Reading library unavailable: {self.library_error}")
+        self.publish_library()
+        if self.sessions:
+            # The page was reloaded after its renderer stopped: show the same buffers.
+            for session in self.sessions.values():
+                self.documentLoaded.emit(json.dumps(session.payload(), ensure_ascii=False))
+            if self.active_id in self.sessions:
+                self.documentActivated.emit(self.active_id)
+            return
         if not self.window.restore_session:
+            self.library.submit(lambda _library: None, self._report_unavailable)
             self.command.emit("empty")
             self.window.manager.deliver_transfer(self.window)
             if self.initial_paths:
                 self.load_paths(self.initial_paths)
             return
-        workspace = {"paths": [], "active": None}
-        if self.library:
-            try:
-                workspace = self.library.workspace()
-            except (sqlite3.Error, ValueError) as error:
-                self.errorOccurred.emit(f"Could not restore the reading session: {error}")
-        paths = [Path(path) for path in workspace["paths"] if Path(path).is_file()]
+        # The saved session is read on the library thread. Until it is reopened,
+        # tab activity must not overwrite it.
+        self.restoring = self.workspace_pending = True
+        self.library.submit(saved_session, self._restore)
+
+    def preferences(self):
+        """The saved, validated reading and interface preferences."""
+        try:
+            values = json.loads(str(self.settings.value("reading", "{}")))
+        except ValueError:
+            values = {}
+        return normalize_preferences(values)
+
+    def ask_close(self):
+        """Let the page ask whether to stay in the background or quit."""
+        tray = self.window.manager.tray
+        self.command.emit("close-request:" + json.dumps({"tray": tray.available()}))
+
+    @Slot(str)
+    def closeChoice(self, choice):
+        """The answer to ask_close; the page has already saved a remembered choice."""
+        tray = self.window.manager.tray
+        if choice == "background":
+            QTimer.singleShot(0, lambda: tray.background(self.window))
+        elif choice == "quit":
+            QTimer.singleShot(0, tray.quit_all)
+
+    def _report_unavailable(self, _result, error):
+        if error:
+            self.errorOccurred.emit(f"Reading library unavailable: {error}")
+
+    def _restore(self, saved, error):
+        self.workspace_pending = False
+        if error:
+            self.errorOccurred.emit(f"Could not restore the reading session: {error}")
+            saved = {"paths": [], "active": None, "empty": not self.library.available}
+        paths = [Path(path) for path in saved["paths"]]
         paths += [
             Path(path).resolve() for path in self.initial_paths if Path(path).resolve() not in paths
         ]
         self.restore_active = (
-            str(Path(self.initial_paths[-1]).resolve())
-            if self.initial_paths
-            else workspace["active"]
+            str(Path(self.initial_paths[-1]).resolve()) if self.initial_paths else saved["active"]
         )
         if paths:
-            self.restoring = True
             self.load_paths(paths)
-        elif entries == []:
+        elif saved["empty"]:
             self.load_paths([SAMPLE], sample=True)
-        else:
-            self.command.emit("empty")
+        self._finish_restore()
 
     def publish_library(self):
-        try:
-            entries = self.library.entries() if self.library else []
-            for entry in entries:
-                entry["missing"] = not Path(entry["path"]).is_file()
-            self.libraryChanged.emit(
-                json.dumps(
-                    {
-                        "available": self.library is not None,
-                        "entries": entries,
-                        "categories": self.library.categories() if self.library else [],
-                    },
-                    ensure_ascii=False,
-                )
-            )
-            return entries
-        except (sqlite3.Error, ValueError) as error:
-            self.errorOccurred.emit(f"Could not read the document library: {error}")
+        """Send the latest library snapshot to this window without reading the database."""
+        if self.library.snapshot:
+            self.libraryChanged.emit(self.library.snapshot)
 
-    def _library_change(self, method, *args):
-        if not self.library:
-            return False
-        try:
-            getattr(self.library, method)(*args)
-            for window in self.window.manager.windows:
-                window.bridge.publish_library()
-            return True
-        except (sqlite3.Error, OSError, ValueError) as error:
-            self.errorOccurred.emit(f"Could not save reading information: {error}")
-            return False
+    def _change_library(self, operation, done=None):
+        """Queue a library change; a failure is reported in this window."""
+
+        def finished(result, error):
+            if error:
+                self.errorOccurred.emit(f"Could not save reading information: {error}")
+            elif done:
+                done(result)
+
+        self.library.submit(operation, finished, changes=True)
+
+    def _library_request(self, request, operation, done=None):
+        """Queue a library command whose outcome the browser awaits through libraryReply."""
+
+        def finished(result, error):
+            if not error and done:
+                done(result)
+            self.libraryReply.emit(request, error or "")
+
+        self.library.submit(operation, finished, changes=True)
 
     def remember_workspace(self):
-        if self.restoring or not self.library:
+        if self.restoring:
             return
         sessions = (s for w in self.window.manager.windows for s in w.bridge.sessions.values())
         paths = list(
@@ -228,13 +291,15 @@ class Bridge(QObject):
         )
         active = self.sessions.get(self.active_id)
         active_path = active.document.path if active and active.document.path in paths else None
-        try:
-            self.library.save_workspace(paths, active_path)
-        except (sqlite3.Error, OSError) as error:
-            self.errorOccurred.emit(f"Could not remember the open documents: {error}")
+        if self.window.manager.tray.exiting and self.library.workspace:
+            # Windows close one by one while exiting; their documents must stay in
+            # the session, while documents saved during the exit join it.
+            previous, active_path = self.library.workspace
+            paths = list(dict.fromkeys([*previous, *paths]))
+        self.library.remember_workspace(paths, active_path)
 
     def _finish_restore(self):
-        if self.restoring and not self.jobs.loads:
+        if self.restoring and not self.workspace_pending and not self.jobs.loads:
             self.restoring = False
             self.active_id = next(
                 (
@@ -258,13 +323,7 @@ class Bridge(QObject):
 
     @Slot(str)
     def openLibrary(self, path):
-        if not self.library:
-            return
-        try:
-            if not self.library.get(path):
-                return
-        except (sqlite3.Error, ValueError) as error:
-            self.errorOccurred.emit(f"Could not read the document library: {error}")
+        if not self.library.known(path):
             return
         existing = next(
             (s.document.id for s in self.sessions.values() if s.document.path == path), None
@@ -275,7 +334,7 @@ class Bridge(QObject):
 
     @Slot(str, bool)
     def starDocument(self, path, starred):
-        self._library_change("set_starred", path, starred)
+        self._change_library(lambda library: library.set_starred(path, starred))
 
     @Slot(str, str)
     def openLibraryInLayout(self, path, layout):
@@ -288,11 +347,11 @@ class Bridge(QObject):
 
     @Slot(str, bool)
     def pinDocument(self, path, pinned):
-        self._library_change("set_pinned", path, pinned)
+        self._change_library(lambda library: library.set_pinned(path, pinned))
 
     @Slot(str, str, bool)
     def moveDocument(self, path, neighbor, before):
-        self._library_change("move_relative", path, neighbor, before)
+        self._change_library(lambda library: library.move_relative(path, neighbor, before))
 
     @staticmethod
     def _paths(raw):
@@ -301,56 +360,69 @@ class Bridge(QObject):
             raise ValueError("Choose saved files first.")
         return list(dict.fromkeys(paths))
 
-    def _library_command(self, operation):
-        if not self.library:
-            return "The document library is unavailable."
+    def _paths_request(self, request, raw, operation):
         try:
-            operation()
-            for window in self.window.manager.windows:
-                window.bridge.publish_library()
-            return ""
-        except (sqlite3.Error, OSError, ValueError) as error:
-            return str(error)
+            paths = self._paths(raw)
+        except (ValueError, TypeError):
+            self.libraryReply.emit(request, "Choose saved files first.")
+            return
+        self._library_request(request, lambda library: operation(library, paths))
 
-    @Slot(str, str, result=str)
-    def createCategory(self, name, paths):
-        return self._library_command(lambda: self.library.create_category(name, self._paths(paths)))
+    @Slot(int, str, str)
+    def createCategory(self, request, name, paths):
+        self._paths_request(request, paths, lambda library, p: library.create_category(name, p))
 
-    @Slot(str, str, result=str)
-    def renameCategory(self, identifier, name):
-        return self._library_command(lambda: self.library.rename_category(identifier, name))
+    @Slot(int, str, str)
+    def renameCategory(self, request, identifier, name):
+        self._library_request(request, lambda library: library.rename_category(identifier, name))
 
-    @Slot(str, result=str)
-    def deleteCategory(self, identifier):
-        return self._library_command(lambda: self.library.delete_category(identifier))
+    @Slot(int, str)
+    def deleteCategory(self, request, identifier):
+        self._library_request(request, lambda library: library.delete_category(identifier))
 
-    @Slot(str, str, bool, result=str)
-    def moveCategory(self, identifier, neighbor, before):
-        return self._library_command(
-            lambda: self.library.move_category(identifier, neighbor, before)
+    @Slot(int, str, str, bool)
+    def moveCategory(self, request, identifier, neighbor, before):
+        self._library_request(
+            request, lambda library: library.move_category(identifier, neighbor, before)
         )
 
-    @Slot(str, str, bool, result=str)
-    def collapseCategory(self, identifier, scope, collapsed):
-        return self._library_command(
-            lambda: self.library.collapse_category(identifier, scope, collapsed)
+    @Slot(int, str, str, bool)
+    def collapseCategory(self, request, identifier, scope, collapsed):
+        self._library_request(
+            request, lambda library: library.collapse_category(identifier, scope, collapsed)
         )
 
-    @Slot(str, str, result=str)
-    def assignDocumentCategories(self, paths, identifier):
-        return self._library_command(
-            lambda: self.library.assign_category(self._paths(paths), identifier)
+    @Slot(int, str, str)
+    def assignDocumentCategories(self, request, paths, identifier):
+        self._paths_request(
+            request, paths, lambda library, p: library.assign_category(p, identifier)
         )
 
-    @Slot(str, str, bool, result=str)
-    def setDocumentFlags(self, paths, flag, value):
-        return self._library_command(
-            lambda: self.library.set_files_flag(self._paths(paths), flag, value)
+    @Slot(int, str, str, bool)
+    def setDocumentFlags(self, request, paths, flag, value):
+        self._paths_request(
+            request, paths, lambda library, p: library.set_files_flag(p, flag, value)
         )
 
-    @Slot(str, str, result=str)
-    def renameFile(self, path, name):
-        if not self.library:
+    @Slot(int, str, str)
+    def renameFile(self, request, path, name):
+        problem = self._rename_problem(path, name)
+        if problem is not None:
+            self.libraryReply.emit(request, problem)
+            return
+        old, target = Path(path), Path(path).with_name(name.strip())
+        if target == old:
+            self.libraryReply.emit(request, "")
+            return
+        self._library_request(
+            request,
+            lambda library: rename_document_file(library, old, target),
+            lambda _result: self._renamed(path, target),
+        )
+
+    def _rename_problem(self, path, name):
+        """Validate a rename on the UI thread, where open tabs and transfers are known."""
+        if not self.library.available:
             return "The document library is unavailable."
         old = self._known_file(path)
         if not old or not old.is_file():
@@ -360,7 +432,7 @@ class Bridge(QObject):
             return "Enter a file name without folder separators."
         target = old.with_name(name)
         if target == old:
-            return ""
+            return None
         if target.exists() or target.is_symlink():
             return "A file with that name already exists."
         try:
@@ -384,45 +456,32 @@ class Bridge(QObject):
                 )
             ):
                 return "Wait for this file to finish opening or moving."
-        renamed = False
+        return None
 
-        def rename():
-            nonlocal renamed
-            file = QFile(str(old))
-            if not file.rename(str(target)):
-                raise OSError(file.errorString())
-            renamed = True
-
-        try:
-            self.library.rename_document(path, str(target), rename)
-        except (OSError, sqlite3.Error, ValueError) as error:
-            if renamed and not QFile.rename(str(target), str(old)):
-                return f"The file is now at {target}, but library update failed: {error}"
-            return str(error)
-        for window in manager.windows:
+    def _renamed(self, path, target):
+        for window in self.window.manager.windows:
             for session in window.bridge.sessions.values():
                 if session.document.path == path:
                     session.document.path = str(target)
                     session.document.name = target.name
             window.bridge.documentRenamed.emit(path, str(target), target.name)
-            window.bridge.publish_library()
         self.remember_workspace()
-        return ""
 
     @Slot(str)
     def forgetDocument(self, path):
         if self.window.manager.path_owner(path):
             self.errorOccurred.emit("Close the document before removing it from the library.")
             return
-        if self._library_change("forget", path):
-            self.remember_workspace()
+        self._change_library(
+            lambda library: library.forget(path), lambda _result: self.remember_workspace()
+        )
 
-    @Slot(str, str, str, result=bool)
-    def saveAnnotation(self, document_id, source, raw):
+    @Slot(int, str, str, str)
+    def saveAnnotation(self, request, document_id, source, raw):
         session = self.sync_source(document_id, source)
         if not session or not session.document.path or session.document.sample:
-            self.errorOccurred.emit("Save this document before adding marks or notes.")
-            return False
+            self.libraryReply.emit(request, "Save this document before adding marks or notes.")
+            return
         try:
             item = json.loads(raw)
             if not isinstance(item, dict):
@@ -432,26 +491,29 @@ class Bridge(QObject):
             anchor = item.get("anchor")
             if isinstance(anchor, dict) and not item.get("id"):
                 anchor["fingerprint"] = session.document.fingerprint
-            return self._library_change(
-                "save_annotation",
-                session.document.path,
+        except (ValueError, TypeError) as error:
+            self.libraryReply.emit(request, str(error))
+            return
+        path = session.document.path
+        self._library_request(
+            request,
+            lambda library: library.save_annotation(
+                path,
                 item.get("id"),
                 item.get("kind"),
                 item.get("label"),
                 item.get("body", ""),
                 anchor,
-            )
-        except (ValueError, TypeError) as error:
-            self.errorOccurred.emit(str(error))
-            return False
+            ),
+        )
 
     @Slot(str, str)
     def deleteAnnotation(self, path, identifier):
-        self._library_change("delete_annotation", path, identifier)
+        self._change_library(lambda library: library.delete_annotation(path, identifier))
 
     @Slot(str, str)
     def resumeAnnotation(self, path, identifier):
-        self._library_change("resume", path, identifier)
+        self._change_library(lambda library: library.resume(path, identifier))
 
     @Slot()
     def openFiles(self):
@@ -494,11 +556,16 @@ class Bridge(QObject):
     @Slot(str, str)
     def _loaded(self, path, payload):
         document = Document(**json.loads(payload))
+        reloaded = self.reloads.pop(path, None)
+        if reloaded in self.sessions:
+            self._replace_session(reloaded, document)
+            return
         if document.id in self.sessions or self.jobs.has_work(document.id):
             document.id = f"{uuid4()}:{path}"
         self.sessions[document.id] = EditSession.opened(document)
         if not document.sample:
-            self._library_change("remember", document.path, document.format)
+            path, document_format = document.path, document.format
+            self._change_library(lambda library: library.remember(path, document_format))
         if not self.restoring:
             self.active_id = document.id
         self.documentLoaded.emit(
@@ -509,8 +576,9 @@ class Bridge(QObject):
 
     @Slot(str, str)
     def _failed(self, path, message):
+        self.reloads.pop(path, None)
         self.errorOccurred.emit(f"{Path(path).name}: {message}")
-        self.publish_library()
+        self.library.refresh()  # a missing file is marked in the library
         self._finish_restore()
 
     def sync_source(self, document_id, source=None):
@@ -649,11 +717,15 @@ class Bridge(QObject):
             if not name:
                 return False
             target = Path(name).expanduser()
-            if not target.suffix:
-                target = target.with_suffix(
-                    ".txt"
-                    if selected_filter.startswith("Text")
-                    else FORMAT_EXTENSIONS[doc.format][0]
+            # "report.2024" has a suffix, but not a document extension.
+            if target.suffix.lower() not in EXTENSIONS:
+                target = target.with_name(
+                    target.name
+                    + (
+                        ".txt"
+                        if selected_filter.startswith("Text")
+                        else FORMAT_EXTENSIONS[doc.format][0]
+                    )
                 )
             target = target.resolve()
             if any(
@@ -708,7 +780,10 @@ class Bridge(QObject):
                 ignored.update(self.settings.value(new_spelling_key, [], type=list))
                 self.settings.setValue(new_spelling_key, sorted(ignored))
             self.settings.setValue("lastFolder", str(target.parent))
-            self._library_change("remember", doc.path, doc.format, previous_path)
+            saved_path, saved_format = doc.path, doc.format
+            self._change_library(
+                lambda library: library.remember(saved_path, saved_format, previous_path)
+            )
             self.documentSaved.emit(json.dumps(session.payload(), ensure_ascii=False))
             self.remember_workspace()
             return True
@@ -726,16 +801,24 @@ class Bridge(QObject):
         session = self.sync_source(document_id, source)
         if not session or not session.document.path or not self._confirm_changes(session):
             return
+        if session.document.format in SLOW_FORMATS:
+            # Word conversion and PDF parsing can take seconds; load on the worker.
+            self.reloads[session.document.path] = document_id
+            self.jobs.load(Path(session.document.path), session.document.sample)
+            return
         try:
             doc = load_document(Path(session.document.path), sample=session.document.sample)
-            doc.id = document_id
-            self.sessions[document_id] = EditSession.opened(doc)
-            self.jobs.discard(document_id)
-            self.documentLoaded.emit(
-                json.dumps(self.sessions[document_id].payload(), ensure_ascii=False)
-            )
+            self._replace_session(document_id, doc)
         except (OSError, ValueError) as error:
             self.errorOccurred.emit(f"Could not reload the file: {error}")
+
+    def _replace_session(self, document_id, document):
+        document.id = document_id
+        self.sessions[document_id] = EditSession.opened(document)
+        self.jobs.discard(document_id)
+        self.documentLoaded.emit(
+            json.dumps(self.sessions[document_id].payload(), ensure_ascii=False)
+        )
 
     @Slot(str)
     @Slot(str, str)
@@ -803,6 +886,15 @@ class Bridge(QObject):
             if not self.window.allow_close:
                 self.window.manager.tray.cancel_exit()
 
+    def confirm_native_quit(self):
+        """Save prompts for every buffer, without the page; False when one is canceled."""
+        if self.window.manager.has_transfer(self.window):
+            return False
+        if not all(self._confirm_changes(s) for s in list(self.sessions.values())):
+            return False
+        self.remember_workspace()
+        return True
+
     @Slot()
     def openSample(self):
         self.load_paths([SAMPLE], sample=True)
@@ -828,7 +920,9 @@ class Bridge(QObject):
                 else Qt.LayoutDirection.LeftToRight
             )
         appearance = json.dumps({key: cleaned[key] for key in ("theme", "palette")})
-        interface = json.dumps({key: cleaned[key] for key in ("language", "spellcheck")})
+        # Every window saves its whole settings object, so each must hold the same
+        # shared values; only window layout (sidebar, header, zoom) stays per window.
+        interface = json.dumps({key: cleaned[key] for key in SHARED_PREFERENCES})
         for window in self.window.manager.windows:
             if window is not self.window:
                 window.bridge.themePreferencesChanged.emit(appearance)
@@ -900,6 +994,7 @@ class Bridge(QObject):
                 "kind": "check",
                 "words": words,
                 "ignored": self._ignored_spelling(document_id),
+                "language": self.window.property("language"),
             }
         )
 
@@ -907,7 +1002,13 @@ class Bridge(QObject):
     def spellingSuggestions(self, document_id, token, word):
         if document_id in self.sessions and 1 < len(word) <= 80:
             self.spelling.submit(
-                {"id": document_id, "token": token, "kind": "suggest", "word": word}
+                {
+                    "id": document_id,
+                    "token": token,
+                    "kind": "suggest",
+                    "word": word,
+                    "language": self.window.property("language"),
+                }
             )
 
     @Slot(str, str, bool)
@@ -931,12 +1032,7 @@ class Bridge(QObject):
             return None
         if any(s.document.path == path for s in self.sessions.values()):
             return Path(path)
-        try:
-            if self.library and self.library.get(path):
-                return Path(path)
-        except (sqlite3.Error, ValueError) as error:
-            self.errorOccurred.emit(f"Could not read the document library: {error}")
-        return None
+        return Path(path) if self.library.known(path) else None
 
     @Slot(str, bool, result=bool)
     def copyFile(self, path, cut):

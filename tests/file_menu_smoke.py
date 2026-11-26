@@ -106,6 +106,9 @@ def main():
             assert not evaluate(f"document.querySelector({json.dumps(selector)}).disabled"), name
             evaluate(f"document.querySelector({json.dumps(selector)}).click()")
             QTest.qWait(100)
+            # Library changes finish on a worker thread; let the lists catch up.
+            window.bridge.library.flush()
+            QTest.qWait(60)
 
         def order(library=False):
             selector = ".library-item" if library else ".file-item"
@@ -180,10 +183,16 @@ def main():
 
             open_menu(row(third, True))
             action("star")
-            native_wait(lambda: window.bridge.library.get(third)["starred"])
+            native_wait(
+                lambda: window.bridge.library.blocking(lambda library: library.get(third))[
+                    "starred"
+                ]
+            )
             open_menu(row(third))
             action("pin")
-            native_wait(lambda: window.bridge.library.get(third)["pinned"])
+            native_wait(
+                lambda: window.bridge.library.blocking(lambda library: library.get(third))["pinned"]
+            )
             assert order()[0] == order(True)[0] == third
             open_menu(row(first))
             action("pin")
@@ -263,7 +272,10 @@ def main():
                 last,
             )
             assert next(iter(last.bridge.sessions.values())).document.path == second
-            assert [record["path"] for record in last.bridge.library.entries()] == expected
+            assert [
+                record["path"]
+                for record in last.bridge.library.blocking(lambda library: library.entries())
+            ] == expected
             print(
                 "PASS: closed library files open in a fresh window with persisted order", flush=True
             )
@@ -294,7 +306,8 @@ def main():
             open_menu(row(third))
             action("close")
             paths[2].unlink()
-            window.bridge.publish_library()
+            window.bridge.library.refresh()
+            window.bridge.library.flush()
             QTest.qWait(100)
             open_menu(row(third, True))
             assert evaluate(
@@ -304,7 +317,9 @@ def main():
             assert app.clipboard().text() == third
             open_menu(row(third, True))
             action("forget")
-            native_wait(lambda: window.bridge.library.get(third) is None)
+            native_wait(
+                lambda: window.bridge.library.blocking(lambda library: library.get(third)) is None
+            )
             assert not errors, errors
             print("PASS: unsaved and missing files have appropriate available actions", flush=True)
             print("File menu smoke test passed.", flush=True)

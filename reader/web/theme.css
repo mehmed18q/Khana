@@ -1,60 +1,100 @@
+/* Design tokens shared with Bandar: the same palettes, formulas and status colors. */
 [data-palette='forest'],
 [data-palette-choice='forest'] {
   --palette-hue: 158;
   --palette-saturation: 42%;
+  --hue: 158;
+  --sat: 42%;
 }
 [data-palette='ocean'],
 [data-palette-choice='ocean'] {
   --palette-hue: 213;
   --palette-saturation: 65%;
+  --hue: 213;
+  --sat: 65%;
 }
 [data-palette='violet'],
 [data-palette-choice='violet'] {
   --palette-hue: 266;
   --palette-saturation: 52%;
+  --hue: 266;
+  --sat: 52%;
 }
 [data-palette='rose'],
 [data-palette-choice='rose'] {
   --palette-hue: 342;
   --palette-saturation: 53%;
+  --hue: 342;
+  --sat: 53%;
 }
 [data-palette='amber'],
 [data-palette-choice='amber'] {
   --palette-hue: 32;
   --palette-saturation: 73%;
+  --hue: 32;
+  --sat: 73%;
 }
 [data-palette='slate'],
 [data-palette-choice='slate'] {
   --palette-hue: 215;
   --palette-saturation: 14%;
+  --hue: 215;
+  --sat: 14%;
 }
 body[data-palette] {
-  --bg: hsl(var(--palette-hue) 15% 97%);
-  --sidebar: hsl(var(--palette-hue) 17% 94%);
+  color-scheme: light;
+  --bg: hsl(var(--hue) 18% 97%);
+  --sidebar: hsl(var(--hue) 20% 94.5%);
   --paper: #fff;
-  --text: hsl(var(--palette-hue) 15% 21%);
-  --muted: hsl(var(--palette-hue) 10% 43%);
-  --line: hsl(var(--palette-hue) 17% 86%);
-  --accent: hsl(var(--palette-hue) var(--palette-saturation) 32%);
-  --accent-soft: hsl(var(--palette-hue) 35% 91%);
-  --code: hsl(var(--palette-hue) 15% 96%);
-  --solid: hsl(var(--palette-hue) var(--palette-saturation) 34%);
-  --solid-hover: hsl(var(--palette-hue) var(--palette-saturation) 27%);
-  --shadow: 0 8px 35px #18232d12;
+  --raised: #fff;
+  --hover: hsl(var(--hue) 25% 96%);
+  --text: hsl(var(--hue) 18% 18%);
+  --muted: hsl(var(--hue) 10% 45%);
+  --faint: hsl(var(--hue) 10% 62%);
+  --line: hsl(var(--hue) 18% 88%);
+  --line-soft: hsl(var(--hue) 18% 93%);
+  --accent: hsl(var(--hue) var(--sat) 38%);
+  --accent-soft: hsl(var(--hue) 45% 93%);
+  --solid: hsl(var(--hue) var(--sat) 42%);
+  --solid-hover: hsl(var(--hue) var(--sat) 35%);
+  --on-solid: #fff;
+  --shadow: 0 10px 40px hsl(var(--hue) 30% 20% / 0.1);
+  --shadow-small: 0 1px 2px hsl(var(--hue) 30% 20% / 0.06);
+  --ok: #1f9d63;
+  --warn: #c27c0e;
+  --err: #d23f36;
+  --ok-soft: #e3f5ec;
+  --warn-soft: #fcf1dc;
+  --err-soft: #fde8e6;
+  --code: hsl(var(--hue) 20% 96.5%);
+  --overlay: hsl(var(--hue) 30% 15% / 0.32);
 }
 body[data-theme='dark'][data-palette] {
-  --bg: hsl(var(--palette-hue) 16% 11%);
-  --sidebar: hsl(var(--palette-hue) 17% 10%);
-  --paper: hsl(var(--palette-hue) 15% 15%);
-  --text: hsl(var(--palette-hue) 17% 89%);
-  --muted: hsl(var(--palette-hue) 13% 67%);
-  --line: hsl(var(--palette-hue) 16% 27%);
-  --accent: hsl(var(--palette-hue) var(--palette-saturation) 75%);
-  --accent-soft: hsl(var(--palette-hue) 25% 23%);
-  --code: hsl(var(--palette-hue) 15% 13%);
-  --solid: hsl(var(--palette-hue) var(--palette-saturation) 35%);
-  --solid-hover: hsl(var(--palette-hue) var(--palette-saturation) 29%);
-  --shadow: 0 8px 35px #0005;
+  color-scheme: dark;
+  --bg: hsl(var(--hue) 16% 10%);
+  --sidebar: hsl(var(--hue) 17% 8.5%);
+  --paper: hsl(var(--hue) 15% 13.5%);
+  --raised: hsl(var(--hue) 15% 16%);
+  --hover: hsl(var(--hue) 15% 17.5%);
+  --text: hsl(var(--hue) 17% 90%);
+  --muted: hsl(var(--hue) 12% 66%);
+  --faint: hsl(var(--hue) 10% 48%);
+  --line: hsl(var(--hue) 15% 23%);
+  --line-soft: hsl(var(--hue) 15% 18%);
+  --accent: hsl(var(--hue) var(--sat) 74%);
+  --accent-soft: hsl(var(--hue) 28% 22%);
+  --solid: hsl(var(--hue) var(--sat) 45%);
+  --solid-hover: hsl(var(--hue) var(--sat) 51%);
+  --shadow: 0 12px 44px #0007;
+  --shadow-small: 0 1px 2px #0004;
+  --ok: #4cc38a;
+  --warn: #e7b04a;
+  --err: #f2766b;
+  --ok-soft: #173a2a;
+  --warn-soft: #3d2f14;
+  --err-soft: #43201d;
+  --code: hsl(var(--hue) 16% 10.5%);
+  --overlay: #0009;
 }
 body[data-palette] .open-button,
 body[data-palette] .save-button {

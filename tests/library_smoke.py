@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -77,8 +78,12 @@ def main():
 
         def close():
             nonlocal window
-            window.close()
-            QTest.qWait(180)
+            # Quit (rather than ask about the background) and check unsaved changes.
+            with patch.object(window.bridge, "preferences", return_value={"closeAction": "quit"}):
+                window.close()
+                deadline = time.monotonic() + 5
+                while window.isVisible() and time.monotonic() < deadline:
+                    QTest.qWait(40)
             assert not window.isVisible(), "Closing should not need to save an annotated document"
             window.page.deleteLater()
             QTest.qWait(80)
@@ -157,14 +162,14 @@ def main():
                 "document.getElementById('annotation-count').textContent==='3'",
                 "multiple marks and selected-text note coexist",
             )
-            record = window.bridge.library.get(str(md))
+            record = window.bridge.library.blocking(lambda library: library.get(str(md)))
             first, later, note = record["annotations"]
             assert note["anchor"]["quote"].startswith("Paragraph 40:")
             assert md.read_text() == original
             assert evaluate("document.getElementById('save-status').textContent==='Saved'")
             assert evaluate("document.querySelectorAll('.annotation-badge').length===3")
             assert evaluate(
-                "document.querySelector('.developer-credit').textContent==='© 2026 · Development by Sadeq Kiomarsi'"
+                "document.querySelector('.developer-credit').textContent.replace(/\\s+/g,' ').includes('© 2026 · Development by Sadeq Kiomarsi')"
             )
             click("annotations-button")
             evaluate(
@@ -176,8 +181,9 @@ def main():
             window.bridge.load_paths([html])
             wait("readerApp.activeId.endsWith('reference.html')", "HTML opens alongside Markdown")
             add("note", 2, "Table note", "A note on the table.")
-            assert evaluate(
-                "document.querySelector('.table-scroll > .annotation-badges .annotation-badge')!==null"
+            wait(
+                "document.querySelector('.table-scroll > .annotation-badges .annotation-badge')!==null",
+                "table note badge",
             )
             assert evaluate("document.querySelector('#document table').textContent==='TitleValue'")
             click("annotations-button")
@@ -246,7 +252,11 @@ def main():
                     + ").click()"
                 )
                 QTest.qWait(80)
-            assert evaluate("document.getElementById('annotation-count').textContent==='1'")
+                window.bridge.library.flush()
+            wait(
+                "document.getElementById('annotation-count').textContent==='1'",
+                "marks and notes can be deleted",
+            )
             close()
 
             launch()
@@ -254,7 +264,12 @@ def main():
                 "document.getElementById('annotation-count').textContent==='1'",
                 "deleted marks and notes stay deleted after restart",
             )
-            assert window.bridge.library.get(str(md))["annotations"][0]["id"] == first["id"]
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(str(md)))["annotations"][
+                    0
+                ]["id"]
+                == first["id"]
+            )
             evaluate(
                 "document.querySelector("
                 + json.dumps(f'.library-item[data-path="{html}"] .library-open')
@@ -275,7 +290,12 @@ def main():
                 + ")?.textContent==='File not found'",
                 "missing file keeps its library entry and annotations",
             )
-            assert window.bridge.library.get(str(md))["annotations"][0]["id"] == first["id"]
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(str(md)))["annotations"][
+                    0
+                ]["id"]
+                == first["id"]
+            )
             md.write_text(original)
             evaluate(
                 "document.querySelector("

@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 from PySide6.QtCore import QSettings
 
-from reader.spelling import Spelling
+from reader.spelling import Spelling, arabic_text, shared_spelling
 from reader.ui.bridge import Bridge
 from reader.ui.spelling import SpellingJobs, Task
 
@@ -32,6 +32,17 @@ class SpellingTests(unittest.TestCase):
         for word in ("المدررسة", "كتااب"):
             self.assertFalse(self.engine.correct(word), word)
         self.assertEqual(self.engine.suggestions("المدررسة")[0], "المدرسة")
+
+    def test_arabic_dictionary_is_used_only_for_arabic_text(self):
+        # Letters shared by Persian and Arabic do not load the large Arabic dictionary.
+        self.assertEqual(Spelling.languages("سلاممم"), ("fa-IR",))
+        self.assertEqual(Spelling.languages("سلاممم", arabic=True), ("fa-IR", "ar"))
+        self.assertEqual(Spelling.languages("كتاب"), ("ar", "fa-IR"))
+        self.assertEqual(Spelling.languages("کتاب"), ("fa-IR",))
+        self.assertTrue(arabic_text(["سلام", "مدرسة"]))
+        self.assertFalse(arabic_text(["سلام", "کتاب"]))
+        self.assertIs(shared_spelling(), shared_spelling())
+        self.assertIs(SpellingJobs(None).engine, SpellingJobs(None).engine)
 
     def test_saved_document_and_global_exceptions_survive_restart(self):
         class Harness:
@@ -67,13 +78,13 @@ class SpellingTests(unittest.TestCase):
         request = {"id": "doc", "token": 1, "kind": "check", "words": ["one", "two"], "ignored": []}
         service = SimpleNamespace(current=request, ready=Mock(), engine=Mock())
 
-        def correct(word):
+        def correct(word, arabic=False):
             service.current = None
             return False
 
         service.engine.correct.side_effect = correct
         Task(service, request).run()
-        service.engine.correct.assert_called_once_with("one")
+        service.engine.correct.assert_called_once_with("one", False)
         service.ready.emit.assert_not_called()
 
     def test_closed_window_rejects_late_spelling_requests(self):

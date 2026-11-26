@@ -12,6 +12,8 @@ from PySide6.QtCore import QObject, QTimer
 from PySide6.QtWidgets import QApplication
 
 from reader.editing import EditSession
+from reader.ui.library_service import LibraryService
+from reader.ui.settings import library_path
 from reader.ui.tray import TrayController
 
 if TYPE_CHECKING:
@@ -44,6 +46,7 @@ class WindowManager(QObject):
         self.recent = None
         self.transfers: dict[tuple[ReaderWindow, str], TabTransfer] = {}
         self.dragging = None
+        self.library = LibraryService(library_path(settings_path), self)
         self.tray = TrayController(self)
 
     def path_owner(self, path, exclude=None):

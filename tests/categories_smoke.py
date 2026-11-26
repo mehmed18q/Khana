@@ -67,7 +67,7 @@ def main():
                 "JSON.stringify({title:document.getElementById('category-dialog-title').textContent,error:document.getElementById('category-error').textContent,disabled:document.getElementById('category-submit').disabled,name:document.getElementById('category-name').value,valid:document.getElementById('category-form').checkValidity()})"
             )
             raise AssertionError(
-                f"{script}: {errors}; {detail}; {window.bridge.library.categories()}"
+                f"{script}: {errors}; {detail}; {window.bridge.library.blocking(lambda library: library.categories())}"
             )
 
         def native_wait(condition):
@@ -78,6 +78,12 @@ def main():
 
         def click(identifier):
             evaluate(f"document.getElementById({json.dumps(identifier)}).click()")
+            QTest.qWait(60)
+            settle()
+
+        def settle():
+            """Library changes finish on a worker thread; let both lists catch up."""
+            window.bridge.library.flush()
             QTest.qWait(60)
 
         def section(scope, opened):
@@ -148,6 +154,7 @@ def main():
             )
             evaluate(f"document.querySelector({json.dumps(selector)}).click()")
             QTest.qWait(100)
+            settle()
 
         def submit_name(value):
             wait("document.getElementById('category-dialog').open")
@@ -157,7 +164,9 @@ def main():
 
         def category(name):
             return next(
-                item["id"] for item in window.bridge.library.categories() if item["name"] == name
+                item["id"]
+                for item in window.bridge.library.blocking(lambda library: library.categories())
+                if item["name"] == name
             )
 
         def drag(source, destination, cancel=False):
@@ -208,8 +217,14 @@ def main():
             evaluate("document.getElementById('category-destination').value=" + json.dumps(a))
             click("category-submit")
             wait("!document.getElementById('category-dialog').open")
-            assert window.bridge.library.get(first)["categoryId"] == a
-            assert window.bridge.library.get(second)["categoryId"] == a
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(first))["categoryId"]
+                == a
+            )
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(second))["categoryId"]
+                == a
+            )
             assert evaluate(
                 f"document.querySelector('#library-list [data-category-id=\"{a}\"]').querySelectorAll('.library-item').length===2"
             )
@@ -232,7 +247,9 @@ def main():
             group_b = f'#file-list [data-category-id="{b}"] .category-toggle'
             menu(group_b)
             action("category-up")
-            assert window.bridge.library.categories()[0]["id"] == b
+            assert (
+                window.bridge.library.blocking(lambda library: library.categories())[0]["id"] == b
+            )
             menu(group_b)
             action("category-rename")
             submit_name("پروژه <۱۴۰۵>")
@@ -241,7 +258,11 @@ def main():
             drag(row(first), group_b)
             native_wait(
                 lambda: all(
-                    window.bridge.library.get(p)["categoryId"] == b for p in (first, second)
+                    window.bridge.library.blocking(lambda library, p=p: library.get(p))[
+                        "categoryId"
+                    ]
+                    == b
+                    for p in (first, second)
                 )
             )
             assert all(path.is_file() for path in paths)
@@ -268,15 +289,25 @@ def main():
             mouse(row(first, True))
             group_a = f'#library-list [data-category-id="{a}"] .category-toggle'
             drag(row(first, True), group_a, cancel=True)
-            assert window.bridge.library.get(first)["categoryId"] == b
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(first))["categoryId"]
+                == b
+            )
             drag(row(first, True), group_a)
-            native_wait(lambda: window.bridge.library.get(first)["categoryId"] == a)
+            native_wait(
+                lambda: (
+                    window.bridge.library.blocking(lambda library: library.get(first))["categoryId"]
+                    == a
+                )
+            )
             print("PASS: Library dragging and Escape cancellation", flush=True)
 
-            note = window.bridge.library.save_annotation(
-                first, "", "note", "Keep", "Note", {"index": 0, "progress": 0}
+            note = window.bridge.library.blocking(
+                lambda library: library.save_annotation(
+                    first, "", "note", "Keep", "Note", {"index": 0, "progress": 0}
+                )
             )
-            window.bridge.publish_library()
+            window.bridge.library.refresh()
             mouse(row(first, True))
             click("edit-mode")
             edited = "# Unsaved while renaming\n\nنباید از دست برود."
@@ -304,8 +335,18 @@ def main():
             assert (
                 evaluate("document.querySelector('.source-editor:not([hidden])').value") == edited
             )
-            assert window.bridge.library.get(str(renamed))["annotations"][0]["id"] == note
-            assert window.bridge.library.get(str(renamed))["categoryId"] == a
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(str(renamed)))[
+                    "annotations"
+                ][0]["id"]
+                == note
+            )
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(str(renamed)))[
+                    "categoryId"
+                ]
+                == a
+            )
             paths[0] = renamed
             menu(row(str(renamed), True))
             action("save")
@@ -371,13 +412,20 @@ def main():
             native_wait(lambda: len(window.bridge.sessions) == 1)
             print("PASS: multi-file close respects unsaved-change cancellation", flush=True)
 
-            saved_categories = window.bridge.library.categories()
-            saved_entries = [(e["path"], e["categoryId"]) for e in window.bridge.library.entries()]
+            saved_categories = window.bridge.library.blocking(lambda library: library.categories())
+            saved_entries = [
+                (e["path"], e["categoryId"])
+                for e in window.bridge.library.blocking(lambda library: library.entries())
+            ]
             close()
             launch()
-            assert window.bridge.library.categories() == saved_categories
+            assert (
+                window.bridge.library.blocking(lambda library: library.categories())
+                == saved_categories
+            )
             assert [
-                (e["path"], e["categoryId"]) for e in window.bridge.library.entries()
+                (e["path"], e["categoryId"])
+                for e in window.bridge.library.blocking(lambda library: library.entries())
             ] == saved_entries
             section("files", True)
             section("library", True)
@@ -395,9 +443,21 @@ def main():
             window.grab().save(str(ROOT / "artifacts" / "categories-dark.png"))
             menu(f'#library-list [data-category-id="{a}"] .category-toggle')
             action("category-delete")
-            native_wait(lambda: window.bridge.library.get(str(renamed))["categoryId"] == "")
+            native_wait(
+                lambda: (
+                    window.bridge.library.blocking(lambda library: library.get(str(renamed)))[
+                        "categoryId"
+                    ]
+                    == ""
+                )
+            )
             assert renamed.read_text() == edited
-            assert window.bridge.library.get(str(renamed))["annotations"][0]["id"] == note
+            assert (
+                window.bridge.library.blocking(lambda library: library.get(str(renamed)))[
+                    "annotations"
+                ][0]["id"]
+                == note
+            )
             assert not errors, errors
             print(
                 "PASS: category order/membership survive restart; deleting a category preserves files and notes",

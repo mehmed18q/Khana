@@ -18,7 +18,8 @@ flowchart TD
     Jobs --> Workers[ui/workers.py: worker snapshots and signals]
     Workers --> Documents[documents.py and format adapters]
     Bridge --> Sessions[editing.py: source state and atomic writes]
-    Bridge --> Library[library.py: SQLite storage]
+    Bridge --> LibraryThread[ui/library_service.py: library thread]
+    LibraryThread --> Library[library.py: SQLite storage]
     Bridge --> Preferences[preferences.py: validated reading preferences]
     Bridge --> HTTP[api_requests.py: explicit HTTP requests]
     UI[web/app.js: view composition and document state] <-->|Qt WebChannel| Bridge
@@ -29,7 +30,8 @@ flowchart TD
 | `reader/desktop.py` | CLI, application metadata, single-instance service and top-level composition. |
 | `reader/resources.py` | Paths to bundled resources, shared by source and frozen builds. |
 | `reader/ui/window.py` | Construct the WebEngine profile, page, channel and bridge; join workers before closing. |
-| `reader/ui/tray.py` | One tray icon per window manager; hide/restore windows and exit sequentially through existing unsaved-change checks. |
+| `reader/ui/tray.py` | One tray icon for the application while it runs (as in Bandar): show/hide windows, open a file, background mode and sequential exit through the unsaved-change checks. |
+| `reader/ui/library_service.py` | Own the only SQLite connection on one worker thread, run library operations in order, return results through queued signals and publish one coalesced snapshot to every window. |
 | `reader/diagnostics.py` | Rotating application logs, fatal traces, Python/Qt exception hooks, worker timings and native event-loop delays. |
 | `reader/ui/workspace.py` | Reserve document paths across windows, select a target window and coordinate acknowledged transfers. A supplied `window_factory` avoids importing the concrete window at runtime. |
 | `reader/ui/bridge.py` | Native command facade: synchronize the latest source, validate operations, display save/close prompts, and publish session/library events. Qt slot names intentionally match the JavaScript contract. |
@@ -38,7 +40,7 @@ flowchart TD
 | `reader/spelling.py`, `reader/ui/spelling.py` | Load bundled Hunspell dictionaries lazily, cache lookup results, and check words on a separate serial worker pool. |
 | `reader/documents.py` | Load supported formats, preserve source metadata, render previews and sanitize HTML. Word/PDF/OpenAPI details live in their existing adapters. |
 | `reader/editing.py` | Buffer baseline, dirty state, conflict detection and atomic file replacement. This uses QtCore's `QSaveFile`, but has no dependency on windows or the WebChannel. |
-| `reader/library.py` | Store documents, annotations and workspace paths. `get(path)` reads only that document and its annotations; `entries()` deliberately reads the full library view. |
+| `reader/library.py` | Store documents, annotations and workspace paths (WAL journal). `get(path)` reads only that document and its annotations; `entries()` deliberately reads the full library view. Used only from the library thread. |
 | `reader/preferences.py` | Normalize untrusted persisted preferences without Qt. Invalid fields fall back independently; numbers must be finite and bounded. |
 | `reader/api_requests.py` | Validate and execute explicit API requests, enforce limits, handle cancellation and release replies. It is separate from browser resource loading. |
 
@@ -74,6 +76,7 @@ global declaration.
 | `openapi-ui.js`, `api-requests.js` | Retained Swagger views and request promises, independently of which tab is visible. |
 | `library-ui.js`, `annotations.js` | Library controls and text anchors. |
 | `formatting.js`, `insertions.js`, `bidi.js` | Text transformations and direction rules, with Node-testable exports. |
+| `settings-dialog.js` | The Settings sheet and the close prompt (background or quit, optionally remembered as `closeAction`). |
 | `i18n.js`, `fa.js`, `pickers.js` | Translate application controls, mirror the interface, and render accessible language and format menus. UI translation excludes document text and user labels. |
 | `spelling.js` | Debounced source checking, underlines limited to visible lines, context-menu selection highlighting, scoped ignore actions and undoable suggestions. Results must match the active document and source snapshot. |
 | `structures.js`, `builders.js` | Locate and safely replace existing tables/diagrams, preserve cell metadata, and edit tables and supported flowcharts. Unsupported structures retain a source editor. |
@@ -102,9 +105,18 @@ application API used by desktop smoke checks.
    pages are requested near the visible area. Responses must match the current
    mount. Main and extra panes use the same implementation.
 6. Background mode hides windows without closing buffers or stopping workers.
-   Tray exit goes through each window's browser snapshot and native save checks;
-   canceling any check stops the remaining exit queue. The last closed window
-   removes the tray icon and quits the application.
+   Closing a window while another is visible closes only that window. Closing the
+   last visible window applies `closeAction` (ask, background or quit); "ask" opens
+   the page's close prompt. Quit goes through each window's browser snapshot and
+   native save checks; canceling any check stops the remaining exit queue. A window
+   without a ready page uses native save prompts instead. The session is saved
+   before the first window closes and only grows while the exit runs. The last
+   closed window finishes queued library writes, removes the tray icon and quits.
+7. The UI thread never runs SQL or checks library files on disk. Library commands
+   that the browser awaits carry a request number and finish through
+   `libraryReply`; other changes report failures as errors. Cross-window checks such
+   as "is this path in the library" use the last published snapshot.
+8. A renderer crash reloads the page; `ready()` then shows the same buffers again.
 
 Editor caret operations reuse source indexes. Source measurement retains unchanged
 line nodes and shifts cached offsets after edits. Input handlers schedule geometry
@@ -146,7 +158,7 @@ after the packaged GUI and repository verification checks pass. See
 | State | Lifetime |
 | --- | --- |
 | Source files | Written only by successful Save/Save As operations. |
-| Library, stars, notes and reopenable workspace paths | SQLite beside `settings.ini`. Unsaved drafts are not persisted. |
+| Library, stars, notes and reopenable workspace paths | SQLite (WAL) beside `settings.ini`, accessed only on the library thread. Unsaved drafts are not persisted. |
 | Reading preferences and native geometry | QSettings; source runs use `.local`, frozen builds use the platform configuration directory. |
 | Spelling exceptions | QSettings for global words and saved document paths; draft exceptions stay in memory until saving. |
 | Editor selections, undo history, pane positions and API credentials/responses | In memory for the open session. API runtime state is never written to settings or source. |

@@ -14,6 +14,7 @@
     documents,
     sourceOf,
     native,
+    request,
     toast,
     bindFileMenu,
     categories,
@@ -332,7 +333,8 @@
         return;
       }
       $('annotation-save').disabled = true;
-      native()?.saveAnnotation(
+      request(
+        'saveAnnotation',
         doc.id,
         sourceOf(doc),
         JSON.stringify({
@@ -341,20 +343,20 @@
           anchor: context.anchor,
           label: $('annotation-name').value,
           body: $('annotation-body').value,
-        }),
-        (success) => {
-          if (dialogContext !== context) return;
-          $('annotation-save').disabled = false;
-          if (success) {
-            $('annotation-dialog').close();
-            toast(context.kind === 'note' ? 'Note saved' : 'Mark saved');
-          } else {
-            $('annotation-error').textContent =
-              'Could not save. Check the name and note, then try again.';
-            $('annotation-error').hidden = false;
-          }
+        })
+      ).then((message) => {
+        if (dialogContext !== context) return;
+        $('annotation-save').disabled = false;
+        if (!message) {
+          $('annotation-dialog').close();
+          toast(context.kind === 'note' ? 'Note saved' : 'Mark saved');
+        } else {
+          toast(message, true);
+          $('annotation-error').textContent =
+            'Could not save. Check the name and note, then try again.';
+          $('annotation-error').hidden = false;
         }
-      );
+      });
     };
     document.addEventListener('click', (event) => {
       if (

@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  function create({ native, menu, entry, toast, icon }) {
+  function create({ native, request, menu, entry, toast, icon }) {
     let records = [],
       context = null,
       pending = false;
@@ -13,7 +13,7 @@
       error = $('category-error');
     function call(method, args, done = () => {}) {
       if (!native()) return;
-      native()[method](...args, (message) => {
+      request(method, ...args).then((message) => {
         if (message) toast(message, true);
         done(message);
       });
@@ -68,7 +68,7 @@
         move: ['assignDocumentCategories', [JSON.stringify(current.paths), destination.value]],
         'rename-file': ['renameFile', [current.path, name.value]],
       }[current.mode];
-      native()[operation[0]](...operation[1], (message) => {
+      request(operation[0], ...operation[1]).then((message) => {
         pending = false;
         $('category-submit').disabled = false;
         if (context !== current) return;

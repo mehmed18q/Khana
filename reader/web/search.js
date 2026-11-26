@@ -5,17 +5,41 @@
     beforeWord = new RegExp(`${word}$`, 'u'),
     afterWord = new RegExp(`^${word}`, 'u');
 
+  /* Persian and Arabic spell some letters differently, and text may carry vowel
+     marks, tatweel or a zero-width non-joiner. A query matches all of these forms. */
+  const LETTER_FORMS = ['یيى', 'کك', 'هة', 'اأإآٱ', 'وؤ'];
+  const forms = new Map(LETTER_FORMS.flatMap((group) => [...group].map((char) => [char, group])));
+  const MARK = /[\u064b-\u065f\u0670\u0640]/u,
+    OPTIONAL_MARKS = '[\\u064b-\\u065f\\u0670\\u0640]*',
+    arabicLetter = (char) => /\p{Script=Arabic}/u.test(char) && /\p{L}/u.test(char);
+
+  function queryPattern(query) {
+    const chars = [...query].filter((char) => !MARK.test(char));
+    return chars
+      .map((char, index) => {
+        if (char === '\u200c') return '\u200c?';
+        if (/[0-9۰-۹٠-٩]/.test(char)) {
+          const value = char.charCodeAt(0) & 15;
+          return `[${value}${String.fromCharCode(0x6f0 + value, 0x660 + value)}]`;
+        }
+        if (!arabicLetter(char)) return char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const next = chars[index + 1];
+        return (
+          (forms.has(char) ? `[${forms.get(char)}]` : char) +
+          OPTIONAL_MARKS +
+          (next && arabicLetter(next) ? '\u200c?' : '')
+        );
+      })
+      .join('');
+  }
+
   function matches(text, query, { matchCase = false, wholeWord = false } = {}) {
     if (!query) return [];
     // Folding an entire string can change its length (e.g. İ), corrupting offsets.
     // An escaped Unicode regexp keeps original UTF-16 coordinates and literal text.
-    const expression = new RegExp(
-        query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[0-9۰-۹٠-٩]/g, (digit) => {
-          const value = digit.charCodeAt(0) & 15;
-          return `[${value}${String.fromCharCode(0x6f0 + value, 0x660 + value)}]`;
-        }),
-        matchCase ? 'gu' : 'giu'
-      ),
+    const pattern = queryPattern(query);
+    if (!pattern) return [];
+    const expression = new RegExp(pattern, matchCase ? 'gu' : 'giu'),
       found = [];
     for (const match of text.matchAll(expression)) {
       const start = match.index,
@@ -356,8 +380,9 @@
         button.setAttribute('aria-current', String(index === resultIndex));
         location.className = 'search-result-location';
         if (snapshot.field) {
-          const prefix = text.slice(0, match.start).split('\n');
-          location.textContent = `Ln ${formatNumber(prefix.length)}, Col ${formatNumber([...prefix.at(-1)].length + 1)}`;
+          snapshot.lines ??= ReaderSourceText.index(text);
+          const { line, column } = ReaderSourceText.position(snapshot.lines, match.start);
+          location.textContent = `Ln ${formatNumber(line + 1)}, Col ${formatNumber(column + 1)}`;
         } else location.textContent = `Match ${formatNumber(index + 1)}`;
         mark.textContent = text.slice(match.start, match.end);
         context.append(

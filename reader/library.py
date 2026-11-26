@@ -48,6 +48,10 @@ class ReadingLibrary:
         self.connection = sqlite3.connect(path, timeout=3)
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys = ON")
+        # Write-ahead logging makes a commit an append instead of a rewrite plus two
+        # syncs; NORMAL synchronization stays durable across application crashes.
+        self.connection.execute("PRAGMA journal_mode = WAL")
+        self.connection.execute("PRAGMA synchronous = NORMAL")
         with self.connection:
             self.connection.executescript("""
                 CREATE TABLE IF NOT EXISTS documents (
@@ -146,6 +150,9 @@ class ReadingLibrary:
             "SELECT d.* FROM documents d LEFT JOIN categories c ON c.id=d.category_id "
             "ORDER BY c.id IS NULL,c.sort_order,c.id,d.pinned DESC,d.sort_order,d.path"
         )
+
+    def has_documents(self):
+        return self.connection.execute("SELECT 1 FROM documents LIMIT 1").fetchone() is not None
 
     def get(self, path):
         """Look up one document without loading the rest of the reading library."""

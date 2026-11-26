@@ -6,7 +6,7 @@ import logging
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 
 from reader.diagnostics import measured
-from reader.spelling import Spelling
+from reader.spelling import arabic_text, shared_spelling
 
 
 class Task(QRunnable):
@@ -21,16 +21,20 @@ class Task(QRunnable):
         if self.service.current is not request:
             return
         result = {"id": request["id"], "token": request["token"], "kind": request["kind"]}
+        engine = self.service.engine
+        arabic = request.get("language") == "ar"
         try:
             if request["kind"] == "suggest":
-                result["suggestions"] = self.service.engine.suggestions(request["word"])
+                arabic = arabic or arabic_text([request["word"]])
+                result["suggestions"] = engine.suggestions(request["word"], arabic)
             else:
                 ignored = set(request["ignored"])
+                arabic = arabic or arabic_text(request["words"])
                 result["misspelled"] = []
                 for word in request["words"]:
                     if self.service.current is not request:
                         return
-                    if word.casefold() not in ignored and not self.service.engine.correct(word):
+                    if word.casefold() not in ignored and not engine.correct(word, arabic):
                         result["misspelled"].append(word)
         except Exception as error:
             logging.getLogger(__name__).exception(
@@ -46,7 +50,7 @@ class SpellingJobs(QObject):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.engine = Spelling()
+        self.engine = shared_spelling()
         self.pool = QThreadPool(self)
         self.pool.setMaxThreadCount(1)
         self.stopped = False

@@ -267,6 +267,7 @@ def main():
             artifacts.mkdir(exist_ok=True)
             window.grab().save(str(artifacts / "formats-pdf.png"))
             assert not errors, errors
+            window.allow_close = True
             window.close()
             QTest.qWait(200)
             assert not window.isVisible()

@@ -27,11 +27,24 @@
     sidebarWidth: 264,
     sidebarCollapsed: false,
     headerCollapsed: false,
+    closeAction: 'ask',
   };
   let settings = { ...defaults },
     bridge,
     activeId = null,
     toastTimer;
+  /* Library commands run on a native worker thread. Each resolves with an error
+     message, or '' on success, when libraryReply returns its request number. */
+  const libraryReplies = new Map();
+  let libraryRequestNumber = 0;
+  function libraryRequest(method, ...args) {
+    if (!bridge) return Promise.resolve('The document library is unavailable.');
+    const number = ++libraryRequestNumber;
+    return new Promise((resolve) => {
+      libraryReplies.set(number, resolve);
+      bridge[method](number, ...args);
+    });
+  }
   const documents = new Map(),
     positions = new Map(),
     overrides = new Map();
@@ -51,8 +64,17 @@
   ReaderDiagnostics.create(() => bridge);
   $('open-logs').onclick = () => bridge?.openLogs();
   ReaderPickers.create();
+  const settingsDialog = ReaderSettingsDialog.create({
+    settings: () => settings,
+    change: changeSettings,
+    native: () => bridge,
+    unsaved: () =>
+      [...documents.values()].filter((doc) => sourceOf(doc) !== doc.savedSource).length,
+    formatNumber,
+  });
   const categories = ReaderCategories.create({
     native: () => bridge,
+    request: libraryRequest,
     menu: contextMenu,
     entry: (path) => reading.entry(path),
     toast,
@@ -65,6 +87,7 @@
     documents,
     sourceOf,
     native: () => bridge,
+    request: libraryRequest,
     toast,
     categories,
     bindFileMenu: (row, target, select) => fileMenu.bind(row, target, select),
@@ -83,6 +106,7 @@
   const fileMenu = ReaderFileMenu.create({
     documents,
     native: () => bridge,
+    request: libraryRequest,
     libraryEntry: (path) => reading.entry(path),
     orderedEntries: () => reading.visibleEntries(),
     orderedDocuments: () => reading.orderedDocuments(),
@@ -270,7 +294,10 @@
 
   function toast(message, error = false) {
     clearTimeout(toastTimer);
-    $('toast').textContent = message;
+    const text = document.createElement('span');
+    text.textContent = message;
+    $('toast').innerHTML = icon(error ? 'alert' : 'check');
+    $('toast').append(text);
     $('toast').classList.toggle('error', error);
     $('toast').hidden = false;
     toastTimer = setTimeout(
@@ -279,6 +306,18 @@
       },
       error ? 6500 : 2800
     );
+  }
+
+  /* Changes from the Settings sheet and the close prompt. */
+  function changeSettings(values) {
+    Object.assign(settings, values);
+    preferences();
+    if ('spellcheck' in values) spelling.changed();
+    if ('syncScroll' in values) sync.mount('preview');
+    if ('language' in values) {
+      updateProgress();
+      sync.resize();
+    }
   }
 
   function preferences(save = true) {
@@ -311,6 +350,7 @@
       rtl: 'Right-to-left text',
       ltr: 'Left-to-right text',
     }[settings.direction];
+    settingsDialog.render();
     if (save) bridge?.saveSettings(JSON.stringify(settings));
     sourceEditor.refreshStatus();
     requestAnimationFrame(updateProgress);
@@ -777,6 +817,10 @@
       new: () => bridge?.newDocument($('new-format').value),
       save: () => saveDocument(),
       'save-as': () => saveDocument(true),
+      'save-all': () => {
+        for (const doc of documents.values())
+          if (sourceOf(doc) !== doc.savedSource) saveDocument(false, doc.id);
+      },
       close: () => {
         if (activeId) closeDocument(activeId);
       },
@@ -796,13 +840,19 @@
         if (doc && !doc.moving) bridge?.reloadFile(doc.id, sourceOf(doc));
       },
       'quit-request': requestQuit,
+      settings: () => settingsDialog.open(),
       'tab-drag-finished': () => document.body.classList.remove('tab-dragging'),
       'tab-transfer-wait': () => toast('Moving tab… Waiting for its current requests and preview.'),
     })
   );
 
-  function command(name) {
-    if (document.querySelector('dialog[open]') && name !== 'quit-request') return;
+  /* Native commands always apply; a command the user starts waits for open dialogs. */
+  function command(name, native = false) {
+    if (name.startsWith('close-request:')) {
+      settingsDialog.askClose(JSON.parse(name.slice('close-request:'.length)));
+      return;
+    }
+    if (!native && document.querySelector('dialog[open]') && name !== 'quit-request') return;
     if (name.startsWith('layout-mode:')) {
       sourceEditor.setMode(false);
       workspace.setLayout(name.slice('layout-mode:'.length));
@@ -923,6 +973,11 @@
       bridge?.toggleFullscreen();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && event.altKey && event.code === 'KeyS') {
+      event.preventDefault();
+      command('save-all');
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {
       const key = event.code || event.key.toLowerCase();
       const name = event.shiftKey
@@ -959,6 +1014,8 @@
             r: 'reload',
             KeyM: 'add-mark',
             m: 'add-mark',
+            Comma: 'settings',
+            ',': 'settings',
           }[key];
       if (name) {
         event.preventDefault();
@@ -1015,7 +1072,8 @@
   if (typeof QWebChannel === 'function' && window.qt?.webChannelTransport) {
     new QWebChannel(qt.webChannelTransport, (channel) => {
       bridge = channel.objects.native;
-      $('app-version').textContent = `/ ${bridge.appVersion}`;
+      for (const id of ['app-version', 'status-version', 'settings-version'])
+        $(id).textContent = `v${bridge.appVersion}`;
       bridge.documentLoaded.connect(receiveDocument);
       bridge.documentSaved.connect(receiveSaved);
       bridge.documentClosed.connect(removeDocument);
@@ -1070,6 +1128,11 @@
         reading.receive(raw);
         files.render();
       });
+      bridge.libraryReply.connect((number, message) => {
+        const resolve = libraryReplies.get(number);
+        libraryReplies.delete(number);
+        resolve?.(message);
+      });
       bridge.pdfPageReady.connect((raw) => {
         const result = JSON.parse(raw);
         pdf.receive(result);
@@ -1086,7 +1149,7 @@
         spelling.changed();
       });
       bridge.apiResponse.connect((raw) => apiRequests.receive(raw));
-      bridge.command.connect(command);
+      bridge.command.connect((name) => command(name, true));
       bridge.focusModeChanged.connect(applyFocusMode);
       bridge.ready();
     });

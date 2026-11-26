@@ -406,6 +406,60 @@ The containing folder is no longer available.|المجلد الذي يحتوي �
 Could not open the containing folder.|تعذر فتح المجلد الذي يحتوي على الملف.
 The folder is no longer available.|المجلد لم يعد متاحاً.
 Could not open the folder.|تعذر فتح المجلد.
+Settings|الإعدادات
+Saved instantly on this computer|يُحفظ فورًا على هذا الحاسوب
+Close settings|إغلاق الإعدادات
+Theme|السمة
+System|النظام
+Reading and editing|القراءة والتحرير
+Underline misspelled Persian, Arabic and English words while editing.|تسطير الكلمات الفارسية والعربية والإنجليزية الخاطئة أثناء التحرير.
+Keep the source and its preview at the same place.|إبقاء المصدر ومعاينته في الموضع نفسه.
+Use more of the window for documents.|استخدام مساحة أكبر من النافذة للمستندات.
+Behavior|السلوك
+When the last window is closed|عند إغلاق آخر نافذة
+In the background, documents and unsaved edits stay open while the window is hidden.|في الخلفية، تبقى المستندات والتعديلات غير المحفوظة مفتوحة أثناء إخفاء النافذة.
+Ask|اسأل
+Run in background|تشغيل في الخلفية
+Quit|خروج
+Keyboard shortcuts|اختصارات لوحة المفاتيح
+Open a document|فتح مستند
+Close document|إغلاق المستند
+About|حول
+Done|تم
+Close Khana?|إغلاق Khana؟
+Keep Khana running in the background, or quit?|هل يبقى Khana يعمل في الخلفية، أم تخرج تمامًا؟
+Unsaved documents: {0}. In the background they stay open; quitting asks you to save them.|مستندات غير محفوظة: {0}. تبقى مفتوحة في الخلفية، ويُطلب منك حفظها عند الخروج.
+In the background, click the tray icon to show the window again.|في وضع الخلفية، انقر أيقونة علبة النظام لإظهار النافذة مجددًا.
+In the background, open Khana again from the applications menu to show the window.|في وضع الخلفية، افتح Khana مجددًا من قائمة التطبيقات لإظهار النافذة.
+Remember my choice|تذكّر اختياري
+{0}: File not found. It may have been moved or deleted.|{0}: لم يُعثر على الملف. ربما نُقل أو حُذف.
+{0}: You do not have permission to read this file.|{0}: ليست لديك صلاحية قراءة هذا الملف.
+Could not save {0}: {1}. Your edits are still open.|تعذّر حفظ {0}: {1}. لا تزال تعديلاتك مفتوحة.
+Could not reload the file: {0}|تعذّرت إعادة تحميل الملف: {0}
+Could not save reading information: {0}|تعذّر حفظ معلومات القراءة: {0}
+Reading library unavailable: {0}|مكتبة القراءة غير متاحة: {0}
+Could not restore the reading session: {0}|تعذّرت استعادة جلسة القراءة: {0}
+The document library is unavailable.|مكتبة المستندات غير متاحة.
+A category with that name already exists.|توجد فئة بهذا الاسم بالفعل.
+Enter a category name of 1–80 characters.|أدخل اسم فئة من 1 إلى 80 حرفًا.
+A file with that name already exists.|يوجد ملف بهذا الاسم بالفعل.
+The file is no longer available.|لم يعد الملف متاحًا.
+Enter a file name without folder separators.|أدخل اسم ملف دون فواصل مجلدات.
+Keep an extension for the same document format.|احتفظ بامتداد لصيغة المستند نفسها.
+The destination is already open in another tab.|الوجهة مفتوحة في علامة تبويب أخرى.
+Wait for this file to finish opening or moving.|انتظر حتى ينتهي فتح هذا الملف أو نقله.
+Choose saved files first.|اختر ملفات محفوظة أولًا.
+Close the document before removing it from the library.|أغلق المستند قبل إزالته من المكتبة.
+Save this document before adding marks or notes.|احفظ هذا المستند قبل إضافة العلامات أو الملاحظات.
+Save your document changes before adding a mark or note.|احفظ تغييرات المستند قبل إضافة علامة أو ملاحظة.
+That file is already open in another tab. Choose a different filename.|هذا الملف مفتوح في علامة تبويب أخرى. اختر اسمًا مختلفًا.
+That file is still being opened. Please wait, then save again.|لا يزال هذا الملف قيد الفتح. انتظر ثم احفظ مجددًا.
+Pinned files stay above unpinned files.|تبقى الملفات المثبتة فوق الملفات غير المثبتة.
+Move the file to that category first.|انقل الملف إلى تلك الفئة أولًا.
+This category no longer exists.|لم تعد هذه الفئة موجودة.
+Save all selected documents before organizing them.|احفظ كل المستندات المحددة قبل تنظيمها.
+That name already belongs to a document in the library.|هذا الاسم يخص مستندًا آخر في المكتبة.
+Save all documents|حفظ كل المستندات
 `
     .trim()
     .split('\n')

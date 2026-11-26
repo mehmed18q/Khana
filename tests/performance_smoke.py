@@ -55,7 +55,9 @@ def main():
             QTest.qWait(500)
             result = {}
             queries = []
-            window.bridge.library.connection.set_trace_callback(queries.append)
+            window.bridge.library.blocking(
+                lambda library: library.connection.set_trace_callback(queries.append)
+            )
             result["open_search_ms"] = measure("readerApp.command('search')")
             js(
                 "document.getElementById('search-input').value="

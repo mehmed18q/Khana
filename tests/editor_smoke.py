@@ -453,7 +453,7 @@ def main():
             evaluate("readerApp.showDocument(" + json.dumps(html_id) + ")")
             edit(html + "\n<!-- unsaved -->")
             with (
-                patch.object(window, "_close_choice", return_value="exit"),
+                patch.object(window.bridge, "preferences", return_value={"closeAction": "quit"}),
                 patch.object(window.bridge, "_ask", return_value=QMessageBox.StandardButton.Cancel),
             ):
                 window.close()
@@ -471,7 +471,7 @@ def main():
             print("PASS: source and preview remain usable in a small window", flush=True)
             assert not console_errors, console_errors
             with (
-                patch.object(window, "_close_choice", return_value="exit"),
+                patch.object(window.bridge, "preferences", return_value={"closeAction": "quit"}),
                 patch.object(
                     window.bridge, "_ask", return_value=QMessageBox.StandardButton.Discard
                 ),

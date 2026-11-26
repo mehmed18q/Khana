@@ -27,7 +27,25 @@ class WorkspaceTests(unittest.TestCase):
         self.path = self.folder / "shared.md"
         self.path.write_text("# Shared document\n")
         self.manager = WindowManager(self.folder / "settings.ini", window_factory=ReaderWindow)
+        self.addCleanup(self.manager.library.shutdown)
         self.origin, self.other = self.window(), self.window()
+
+    def library(self, operation):
+        """Change the library directly, then deliver the refreshed snapshot."""
+        result = self.manager.library.blocking(operation)
+        self.manager.library.refresh()
+        self.manager.library.flush()
+        return result
+
+    def request(self, bridge, slot, *args):
+        """Call an asynchronous library slot and return its reply message."""
+        replies = []
+        bridge.libraryReply.connect(lambda _number, message: replies.append(message))
+        getattr(bridge, slot)(7, *args)
+        self.manager.library.flush()
+        bridge.libraryReply.disconnect()
+        self.assertEqual(len(replies), 1)
+        return replies[0]
 
     def window(self):
         window = QObject()
@@ -36,13 +54,12 @@ class WorkspaceTests(unittest.TestCase):
         window.bridge = Bridge(window, [], self.manager.settings_path)
         window.bridge.initialized = True
         self.manager.windows.append(window)
-        self.addCleanup(window.bridge.library.connection.close)
         return window
 
     def opened(self, window):
         session = EditSession.opened(load_document(self.path))
         window.bridge.sessions[session.document.id] = session
-        window.bridge.library.remember(str(self.path), "Markdown")
+        self.library(lambda library: library.remember(str(self.path), "Markdown"))
         return session
 
     def test_library_updates_reach_every_window(self):
@@ -50,6 +67,7 @@ class WorkspaceTests(unittest.TestCase):
         received = []
         self.other.bridge.libraryChanged.connect(received.append)
         self.origin.bridge.starDocument(str(self.path), True)
+        self.manager.library.flush()
         self.assertTrue(received, "The other window still shows the old star state")
         self.assertTrue(json.loads(received[-1])["entries"][0]["starred"])
 
@@ -65,24 +83,28 @@ class WorkspaceTests(unittest.TestCase):
         session = self.opened(self.origin)
         identifier = session.document.id
         session.document.source = "# Unsaved changes"
-        category = self.origin.bridge.library.create_category("Study", [str(self.path)])
-        self.origin.bridge.library.set_pinned(str(self.path), True)
-        note = self.origin.bridge.library.save_annotation(
-            str(self.path), "", "note", "Keep", "Note", {"index": 0, "progress": 0}
+        category = self.library(lambda library: library.create_category("Study", [str(self.path)]))
+        self.library(lambda library: library.set_pinned(str(self.path), True))
+        note = self.library(
+            lambda library: library.save_annotation(
+                str(self.path), "", "note", "Keep", "Note", {"index": 0, "progress": 0}
+            )
         )
         target = self.path.with_name("نام جدید.md")
-        self.assertEqual(self.other.bridge.renameFile(str(self.path), target.name), "")
+        self.assertEqual(
+            self.request(self.other.bridge, "renameFile", str(self.path), target.name), ""
+        )
         self.assertFalse(self.path.exists())
         self.assertEqual(target.read_text(), "# Shared document\n")
         self.assertEqual(session.document.path, str(target))
         self.assertEqual(session.document.id, identifier)
         self.assertEqual(session.document.source, "# Unsaved changes")
         self.assertTrue(session.dirty)
-        record = self.other.bridge.library.get(str(target))
+        record = self.library(lambda library: library.get(str(target)))
         self.assertEqual(record["categoryId"], category)
         self.assertTrue(record["pinned"])
         self.assertEqual(record["annotations"][0]["id"], note)
-        self.assertIsNone(self.other.bridge.library.get(str(self.path)))
+        self.assertIsNone(self.library(lambda library: library.get(str(self.path))))
         self.assertTrue(self.origin.bridge._save_session(session))
         self.assertEqual(target.read_text(), "# Unsaved changes")
         self.assertFalse(self.path.exists())
@@ -92,19 +114,34 @@ class WorkspaceTests(unittest.TestCase):
         target = self.path.with_name("existing.md")
         target.write_text("Keep existing")
         for name in (target.name, "../outside.md", "other.pdf", " . ", " .. "):
-            self.assertTrue(self.other.bridge.renameFile(str(self.path), name))
+            self.assertTrue(self.request(self.other.bridge, "renameFile", str(self.path), name))
         self.assertEqual(self.path.read_text(), "# Shared document\n")
         self.assertEqual(target.read_text(), "Keep existing")
 
     def test_rename_waits_for_pending_open_in_another_window(self):
-        self.other.bridge.library.remember(str(self.path), "Markdown")
+        self.library(lambda library: library.remember(str(self.path), "Markdown"))
         target = self.path.with_name("renamed.md")
         self.origin.bridge.initialized = False
         self.origin.bridge.initial_paths = [self.path]
-        self.assertTrue(self.other.bridge.renameFile(str(self.path), target.name))
+        self.assertTrue(self.request(self.other.bridge, "renameFile", str(self.path), target.name))
         self.assertTrue(self.path.is_file())
         self.assertFalse(target.exists())
-        self.assertIsNotNone(self.other.bridge.library.get(str(self.path)))
+        self.assertIsNotNone(self.library(lambda library: library.get(str(self.path))))
+
+    def test_exit_keeps_documents_of_windows_that_already_closed(self):
+        self.opened(self.origin)
+        second = self.folder / "second.md"
+        second.write_text("# Second\n")
+        session = EditSession.opened(load_document(second))
+        self.other.bridge.sessions[session.document.id] = session
+        self.manager.tray.exiting = [self.origin, self.other]
+        self.origin.bridge.remember_workspace()
+        self.manager.windows.remove(self.origin)  # the first window has closed
+        self.other.bridge.remember_workspace()
+        self.manager.library.flush()
+        saved = self.manager.library.blocking(lambda library: library.workspace())
+        self.assertEqual(saved["paths"], [str(self.path), str(second)])
+        self.manager.tray.exiting = []
 
     def test_bulk_close_cancel_keeps_all_tabs_open(self):
         original = self.opened(self.origin)
@@ -123,7 +160,10 @@ class WorkspaceTests(unittest.TestCase):
         received = []
         self.other.bridge.libraryChanged.connect(received.append)
         self.assertEqual(
-            self.origin.bridge.createCategory("مطالعه", json.dumps([str(self.path)])), ""
+            self.request(
+                self.origin.bridge, "createCategory", "مطالعه", json.dumps([str(self.path)])
+            ),
+            "",
         )
         payload = json.loads(received[-1])
         self.assertEqual(payload["categories"][0]["name"], "مطالعه")
@@ -131,12 +171,14 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_cannot_forget_a_document_open_in_another_window(self):
         self.opened(self.origin)
-        library = self.origin.bridge.library
-        annotation = library.save_annotation(
-            str(self.path), "", "note", "Keep me", "Text", {"index": 0, "progress": 0}
+        annotation = self.library(
+            lambda library: library.save_annotation(
+                str(self.path), "", "note", "Keep me", "Text", {"index": 0, "progress": 0}
+            )
         )
         self.other.bridge.forgetDocument(str(self.path))
-        record = library.get(str(self.path))
+        self.manager.library.flush()
+        record = self.library(lambda library: library.get(str(self.path)))
         self.assertIsNotNone(
             record, "Removing from a different window deleted an open document and its notes"
         )

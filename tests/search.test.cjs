@@ -68,3 +68,14 @@ test('replace all is based on original matches even when replacement contains th
   assert.equal(apply(text, replacement(text, matches(text, 'cat'), 'catcat')), 'catcat catcat');
   assert.equal(apply(text, replacement(text, [matches(text, 'cat')[1]], 'dog')), 'cat dog');
 });
+test('Persian and Arabic letter forms, vowel marks and ZWNJ match the same query', () => {
+  const found = (text, query) => slices(text, query);
+  assert.deepEqual(found('كتاب و کتاب و كِتَاب', 'کتاب'), ['كتاب', 'کتاب', 'كِتَاب']);
+  assert.deepEqual(found('علي و علی', 'علی'), ['علي', 'علی']);
+  assert.deepEqual(found('مدرسة و مدرسه', 'مدرسه'), ['مدرسة', 'مدرسه']);
+  assert.deepEqual(found('إسلام و اسلام', 'اسلام'), ['إسلام', 'اسلام']);
+  assert.deepEqual(found('کتاب‌ها و کتابها', 'کتابها'), ['کتاب‌ها', 'کتابها']);
+  assert.deepEqual(found('مسئله ۱۲ و 12', '12'), ['۱۲', '12']);
+  assert.deepEqual(found('a.b axb', 'a.b'), ['a.b']);
+  assert.deepEqual(matches('text', 'َ'), []);
+});

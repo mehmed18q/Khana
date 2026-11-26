@@ -13,10 +13,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QT_QUICK_BACKEND", "software")
 os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu")
 
-from PySide6.QtCore import QTimer
 from PySide6.QtTest import QTest
 from PySide6.QtWebEngineCore import QWebEnginePage
-from PySide6.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from reader.ui.window import ReaderWindow
 
@@ -47,61 +46,72 @@ def main():
                 assert time.monotonic() < deadline
                 QTest.qWait(30)
 
-        def choose(label, available=True):
-            checked = []
+        def ask():
+            """Close the window and wait for the page's close prompt."""
+            window.close()
+            wait(lambda: js("document.getElementById('close-dialog').open"))
 
-            def click():
-                box = app.activeModalWidget()
-                assert isinstance(box, QMessageBox)
-                buttons = {button.text(): button for button in box.buttons()}
-                assert set(buttons) == {"Exit", "Cancel", "Stay in background"}
-                assert box.defaultButton() is buttons["Cancel"]
-                assert box.escapeButton() is buttons["Cancel"]
-                assert buttons["Stay in background"].isEnabled() == available
-                checked.append(True)
-                buttons[label].click()
-
-            with patch.object(tray, "available", return_value=available):
-                QTimer.singleShot(0, click)
-                choice = window._close_choice()
-            assert checked
-            return choice
+        def answer(value, remember=False):
+            js(
+                "document.getElementById('close-remember').checked="
+                + ("true" if remember else "false")
+                + ";document.querySelector('#close-dialog [value=\""
+                + value
+                + "\"]').click()"
+            )
+            wait(lambda: not js("document.getElementById('close-dialog').open"))
+            QTest.qWait(50)
 
         try:
             wait(lambda: js("!!window.readerApp?.activeId"))
-            assert choose("Cancel", available=False) == "cancel"
-            assert choose("Exit") == "exit"
-            assert choose("Stay in background") == "background"
+            assert tray.icon is None or tray.icon.isVisible()
+            assert not app.quitOnLastWindowClosed()
+
+            # The page asks, as Bandar does; Cancel keeps everything as it was.
+            with patch.object(tray, "available", return_value=False):
+                ask()
+            assert "applications menu" in js("document.getElementById('close-hint').textContent")
+            answer("cancel")
+            assert window.isVisible() and window in manager.windows
             js("readerApp.setEditMode(true)")
             js(
                 "window.field=document.querySelector('.source-editor');field.focus();field.setSelectionRange(field.value.length,field.value.length);document.execCommand('insertText',false,'Unsaved متن')"
             )
             source = js("field.value")
-            with patch.object(window, "_close_choice", return_value="cancel"):
-                window.close()
-            assert window.isVisible() and not window.close_pending
-            assert js("field.value") == source
-            with (
-                patch.object(tray, "available", return_value=True),
-                patch.object(QSystemTrayIcon, "show"),
-                patch.object(window, "_close_choice", return_value="background"),
-            ):
-                window.close()
-            assert not window.isVisible() and window in manager.windows
-            assert not app.quitOnLastWindowClosed()
-            assert path.read_text() == "# Saved\n"
-            assert [
-                action.text() for action in tray.menu.actions() if not action.isSeparator()
-            ] == ["Open", "Exit"]
-            tray.open_action.trigger()
+            ask()
+            assert "1" in js("document.getElementById('close-message').textContent")
+            assert js("document.activeElement.id") == "close-background"
+            answer("background")
+            wait(lambda: not window.isVisible())
+            assert window in manager.windows and path.read_text() == "# Saved\n"
+            tray.restore()
             assert window.isVisible()
             assert js("field.value") == source
             js("field.focus();document.execCommand('undo')")
             assert js("field.value") == "# Saved\n"
             js("document.execCommand('redo')")
             assert js("field.value") == source
+
+            # A remembered choice is saved and applies without asking again.
+            ask()
+            answer("background", remember=True)
+            wait(lambda: not window.isVisible())
+            assert window.bridge.preferences()["closeAction"] == "background"
+            tray.restore()
+            window.close()
+            wait(lambda: not window.isVisible())
+            assert not js("document.getElementById('close-dialog').open")
+            tray.restore()
+            js("readerApp.preferences()")  # the page saves its own copy of the setting
+            assert window.bridge.preferences()["closeAction"] == "background"
+            js(
+                "document.getElementById('settings-button').click();"
+                'document.querySelector(\'#settings-dialog [data-setting="closeAction"][data-value="ask"]\').click();'
+                "document.getElementById('settings-dialog').close()"
+            )
+            wait(lambda: window.bridge.preferences()["closeAction"] == "ask")
             print(
-                "PASS: close choices, background, tray restore, selection buffer and undo",
+                "PASS: close prompt, background, remembered choice, tray restore, buffer and undo",
                 flush=True,
             )
 
@@ -120,7 +130,7 @@ def main():
             with patch.object(
                 window.bridge, "_ask", return_value=QMessageBox.StandardButton.Cancel
             ):
-                tray.quit_action.trigger()
+                tray.quit_all()
                 wait(lambda: not window.close_pending and not tray.exiting)
             assert len(manager.windows) == 2 and window.isVisible()
             assert js("field.value") == source
@@ -159,7 +169,7 @@ def main():
                 ),
                 patch.object(app, "quit") as quit_app,
             ):
-                tray.quit_action.trigger()
+                tray.quit_all()
                 wait(lambda: not manager.windows)
                 assert quit_app.called
             assert path.read_text() == source

@@ -17,8 +17,11 @@ class SingleInstance(QObject):
     def __init__(self, parent=None, directory=None, name=None):
         super().__init__(parent)
         identity = sha256(str(Path.home()).encode()).hexdigest()[:16]
+        # The per-user runtime folder (XDG_RUNTIME_DIR) is private; a shared /tmp
+        # would let another account claim the name or read forwarded paths.
         base = Path(
             directory
+            or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.RuntimeLocation)
             or QStandardPaths.writableLocation(QStandardPaths.StandardLocation.TempLocation)
         )
         self.address = str(base / (name or f"{APP_ID}-{identity}"))

@@ -36,6 +36,7 @@ const readerGlobals = [
   'ReaderSpelling',
   'ReaderI18n',
   'ReaderPickers',
+  'ReaderSettingsDialog',
   'ReaderWindowControls',
   'ReaderWorkspace',
   'QWebChannel',

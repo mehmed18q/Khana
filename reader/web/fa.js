@@ -406,6 +406,60 @@ Wait for the preview to update, then try again.|صبر کنید پیش‌نما�
 The source changed. Select the insertion point and try again.|متن تغییر کرد. محل درج را انتخاب کنید و دوباره تلاش کنید.
 Could not edit the source text. Select the text and try again.|ویرایش متن ممکن نشد. متن را انتخاب کنید و دوباره تلاش کنید.
 Reading fullscreen · Press Esc to return.|مطالعهٔ تمام‌صفحه؛ Esc برای بازگشت.
+Settings|تنظیمات
+Saved instantly on this computer|بلافاصله روی همین رایانه ذخیره می‌شود
+Close settings|بستن تنظیمات
+Theme|پوسته
+System|سیستم
+Reading and editing|خواندن و ویرایش
+Underline misspelled Persian, Arabic and English words while editing.|هنگام ویرایش، زیر واژه‌های نادرست فارسی، عربی و انگلیسی خط کشیده می‌شود.
+Keep the source and its preview at the same place.|متن منبع و پیش‌نمایش آن در یک جا هماهنگ می‌مانند.
+Use more of the window for documents.|فضای بیشتری از پنجره به سند می‌رسد.
+Behavior|رفتار
+When the last window is closed|هنگام بستن آخرین پنجره
+In the background, documents and unsaved edits stay open while the window is hidden.|در پس‌زمینه، اسناد و تغییرات ذخیره‌نشده با پنهان بودن پنجره باز می‌مانند.
+Ask|بپرس
+Run in background|اجرا در پس‌زمینه
+Quit|خروج کامل
+Keyboard shortcuts|میان‌برهای صفحه‌کلید
+Open a document|باز کردن سند
+Close document|بستن سند
+About|درباره
+Done|تمام
+Close Khana?|خوانا بسته شود؟
+Keep Khana running in the background, or quit?|خوانا در پس‌زمینه بماند یا کامل بسته شود؟
+Unsaved documents: {0}. In the background they stay open; quitting asks you to save them.|اسناد ذخیره‌نشده: {0}. در پس‌زمینه باز می‌مانند؛ هنگام خروج کامل برای ذخیرهٔ آن‌ها پرسیده می‌شود.
+In the background, click the tray icon to show the window again.|در حالت پس‌زمینه، برای نمایش دوبارهٔ پنجره روی آیکون سینی سیستم کلیک کنید.
+In the background, open Khana again from the applications menu to show the window.|در حالت پس‌زمینه، برای نمایش دوبارهٔ پنجره خوانا را دوباره از منوی برنامه‌ها باز کنید.
+Remember my choice|انتخابم را به خاطر بسپار
+{0}: File not found. It may have been moved or deleted.|{0}: فایل پیدا نشد. ممکن است جابه‌جا یا حذف شده باشد.
+{0}: You do not have permission to read this file.|{0}: اجازهٔ خواندن این فایل را ندارید.
+Could not save {0}: {1}. Your edits are still open.|ذخیرهٔ {0} ممکن نشد: {1}. تغییرات شما هنوز باز است.
+Could not reload the file: {0}|بارگذاری دوبارهٔ فایل ممکن نشد: {0}
+Could not save reading information: {0}|ذخیرهٔ اطلاعات مطالعه ممکن نشد: {0}
+Reading library unavailable: {0}|کتابخانهٔ مطالعه در دسترس نیست: {0}
+Could not restore the reading session: {0}|بازگرداندن جلسهٔ مطالعه ممکن نشد: {0}
+The document library is unavailable.|کتابخانهٔ اسناد در دسترس نیست.
+A category with that name already exists.|دسته‌ای با این نام وجود دارد.
+Enter a category name of 1–80 characters.|نام دسته را بین ۱ تا ۸۰ نویسه وارد کنید.
+A file with that name already exists.|فایلی با این نام وجود دارد.
+The file is no longer available.|فایل دیگر در دسترس نیست.
+Enter a file name without folder separators.|نام فایل را بدون جداکنندهٔ پوشه وارد کنید.
+Keep an extension for the same document format.|پسوندی از همان قالب سند نگه دارید.
+The destination is already open in another tab.|مقصد در زبانهٔ دیگری باز است.
+Wait for this file to finish opening or moving.|صبر کنید تا باز شدن یا جابه‌جایی این فایل تمام شود.
+Choose saved files first.|ابتدا فایل‌های ذخیره‌شده را انتخاب کنید.
+Close the document before removing it from the library.|پیش از حذف سند از کتابخانه، آن را ببندید.
+Save this document before adding marks or notes.|پیش از افزودن نشان یا یادداشت، این سند را ذخیره کنید.
+Save your document changes before adding a mark or note.|پیش از افزودن نشان یا یادداشت، تغییرات سند را ذخیره کنید.
+That file is already open in another tab. Choose a different filename.|این فایل در زبانهٔ دیگری باز است. نام دیگری انتخاب کنید.
+That file is still being opened. Please wait, then save again.|این فایل هنوز در حال باز شدن است. کمی صبر کنید و دوباره ذخیره کنید.
+Pinned files stay above unpinned files.|فایل‌های سنجاق‌شده بالای فایل‌های دیگر می‌مانند.
+Move the file to that category first.|ابتدا فایل را به آن دسته منتقل کنید.
+This category no longer exists.|این دسته دیگر وجود ندارد.
+Save all selected documents before organizing them.|پیش از مرتب‌سازی، همهٔ اسناد انتخاب‌شده را ذخیره کنید.
+That name already belongs to a document in the library.|این نام متعلق به سند دیگری در کتابخانه است.
+Save all documents|ذخیرهٔ همهٔ اسناد
 `
     .trim()
     .split('\n')

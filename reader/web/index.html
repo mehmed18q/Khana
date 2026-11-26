@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="theme.css" />
     <link rel="stylesheet" href="file-icons.css" />
     <link rel="stylesheet" href="header.css" />
+    <link rel="stylesheet" href="shared.css" />
     <script src="qrc:///qtwebchannel/qwebchannel.js" defer></script>
     <script src="bidi.js" defer></script>
     <script src="vendor/katex/katex.min.js" defer></script>
@@ -63,6 +64,7 @@
     <script src="ar.js" defer></script>
     <script src="i18n.js" defer></script>
     <script src="pickers.js" defer></script>
+    <script src="settings-dialog.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -136,6 +138,23 @@
           <path d="M3 6h7l2 3h9v11H3ZM3 6V4h7l2 2h9v3" />
         </symbol>
         <symbol id="i-mark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4Z" /></symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"
+          />
+        </symbol>
+        <symbol id="i-layers" viewBox="0 0 24 24">
+          <path d="m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5" />
+        </symbol>
+        <symbol id="i-power" viewBox="0 0 24 24">
+          <path d="M12 3v9M6.3 6.6a8 8 0 1 0 11.4 0" />
+        </symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24">
+          <path
+            d="M12 9v4m0 4h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+          />
+        </symbol>
         <symbol id="i-note" viewBox="0 0 24 24">
           <path d="M4 3h16v13l-5 5H4Zm11 18v-5h5M8 8h8M8 12h6" />
         </symbol>
@@ -169,9 +188,12 @@
           data-window-drag
           title="Drag to move window. Double-click to toggle fullscreen."
         >
-          <img src="icon.svg" alt="" width="45" height="45" draggable="false" />
+          <span class="brand-mark" aria-hidden="true"
+            ><svg><use href="#i-book" /></svg
+          ></span>
           <div>
-            <span class="brand-name">Khana<span class="brand-dot">.</span></span
+            <span class="brand-name" dir="ltr" translate="no"
+              >Khana<span class="brand-dot">.</span></span
             ><span class="brand-tagline">A little clarity. In every language.</span>
           </div>
         </div>
@@ -450,6 +472,15 @@
                 </fieldset>
               </section>
             </div>
+            <button
+              id="settings-button"
+              class="icon-button"
+              title="Settings (Ctrl+,)"
+              aria-label="Settings"
+              aria-haspopup="dialog"
+            >
+              <svg aria-hidden="true"><use href="#i-settings" /></svg>
+            </button>
             <button
               id="header-collapse"
               class="icon-button"
@@ -862,7 +893,12 @@
             ><span id="direction-status">Smart direction is on</span>
           </div>
           <span class="developer-credit" dir="ltr">
-            <button id="open-logs" title="Open application logs" aria-label="Open application logs">
+            <button
+              id="open-logs"
+              class="status-link"
+              title="Open application logs"
+              aria-label="Open application logs"
+            >
               Logs
             </button>
             <a
@@ -878,6 +914,8 @@
                 >Sadeq Kiomarsi</a
               ></span
             >
+            <span class="status-separator">·</span>
+            <span id="status-version" class="version-chip" translate="no"></span>
           </span>
           <div>
             <span id="progress-label">0% read</span>
@@ -1107,6 +1145,166 @@
           <button id="pdf-cancel" type="button" class="secondary-button">Cancel</button
           ><button id="pdf-apply" type="submit" class="save-button">Apply</button>
         </div>
+      </form>
+    </dialog>
+    <dialog id="close-dialog" class="sheet small" aria-labelledby="close-title">
+      <form method="dialog">
+        <header class="sheet-head">
+          <span class="sheet-icon" aria-hidden="true"
+            ><svg><use href="#i-book" /></svg
+          ></span>
+          <div><h2 id="close-title">Close Khana?</h2></div>
+          <button class="icon-button" value="cancel" aria-label="Cancel">
+            <svg aria-hidden="true"><use href="#i-close" /></svg>
+          </button>
+        </header>
+        <div class="sheet-body">
+          <p id="close-message">Keep Khana running in the background, or quit?</p>
+          <p id="close-hint" class="muted">
+            In the background, click the tray icon to show the window again.
+          </p>
+          <label class="toggle-row"
+            ><span>Remember my choice</span
+            ><span class="switch"><input id="close-remember" type="checkbox" /><span></span></span
+          ></label>
+        </div>
+        <footer class="sheet-foot">
+          <button class="button" value="cancel">Cancel</button><span class="spacer"></span
+          ><button id="close-quit" class="button danger" value="quit">
+            <svg aria-hidden="true"><use href="#i-power" /></svg>Quit</button
+          ><button id="close-background" class="button primary" value="background">
+            <svg aria-hidden="true"><use href="#i-layers" /></svg>Run in background
+          </button>
+        </footer>
+      </form>
+    </dialog>
+    <dialog id="settings-dialog" class="sheet" aria-labelledby="settings-title">
+      <form method="dialog">
+        <header class="sheet-head">
+          <span class="sheet-icon" aria-hidden="true"
+            ><svg><use href="#i-settings" /></svg
+          ></span>
+          <div>
+            <h2 id="settings-title">Settings</h2>
+            <p>Saved instantly on this computer</p>
+          </div>
+          <button class="icon-button" value="close" aria-label="Close settings">
+            <svg aria-hidden="true"><use href="#i-close" /></svg>
+          </button>
+        </header>
+        <div class="sheet-body">
+          <section class="settings-section">
+            <h3>Appearance</h3>
+            <div class="setting">
+              <span class="text"><span>Theme</span></span>
+              <div class="segmented" role="group" aria-label="Theme">
+                <button type="button" data-theme-choice="auto">System</button
+                ><button type="button" data-theme-choice="light">Light</button
+                ><button type="button" data-theme-choice="dark">Dark</button>
+              </div>
+            </div>
+            <div class="setting">
+              <span class="text"><span>Language</span></span>
+              <div class="segmented" role="group" aria-label="Language" translate="no">
+                <button type="button" data-setting="language" data-value="en">English</button
+                ><button type="button" data-setting="language" data-value="fa">فارسی</button
+                ><button type="button" data-setting="language" data-value="ar">العربية</button>
+              </div>
+            </div>
+            <div class="settings-palette-grid" role="group" aria-label="Color palette">
+              <button type="button" class="palette-choice" data-palette-choice="forest">
+                <span class="palette-swatch" aria-hidden="true"></span>Forest</button
+              ><button type="button" class="palette-choice" data-palette-choice="ocean">
+                <span class="palette-swatch" aria-hidden="true"></span>Ocean</button
+              ><button type="button" class="palette-choice" data-palette-choice="violet">
+                <span class="palette-swatch" aria-hidden="true"></span>Violet</button
+              ><button type="button" class="palette-choice" data-palette-choice="rose">
+                <span class="palette-swatch" aria-hidden="true"></span>Rose</button
+              ><button type="button" class="palette-choice" data-palette-choice="amber">
+                <span class="palette-swatch" aria-hidden="true"></span>Amber</button
+              ><button type="button" class="palette-choice" data-palette-choice="slate">
+                <span class="palette-swatch" aria-hidden="true"></span>Slate
+              </button>
+            </div>
+          </section>
+          <section class="settings-section">
+            <h3>Reading and editing</h3>
+            <label class="setting"
+              ><span class="text"
+                ><span>Spell check</span
+                ><small
+                  >Underline misspelled Persian, Arabic and English words while editing.</small
+                ></span
+              ><span class="switch"
+                ><input type="checkbox" data-setting="spellcheck" /><span></span></span
+            ></label>
+            <label class="setting"
+              ><span class="text"
+                ><span>Sync scroll</span
+                ><small>Keep the source and its preview at the same place.</small></span
+              ><span class="switch"
+                ><input type="checkbox" data-setting="syncScroll" /><span></span></span
+            ></label>
+            <label class="setting"
+              ><span class="text"
+                ><span>Wider page</span><small>Use more of the window for documents.</small></span
+              ><span class="switch"><input type="checkbox" data-setting="wide" /><span></span></span
+            ></label>
+          </section>
+          <section class="settings-section">
+            <h3>Behavior</h3>
+            <div class="setting">
+              <span class="text"
+                ><span>When the last window is closed</span
+                ><small
+                  >In the background, documents and unsaved edits stay open while the window is
+                  hidden.</small
+                ></span
+              >
+              <div class="segmented" role="group" aria-label="When the last window is closed">
+                <button type="button" data-setting="closeAction" data-value="ask">Ask</button
+                ><button type="button" data-setting="closeAction" data-value="background">
+                  Run in background</button
+                ><button type="button" data-setting="closeAction" data-value="quit">Quit</button>
+              </div>
+            </div>
+          </section>
+          <section class="settings-section">
+            <h3>Keyboard shortcuts</h3>
+            <div class="shortcuts">
+              <kbd>Ctrl+O</kbd><span>Open a document</span> <kbd>Ctrl+N</kbd
+              ><span>New document</span> <kbd>Ctrl+S</kbd><span>Save</span> <kbd>Ctrl+Alt+S</kbd
+              ><span>Save all documents</span> <kbd>Ctrl+E</kbd><span>Edit &amp; Preview</span>
+              <kbd>Ctrl+F</kbd><span>Find in document</span> <kbd>Ctrl+H</kbd><span>Replace</span>
+              <kbd>Ctrl+G</kbd><span>Go to line</span> <kbd>Ctrl+W</kbd><span>Close document</span>
+              <kbd>Ctrl+Shift+F</kbd><span>Reading fullscreen</span> <kbd>Ctrl+,</kbd
+              ><span>Settings</span>
+            </div>
+          </section>
+          <section class="settings-section">
+            <h3>About</h3>
+            <div class="setting">
+              <span class="text"
+                ><span
+                  ><strong translate="no">Khana</strong>
+                  <span id="settings-version" dir="ltr"></span></span
+                ><small
+                  ><span>Development by</span> <span translate="no">Sadeq Kiomarsi</span> ·
+                  <span>Read. Write. Make it yours.</span></small
+                ></span
+              >
+              <span class="settings-links"
+                ><button type="button" class="button" id="settings-logs">Logs</button
+                ><button type="button" class="button" id="settings-github">
+                  <svg aria-hidden="true"><use href="#i-github" /></svg>GitHub
+                </button></span
+              >
+            </div>
+          </section>
+        </div>
+        <footer class="sheet-foot">
+          <span class="spacer"></span><button class="button primary" value="close">Done</button>
+        </footer>
       </form>
     </dialog>
     <div class="notifications">
